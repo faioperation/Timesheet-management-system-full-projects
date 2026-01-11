@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* React Quill Editor Customization */
+.rich-text-editor .ql-container {
+  font-size: 13px;
+  min-height: 200px;
+}
+
+.rich-text-editor .ql-toolbar {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #d1d5db;
+  padding: 8px;
+}
+
+.rich-text-editor .ql-toolbar .ql-formats {
+  margin-right: 8px;
+}
+
+.rich-text-editor .ql-toolbar button {
+  padding: 4px;
+  margin: 2px;
+}
+
+.rich-text-editor .ql-toolbar button:hover {
+  background-color: #e5e7eb;
+  border-radius: 4px;
+}
+
+.rich-text-editor .ql-editor {
+  min-height: 200px;
+  padding: 16px;
+  font-size: 13px;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide arrows for Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Fieldset styles for form inputs */
+.fieldset {
+  @apply relative border border-[#CED2E5] rounded-md px-3 pt-2 pb-1;
+}
+
+.fieldset-legend {
+  @apply text-xs text-gray-600 px-2 bg-white;
+  position: absolute;
+  top: -10px;
+  left: 8px;
+}
+
+.input {
+  @apply w-full border-none outline-none bg-transparent;
+}
+
+/* Time input styling */
+input[type="time"] {
+  @apply appearance-none;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  @apply cursor-pointer;
+}
+
