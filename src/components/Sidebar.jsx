@@ -1,161 +1,196 @@
-import React, { useState, useEffect } from 'react'
-import { MdSpaceDashboard, MdOutlineAccessTimeFilled, MdOutlineCalendarMonth, MdSettings, MdHome, MdBusiness } from "react-icons/md";
+import React, { useState, useEffect } from "react";
+import {
+  MdSpaceDashboard,
+  MdOutlineAccessTimeFilled,
+  MdOutlineCalendarMonth,
+  MdSettings,
+  MdHome,
+  MdBusiness,
+} from "react-icons/md";
 import { LuSquareActivity } from "react-icons/lu";
 import { FaUserLarge } from "react-icons/fa6";
 import { IoLogOut } from "react-icons/io5";
 import { RxCross2 } from "react-icons/rx";
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getRoleBasedMenuItems } from '../libs/roleUtils';
-import { logout } from '../libs/apiFetch';
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { getRoleBasedMenuItems } from "../libs/roleUtils";
+import { logout } from "../libs/apiFetch";
 
 function Sidebar({ onClose }) {
-    const location = useLocation()
-    const navigate = useNavigate()
-    const Pathname = location.pathname
-    const [userRole, setUserRole] = useState(null);
-    const [menuItems, setMenuItems] = useState([]);
-    const [hoveredItem, setHoveredItem] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const Pathname = location.pathname;
+  const [userRole, setUserRole] = useState(null);
+  const [menuItems, setMenuItems] = useState([]);
+  const [hoveredItem, setHoveredItem] = useState(null);
 
-    useEffect(() => {
-        const getCookie = (name) => {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
-        }
-        const role = getCookie('user_role');
-        setUserRole(role);
-        
-        // Get menu items based on role
-        const items = getRoleBasedMenuItems(role);
-        
-        // Map icon keys to actual icons
-        const iconMap = {
-            'home': <MdHome />,
-            'company': <MdBusiness />,
-            'dashboard': <MdSpaceDashboard />,
-            'users': <FaUserLarge />,
-            'timesheet': <MdOutlineCalendarMonth />,
-            'scheduler': <MdOutlineAccessTimeFilled />,
-            'activity': <LuSquareActivity />,
-            'settings': <MdSettings />,
-        };
-        
-        const itemsWithIcons = items.map(item => ({
-            ...item,
-            Icon: iconMap[item.iconKey] || <MdSpaceDashboard />
-        }));
-        
-        setMenuItems(itemsWithIcons);
-    }, []);
+  useEffect(() => {
+    const getCookie = (name) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(";").shift();
+      return null;
+    };
+    const role = getCookie("user_role");
+    setUserRole(role);
 
-    const NavLinks = menuItems;
+    // Get menu items based on role
+    const items = getRoleBasedMenuItems(role);
 
-    const handleLinkClick = () => {
-        if (onClose) {
-            onClose();
-        }
+    // Map icon keys to actual icons
+    const iconMap = {
+      home: <MdHome />,
+      company: <MdBusiness />,
+      dashboard: <MdSpaceDashboard />,
+      users: <FaUserLarge />,
+      timesheet: <MdOutlineCalendarMonth />,
+      scheduler: <MdOutlineAccessTimeFilled />,
+      activity: <LuSquareActivity />,
+      settings: <MdSettings />,
     };
 
-    return (
-        <div className={`bg-[#5069E5] w-[100%] h-[100%] px-2 sm:px-3 lg:px-4 py-4 lg:py-6 flex flex-col justify-between`}>
-            {/* Mobile close button */}
-            <div className="lg:hidden flex justify-end mb-2">
-                <button
-                    onClick={onClose}
-                    className="text-white text-2xl hover:bg-white/20 rounded p-1 transition-colors"
-                    aria-label="Close menu"
-                >
-                    <RxCross2 />
-                </button>
-            </div>
+    const itemsWithIcons = items.map((item) => ({
+      ...item,
+      Icon: iconMap[item.iconKey] || <MdSpaceDashboard />,
+    }));
 
-            <div className='w-full flex-1'>
-                <ul className="flex flex-col items-center gap-4 sm:gap-6 lg:gap-8 mt-2 sm:mt-4 lg:mt-6 pt-4 sm:pt-5 lg:pt-6 border-t border-[#CED2E5] w-full">
-                    {NavLinks.map((navlink, idx) => {
-                        // Check if current path matches the navlink path
-                        const isExactMatch = Pathname === navlink.pathname;
-                        // Check if current path starts with navlink path (for nested routes)
-                        const isNestedMatch = navlink.pathname !== '/' && Pathname.startsWith(navlink.pathname + "/");
-                        const isActive = isExactMatch || isNestedMatch;
-                        const hasSubItems = navlink.subItems && navlink.subItems.length > 0;
-                        const isHovered = hoveredItem === idx;
-                        
-                        return (
-                            <li
-                                key={idx}
-                                className={`w-full relative ${isActive ? "text-white" : "text-[#0C0C0D]"} hover:text-white transition-colors duration-200`}
-                                onMouseEnter={() => hasSubItems && setHoveredItem(idx)}
-                                onMouseLeave={() => setHoveredItem(null)}
-                            >
-                                {/* Main menu item */}
-                                <Link 
-                                    to={navlink.pathname} 
-                                    onClick={handleLinkClick} 
-                                    className="flex flex-col items-center py-2 text-xl sm:text-2xl"
-                                >
-                                    {navlink.Icon}
-                                </Link>
-                                
-                                {/* Sub-menu dropdown */}
-                                {hasSubItems && isHovered && (
-                                    <div className="absolute left-full top-0 ml-2 bg-[#5069E5] rounded-lg shadow-lg min-w-[180px] py-2 z-50">
-                                        <div className="px-4 py-2 border-b border-[#CED2E5]">
-                                            <p className="text-white font-semibold text-base">{navlink.Title.charAt(0).toUpperCase() + navlink.Title.slice(1)}</p>
-                                        </div>
-                                        {navlink.subItems.map((subItem, subIdx) => {
-                                            const isSubActive = Pathname === subItem.pathname || Pathname.startsWith(subItem.pathname + "/");
-                                            return (
-                                                <Link
-                                                    key={subIdx}
-                                                    to={subItem.pathname}
-                                                    onClick={handleLinkClick}
-                                                    className={`block px-4 py-2 text-sm transition-colors ${
-                                                        isSubActive 
-                                                            ? "text-white bg-white/20" 
-                                                            : "text-white/80 hover:text-white hover:bg-white/10"
-                                                    } ${subIdx < navlink.subItems.length - 1 ? "border-b border-[#CED2E5]" : ""}`}
-                                                >
-                                                    {subItem.Title}
-                                                </Link>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </li>
-                        );
-                    })}
-                </ul>
-            </div>
-            <div>
-                <div className={`${Pathname === '/logout' ? "text-white" : "text-[#0C0C0D]"} text-xl sm:text-2xl text-center cursor-pointer`}>
-                    <div 
-                        className="flex flex-col items-center py-2 hover:text-white transition-colors" 
-                        onClick={() => {
-                            logout({ navigate });
-                            if (onClose) {
-                                onClose();
-                            }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                logout({ navigate });
-                                if (onClose) {
-                                    onClose();
-                                }
-                            }
-                        }}
-                        aria-label="Logout"
-                    >
-                        <IoLogOut />
+    setMenuItems(itemsWithIcons);
+  }, []);
+
+  const NavLinks = menuItems;
+
+  const handleLinkClick = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      className={`bg-[#5069E5] w-[100%] h-[100%] px-2 sm:px-3 lg:px-4 py-4 lg:py-6 flex flex-col justify-between`}
+    >
+      {/* Mobile close button */}
+      <div className="lg:hidden flex justify-end mb-2">
+        <button
+          onClick={onClose}
+          className="text-white text-2xl hover:bg-white/20 rounded p-1 transition-colors"
+          aria-label="Close menu"
+        >
+          <RxCross2 />
+        </button>
+      </div>
+
+      <div className="w-full flex-1">
+        <ul className="flex flex-col items-center gap-4 sm:gap-6 lg:gap-8 mt-2 sm:mt-4 lg:mt-6 pt-4 sm:pt-5 lg:pt-6 border-t border-[#CED2E5] w-full">
+          {NavLinks.map((navlink, idx) => {
+            // Check if current path matches the navlink path
+            const isExactMatch = Pathname === navlink.pathname;
+            // Check if current path starts with navlink path (for nested routes)
+            const isNestedMatch =
+              navlink.pathname !== "/" &&
+              Pathname.startsWith(navlink.pathname + "/");
+
+            // Special handling for settings: any /settings/* route should highlight settings menu
+            let isActive = isExactMatch || isNestedMatch;
+            if (
+              navlink.Title === "settings" &&
+              Pathname.startsWith("/settings")
+            ) {
+              isActive = true;
+            }
+
+            const hasSubItems = navlink.subItems && navlink.subItems.length > 0;
+            const isHovered = hoveredItem === idx;
+
+            return (
+              <li
+                key={idx}
+                className={`w-full relative ${
+                  isActive ? "text-white" : "text-[#0C0C0D]"
+                } hover:text-white transition-colors duration-200`}
+                onMouseEnter={() => hasSubItems && setHoveredItem(idx)}
+                onMouseLeave={() => setHoveredItem(null)}
+              >
+                {/* Main menu item */}
+                <Link
+                  to={navlink.pathname}
+                  onClick={handleLinkClick}
+                  className="flex flex-col items-center py-2 text-xl sm:text-2xl"
+                >
+                  {navlink.Icon}
+                </Link>
+
+                {/* Sub-menu dropdown */}
+                {hasSubItems && isHovered && (
+                  <div className="absolute left-full top-0 ml-2 bg-[#5069E5] rounded-lg shadow-lg min-w-[180px] py-2 z-50">
+                    <div className="px-4 py-2 border-b border-[#CED2E5]">
+                      <p className="text-white font-semibold text-base">
+                        {navlink.Title.charAt(0).toUpperCase() +
+                          navlink.Title.slice(1)}
+                      </p>
                     </div>
-                </div>
-            </div>
+                    {navlink.subItems.map((subItem, subIdx) => {
+                      const isSubActive =
+                        Pathname === subItem.pathname ||
+                        Pathname.startsWith(subItem.pathname + "/");
+                      return (
+                        <Link
+                          key={subIdx}
+                          to={subItem.pathname}
+                          onClick={handleLinkClick}
+                          className={`block px-4 py-2 text-sm transition-colors ${
+                            isSubActive
+                              ? "text-white bg-white/20"
+                              : "text-white/80 hover:text-white hover:bg-white/10"
+                          } ${
+                            subIdx < navlink.subItems.length - 1
+                              ? "border-b border-[#CED2E5]"
+                              : ""
+                          }`}
+                        >
+                          {subItem.Title}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <div>
+        <div
+          className={`${
+            Pathname === "/logout" ? "text-white" : "text-[#0C0C0D]"
+          } text-xl sm:text-2xl text-center cursor-pointer`}
+        >
+          <div
+            className="flex flex-col items-center py-2 hover:text-white transition-colors"
+            onClick={() => {
+              logout({ navigate });
+              if (onClose) {
+                onClose();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                logout({ navigate });
+                if (onClose) {
+                  onClose();
+                }
+              }
+            }}
+            aria-label="Logout"
+          >
+            <IoLogOut />
+          </div>
         </div>
-    )
+      </div>
+    </div>
+  );
 }
 
-export default Sidebar
+export default Sidebar;

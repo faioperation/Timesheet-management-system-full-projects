@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import ReusableTable from '../../components/ReusableTable';
+import CreateTemplateModal from '../../components/CreateTemplateModal';
+import ViewTemplateModal from '../../components/ViewTemplateModal';
 
 export default function Template() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   // Sample template data matching the image
   const templateData = [
@@ -13,6 +18,14 @@ export default function Template() {
       name: 'Default template',
       type: 'Timesheet submit, {{start_date}} To {{end_date}}',
       subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
+      body: `Hello,
+
+Timesheet is submit for client : {{client_name}}
+for time period: {{start_date}} To {{end_date}}
+
+Please check and approve.
+
+Thank you.`,
     },
     {
       id: 2,
@@ -20,6 +33,14 @@ export default function Template() {
       name: 'Timesheet resubmit',
       type: 'Timesheet submit, {{start_date}} To {{end_date}}',
       subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
+      body: `Hello,
+
+Timesheet is submit for client : {{client_name}}
+for time period: {{start_date}} To {{end_date}}
+
+Please check and approve.
+
+Thank you.`,
     },
     {
       id: 3,
@@ -27,6 +48,14 @@ export default function Template() {
       name: 'Timesheet resubmit',
       type: 'Timesheet submit, {{start_date}} To {{end_date}}',
       subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
+      body: `Hello,
+
+Timesheet is submit for client : {{client_name}}
+for time period: {{start_date}} To {{end_date}}
+
+Please check and approve.
+
+Thank you.`,
     },
     {
       id: 4,
@@ -34,6 +63,14 @@ export default function Template() {
       name: 'Timesheet resubmit',
       type: 'Timesheet submit, {{start_date}} To {{end_date}}',
       subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
+      body: `Hello,
+
+Timesheet is submit for client : {{client_name}}
+for time period: {{start_date}} To {{end_date}}
+
+Please check and approve.
+
+Thank you.`,
     },
     {
       id: 5,
@@ -41,6 +78,14 @@ export default function Template() {
       name: 'Timesheet resubmit',
       type: 'Timesheet submit, {{start_date}} To {{end_date}}',
       subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
+      body: `Hello,
+
+Timesheet is submit for client : {{client_name}}
+for time period: {{start_date}} To {{end_date}}
+
+Please check and approve.
+
+Thank you.`,
     },
     {
       id: 6,
@@ -48,6 +93,14 @@ export default function Template() {
       name: 'Timesheet resubmit',
       type: 'Timesheet submit, {{start_date}} To {{end_date}}',
       subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
+      body: `Hello,
+
+Timesheet is submit for client : {{client_name}}
+for time period: {{start_date}} To {{end_date}}
+
+Please check and approve.
+
+Thank you.`,
     },
     {
       id: 7,
@@ -55,6 +108,14 @@ export default function Template() {
       name: 'Timesheet resubmit',
       type: 'Timesheet submit, {{start_date}} To {{end_date}}',
       subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
+      body: `Hello,
+
+Timesheet is submit for client : {{client_name}}
+for time period: {{start_date}} To {{end_date}}
+
+Please check and approve.
+
+Thank you.`,
     },
     {
       id: 8,
@@ -62,6 +123,14 @@ export default function Template() {
       name: 'Timesheet resubmit',
       type: 'Timesheet submit, {{start_date}} To {{end_date}}',
       subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
+      body: `Hello,
+
+Timesheet is submit for client : {{client_name}}
+for time period: {{start_date}} To {{end_date}}
+
+Please check and approve.
+
+Thank you.`,
     },
     {
       id: 9,
@@ -69,13 +138,33 @@ export default function Template() {
       name: 'Submission',
       type: 'Submission, {{start_date}} To {{end_date}}',
       subject: 'Submission, {{start_date}} To {{end_date}}',
+      body: `Hello,
+
+Timesheet is submit for client : {{client_name}}
+for time period: {{start_date}} To {{end_date}}
+
+Please check and approve.
+
+Thank you.`,
     },
   ];
 
   const handleCreateTemplate = () => {
-    // Navigate to create template page
-    // navigate('/settings/template/create');
-    console.log('Create template clicked');
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleViewTemplate = (template) => {
+    setSelectedTemplate(template);
+    setIsViewModalOpen(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedTemplate(null);
   };
 
   const handlePageChange = (page) => {
@@ -126,8 +215,11 @@ export default function Template() {
       key: 'action',
       label: 'Action',
       className: 'text-left',
-      render: () => (
-        <button className="text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors">
+      render: (row) => (
+        <button
+          onClick={() => handleViewTemplate(row)}
+          className="text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
+        >
           View
         </button>
       ),
@@ -155,6 +247,19 @@ export default function Template() {
         totalPages={25}
         onPageChange={handlePageChange}
         showPagination={true}
+      />
+
+      {/* Create Template Modal */}
+      <CreateTemplateModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
+
+      {/* View Template Modal */}
+      <ViewTemplateModal
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        template={selectedTemplate}
       />
     </div>
   );
