@@ -1,57 +1,159 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { IoMdArrowDropdown } from 'react-icons/io';
+import { FaEye } from 'react-icons/fa';
 import ReusableTable from '../components/ReusableTable';
 
 export default function Timesheet() {
+  const [activeFilter, setActiveFilter] = useState('All');
   const [filterPeriod, setFilterPeriod] = useState('Weekly');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [timesheetData, setTimesheetData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Sample data - replace with API call
-  useEffect(() => {
-    // Mock data matching the image
-    const mockData = Array.from({ length: 25 }, (_, index) => ({
-      id: index + 1,
-      no: String(index + 1).padStart(2, '0'),
+  // Sample data matching the image
+  const allTimesheetData = [
+    {
+      id: 1,
+      createdBy: 'Savannah Nguyen',
       client: 'Naresh Vyas',
       period: '15 Sep 2025 to 21 Sep 2025',
       uploadDate: '14 Sep 2025',
       status: 'Approved',
-    }));
-    setTimesheetData(mockData);
-  }, []);
+    },
+    {
+      id: 2,
+      createdBy: 'Jane Cooper',
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: 'Rejected',
+    },
+    {
+      id: 3,
+      createdBy: 'Darlene Robertson',
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: 'Pending',
+    },
+    {
+      id: 4,
+      createdBy: 'Eleanor Pena',
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: 'Approved',
+    },
+    {
+      id: 5,
+      createdBy: 'Jerome Bell',
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: 'Approved',
+    },
+    {
+      id: 6,
+      createdBy: 'Jacob Jones',
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: 'Created',
+    },
+    {
+      id: 7,
+      createdBy: 'Theresa Webb',
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: 'Rejected',
+    },
+    {
+      id: 8,
+      createdBy: 'Jenny Wilson',
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: 'Rejected',
+    },
+    {
+      id: 9,
+      createdBy: 'Wade Warren',
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: 'Rejected',
+    },
+    {
+      id: 10,
+      createdBy: 'Guy Hawkins',
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: 'Pending',
+    },
+    // Add more data for pagination
+    ...Array.from({ length: 240 }, (_, index) => ({
+      id: 11 + index,
+      createdBy: `User ${11 + index}`,
+      client: 'Naresh Vyas',
+      period: '15 Sep 2025 to 21 Sep 2025',
+      uploadDate: '14 Sep 2025',
+      status: ['Approved', 'Rejected', 'Pending', 'Created'][index % 4],
+    })),
+  ];
 
-  const filterOptions = ['Weekly', 'Monthly', 'Yearly'];
+  // Filter data based on active filter
+  const filteredData = useMemo(() => {
+    if (activeFilter === 'All') {
+      return allTimesheetData;
+    }
+    return allTimesheetData.filter(item => item.status === activeFilter);
+  }, [activeFilter]);
 
-  const handleFilterChange = (option) => {
-    setFilterPeriod(option);
+  useEffect(() => {
+    // Reset to first page when filter changes
+    setCurrentPage(1);
+  }, [activeFilter]);
+
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+  };
+
+  const handlePeriodChange = (period) => {
+    setFilterPeriod(period);
     setShowDropdown(false);
-    // Fetch data based on filter here
+    // Fetch data based on period here
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    // Fetch data for the page here
+    // Fetch data for the page here if needed
+  };
+
+  const handleView = (row) => {
+    console.log('View clicked for:', row);
+    // Navigate to view page or open modal
   };
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'Approved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'Rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'Created':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const columns = [
     {
-      key: 'no',
-      label: 'No',
+      key: 'createdBy',
+      label: 'Created by',
       className: 'text-left',
     },
     {
@@ -74,22 +176,61 @@ export default function Timesheet() {
       label: 'Status',
       className: 'text-left',
       render: (row) => (
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(row.status)}`}>
-          {row.status}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={`px-3 py-1 inline-flex items-center rounded-full text-xs font-medium border ${getStatusBadgeClass(row.status)}`}>
+            {row.status}
+          </span>
+          <IoMdArrowDropdown className="text-gray-400 cursor-pointer" size={14} />
+        </div>
+      ),
+    },
+    {
+      key: 'action',
+      label: 'Action',
+      className: 'text-left',
+      render: (row) => (
+        <button
+          onClick={() => handleView(row)}
+          className="flex items-center gap-1 text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
+        >
+          <FaEye size={14} />
+          <span>View</span>
+        </button>
       ),
     },
   ];
 
+  const filterOptions = ['Weekly', 'Monthly', 'Yearly'];
+
   return (
     <div className="w-full pb-10">
-      {/* Header Section */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-black">My submitted timesheet</h2>
+      {/* Top Section with Filter Tabs and Dropdown */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        {/* Filter Tabs */}
+        <div className="flex gap-2">
+          {['All', 'Pending', 'Approved', 'Rejected'].map((filter) => (
+            <button
+              key={filter}
+              onClick={() => handleFilterChange(filter)}
+              className={`
+                px-6 py-2.5 rounded-lg text-sm font-medium transition-colors border-b-2
+                ${
+                  activeFilter === filter
+                    ? 'bg-[#E0E7FF] text-[#5069E5] border-[#5069E5]'
+                    : 'bg-white text-gray-600 hover:text-gray-900 border-transparent'
+                }
+              `}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        {/* Weekly Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-[#5069E5] transition-colors cursor-pointer justify-between min-w-[120px]"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-[#5069E5] transition-colors cursor-pointer justify-between min-w-[120px]"
           >
             <span>{filterPeriod}</span>
             <IoMdArrowDropdown className="text-gray-500" size={20} />
@@ -105,7 +246,7 @@ export default function Timesheet() {
                 {filterOptions.map((option) => (
                   <button
                     key={option}
-                    onClick={() => handleFilterChange(option)}
+                    onClick={() => handlePeriodChange(option)}
                     className={`w-full text-left px-4 py-2 hover:bg-[#E0E7FF] transition-colors ${
                       filterPeriod === option ? 'bg-[#E0E7FF] text-[#5069E5]' : 'text-gray-800'
                     }`}
@@ -119,14 +260,15 @@ export default function Timesheet() {
         </div>
       </div>
 
-      {/* Reusable Table */}
+      {/* Table */}
       <ReusableTable
+        key={activeFilter} // Reset pagination when filter changes
         columns={columns}
-        data={timesheetData}
+        data={filteredData}
         itemsPerPage={10}
         onPageChange={handlePageChange}
-        showPagination={true}
         headerBgColor="bg-[#E0E7FF]"
+        stripedRows={true}
       />
     </div>
   );

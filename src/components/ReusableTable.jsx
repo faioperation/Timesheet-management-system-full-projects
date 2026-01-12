@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { IoMdArrowDropdown } from 'react-icons/io';
 
 /**
  * Reusable Table Component with Pagination
@@ -22,7 +23,7 @@ import React, { useState } from 'react';
 const ReusableTable = ({
   columns = [],
   data = [],
-  itemsPerPage = 10,
+  itemsPerPage: initialItemsPerPage = 10,
   totalPages: propTotalPages,
   onPageChange,
   emptyMessage = 'No data available',
@@ -32,13 +33,21 @@ const ReusableTable = ({
   stripedRows = true,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
 
-  // Calculate pagination
-  const calculatedTotalPages = propTotalPages || Math.ceil(data.length / itemsPerPage);
+  // Update itemsPerPage when initialItemsPerPage prop changes
+  useEffect(() => {
+    setItemsPerPage(initialItemsPerPage);
+  }, [initialItemsPerPage]);
+
+  // Calculate pagination - always slice data locally based on itemsPerPage
+  // If propTotalPages is provided, use it for pagination display, but still slice locally
+  const calculatedTotalPages = Math.ceil(data.length / itemsPerPage);
   const totalPages = propTotalPages || calculatedTotalPages;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentItems = propTotalPages ? data : data.slice(startIndex, endIndex);
+  // Always slice data based on itemsPerPage for client-side pagination
+  const currentItems = data.slice(startIndex, endIndex);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -46,6 +55,16 @@ const ReusableTable = ({
       if (onPageChange) {
         onPageChange(page);
       }
+    }
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    const newItemsPerPage = Number(e.target.value);
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when items per page changes
+    // If propTotalPages is provided, notify parent about the change
+    if (onPageChange) {
+      onPageChange(1);
     }
   };
 
@@ -135,9 +154,31 @@ const ReusableTable = ({
       </div>
 
       {/* Pagination */}
-      {showPagination && totalPages > 1 && (
-        <div className="flex justify-center mt-6">
-          <nav className="flex items-center gap-0" aria-label="Pagination">
+      {showPagination && (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-6">
+          {/* Items per page dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Show</span>
+            <div className="relative">
+              <select
+                value={itemsPerPage}
+                onChange={handleItemsPerPageChange}
+                className="appearance-none border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#5069E5] focus:border-[#5069E5] cursor-pointer"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={30}>30</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <IoMdArrowDropdown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={16} />
+            </div>
+            <span className="text-sm text-gray-600">entries</span>
+          </div>
+
+          {/* Pagination buttons */}
+          {totalPages > 1 && (
+            <nav className="flex items-center gap-0" aria-label="Pagination">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
@@ -178,6 +219,7 @@ const ReusableTable = ({
               Next
             </button>
           </nav>
+          )}
         </div>
       )}
     </div>

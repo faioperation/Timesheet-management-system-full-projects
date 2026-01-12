@@ -10,11 +10,19 @@ import SettingsLayout from "../layout/SettingsLayout";
 import RoleBasedRoute from "../components/RoleBasedRoute";
 import Profile from "../pages/settings/Profile";
 import Template from "../pages/settings/Template";
+import Company from "../pages/settings/Company";
+import RolePermission from "../pages/settings/RolePermission";
+import Subscription from "../pages/settings/Subscription";
 import Timesheet from "../pages/Timesheet";
 import UserDashboard from "../pages/dashboard/UserDashboard";
 import BusinessAdminDashboard from "../pages/dashboard/BusinessAdminDashboard";
 import SupervisorDashboard from "../pages/dashboard/SupervisorDashboard";
 import CreateTimesheet from "../pages/timesheet/CreateTimesheet";
+import Activity from "../pages/Activity";
+import Scheduler from "../pages/Scheduler";
+import UserList from "../pages/UserList";
+import AddUser from "../pages/AddUser";
+import AssignClientDetails from "../pages/AssignClientDetails";
 
 // Helper function to redirect based on role
 function HomeRedirect() {
@@ -130,7 +138,23 @@ const router = createBrowserRouter([
         path: 'user/userlist',
         element: (
           <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
-            <div>User List (To be implemented)</div>
+            <UserList />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: 'user/add',
+        element: (
+          <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
+            <AddUser />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: 'user/assign-client-details',
+        element: (
+          <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
+            <AssignClientDetails />
           </RoleBasedRoute>
         ),
       },
@@ -147,7 +171,7 @@ const router = createBrowserRouter([
         path: 'scheduler',
         element: (
           <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
-            <div>Scheduler (To be implemented)</div>
+            <Scheduler />
           </RoleBasedRoute>
         ),
       },
@@ -155,7 +179,7 @@ const router = createBrowserRouter([
         path: 'activity',
         element: (
           <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
-            <div>Activity (To be implemented)</div>
+            <Activity />
           </RoleBasedRoute>
         ),
       },
@@ -171,6 +195,18 @@ const router = createBrowserRouter([
           {
             path: 'profile',
             element: <Profile />,
+          },
+          {
+            path: 'company',
+            element: <Company />,
+          },
+          {
+            path: 'role-permission',
+            element: <RolePermission />,
+          },
+          {
+            path: 'subscription',
+            element: <Subscription />,
           },
           {
             path: 'template',
