@@ -1,12 +1,14 @@
 import { useLocation } from 'react-router-dom';
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import { HiMenuAlt3 } from 'react-icons/hi';
+import { apiFetch, API_BASE_URL } from '../libs/apiFetch';
 
 function Navbar({ onMenuClick }) {
   const location = useLocation();
   const pathName = location.pathname;
-  const [userName, setUserName] = useState('Steve john');
-  const [userEmail, setUserEmail] = useState('example@gmail.com');
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [profileImage, setProfileImage] = useState('/assets/profilePlaceholder.png');
 
   useEffect(() => {
     const getCookie = (name) => {
@@ -16,17 +18,65 @@ function Navbar({ onMenuClick }) {
       return null;
     };
 
-    // Get user info from cookies
-    const name = getCookie('user_name');
-    const email = getCookie('user_email');
+    // Get user data from cookies first (fallback)
+    const cookieName = getCookie('user_name');
+    const cookieEmail = getCookie('user_email');
     
-    // Update state if cookies exist
-    if (name) {
-      setUserName(name);
-    }
-    if (email) {
-      setUserEmail(email);
-    }
+    if (cookieName) setUserName(cookieName);
+    if (cookieEmail) setUserEmail(cookieEmail);
+
+    // Fetch profile data from API
+    const fetchProfileData = async () => {
+      try {
+        const response = await apiFetch("/profile", {
+          method: "GET",
+        });
+
+        if (!response.ok) {
+          // If API fails, use cookie values
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          const data = result.data;
+
+          // Update user name and email from API
+          if (data.name) {
+            setUserName(data.name);
+          }
+          if (data.email) {
+            setUserEmail(data.email);
+          }
+
+          // Handle profile image URL
+          if (data.image) {
+            let imageUrl = data.image;
+
+            if (
+              imageUrl &&
+              !imageUrl.startsWith("http") &&
+              !imageUrl.startsWith("data:")
+            ) {
+              // If it's a relative path, prepend the API base URL
+              if (imageUrl.startsWith("/")) {
+                imageUrl = `${API_BASE_URL}${imageUrl}`;
+              } else {
+                imageUrl = `${API_BASE_URL}/${imageUrl}`;
+              }
+            }
+
+            setProfileImage(imageUrl);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+        // Silently fail - use cookie values as fallback
+      }
+    };
+
+    fetchProfileData();
   }, []);
 
   return (
@@ -56,7 +106,17 @@ function Navbar({ onMenuClick }) {
               <p className='text-xs sm:text-sm lg:text-base text-[#736E6E] truncate max-w-[150px] lg:max-w-none'>{userEmail}</p>
             </div>
             <div className='w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] lg:w-[48px] lg:h-[48px]'>
-              <img className='w-full h-full rounded-full' src={'/assets/profilePlaceholder.png'} alt={'Profile Image'} />
+              <img 
+                className='w-full h-full rounded-full object-cover' 
+                src={profileImage} 
+                alt={'Profile Image'}
+                onError={(e) => {
+                  // If image fails to load, show placeholder
+                  if (e.target.src !== '/assets/profilePlaceholder.png') {
+                    e.target.src = '/assets/profilePlaceholder.png';
+                  }
+                }}
+              />
             </div>
           </div>
         </div>

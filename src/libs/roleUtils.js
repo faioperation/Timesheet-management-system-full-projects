@@ -49,7 +49,7 @@ export const getRoleBasedMenuItems = (role) => {
   }
 
   // Supervisor/Staff menu (Staff from backend and supervisor are the same role)
-  if (role === 'supervisor' || role === 'Staff' || role === 'staff') {
+  if (role === 'supervisor' || role === 'Staff') {
     return [
       { Title: 'dashboard', pathname: '/dashboard/supervisor', iconKey: 'dashboard' },
       { Title: 'users', pathname: '/user/userlist', iconKey: 'users' },

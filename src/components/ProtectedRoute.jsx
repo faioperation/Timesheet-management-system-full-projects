@@ -23,6 +23,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // If user is on a protected path and has no token, redirect to login
+  // Token refresh will be handled automatically by apiFetch when making API calls
   if (!isPublicPath && !token) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
