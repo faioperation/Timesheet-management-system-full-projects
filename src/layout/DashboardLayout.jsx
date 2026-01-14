@@ -15,7 +15,6 @@ function DashboardLayout() {
 
       {/* Sidebar + Content */}
       <div className="flex items-center justify-between w-screen h-[calc(100vh-80px)] mt-[80px]">
-        {/* Sidebar - Desktop: Always visible, Mobile: Drawer */}
         <div
           className={`lg:w-[5%] w-[70px] h-full transition-all duration-300 ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
