@@ -178,7 +178,7 @@ const router = createBrowserRouter([
       {
         path: 'activity',
         element: (
-          <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
+          <RoleBasedRoute allowedRoles={['Business Admin']}>
             <Activity />
           </RoleBasedRoute>
         ),

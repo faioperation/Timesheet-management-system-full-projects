@@ -1,119 +1,144 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import ReusableTable from '../components/ReusableTable';
+import { apiFetch } from '../libs/apiFetch';
+import { toast } from 'react-toastify';
 
-// Sample activities data matching the image
-const allActivitiesData = [
-    {
-      id: 1,
-      no: '01',
-      createdBy: 'Ralph Edwards',
-      date: '14 Sep 2025',
-      role: 'Admin',
-      activities: 'Timesheet approved',
-    },
-    {
-      id: 2,
-      no: '02',
-      createdBy: 'Kathryn Murphy',
-      date: '14 Sep 2025',
-      role: 'User',
-      activities: 'Timesheet Submit',
-    },
-    {
-      id: 3,
-      no: '03',
-      createdBy: 'Jacob Jones',
-      date: '14 Sep 2025',
-      role: 'Supervisor',
-      activities: 'Add user',
-    },
-    {
-      id: 4,
-      no: '04',
-      createdBy: 'Esther Howard',
-      date: '14 Sep 2025',
-      role: 'Admin',
-      activities: 'Timesheet Resubmit',
-    },
-    {
-      id: 5,
-      no: '05',
-      createdBy: 'Eleanor Pena',
-      date: '14 Sep 2025',
-      role: 'User',
-      activities: 'Create Timesheet',
-    },
-    {
-      id: 6,
-      no: '06',
-      createdBy: 'Darlene Robertson',
-      date: '14 Sep 2025',
-      role: 'Supervisor',
-      activities: 'Timesheet approved',
-    },
-    {
-      id: 7,
-      no: '07',
-      createdBy: 'Theresa Webb',
-      date: '14 Sep 2025',
-      role: 'Admin',
-      activities: 'Timesheet Submit',
-    },
-    {
-      id: 8,
-      no: '08',
-      createdBy: 'Brooklyn Simmons',
-      date: '14 Sep 2025',
-      role: 'User',
-      activities: 'Add user',
-    },
-    {
-      id: 9,
-      no: '09',
-      createdBy: 'Savannah Nguyen',
-      date: '14 Sep 2025',
-      role: 'Supervisor',
-      activities: 'Timesheet Resubmit',
-    },
-    {
-      id: 10,
-      no: '10',
-      createdBy: 'Jerome Bell',
-      date: '14 Sep 2025',
-      role: 'Admin',
-      activities: 'Create Timesheet',
-    },
-    {
-      id: 11,
-      no: '11',
-      createdBy: 'Ralph Edwards',
-      date: '14 Sep 2025',
-      role: 'User',
-      activities: 'Timesheet approved',
-    },
-    // Add more data to match 25 pages requirement
-    ...Array.from({ length: 239 }, (_, index) => ({
-      id: 12 + index,
-      no: String(12 + index).padStart(2, '0'),
-      createdBy: `User ${12 + index}`,
-      date: '14 Sep 2025',
-      role: ['Admin', 'User', 'Supervisor'][index % 3],
-      activities: ['Timesheet approved', 'Timesheet Submit', 'Add user', 'Timesheet Resubmit', 'Create Timesheet'][index % 5],
-    })),
-];
+// Helper function to format action to display text
+const formatAction = (action) => {
+  const actionMap = {
+    'login': 'Login',
+    'create_vendor': 'Create Vendor',
+    'create_employee': 'Create Employee',
+    'create_user': 'Create User',
+    'create_timesheet': 'Create Timesheet',
+    'update_profile': 'Update Profile',
+    'change_password': 'Change Password',
+    'assign_permission_to_role': 'Assign Permission to Role',
+    'timesheet_approved': 'Timesheet Approved',
+    'timesheet_submit': 'Timesheet Submit',
+    'timesheet_resubmit': 'Timesheet Resubmit',
+  };
+  
+  // Convert snake_case to Title Case if not in map
+  if (actionMap[action]) {
+    return actionMap[action];
+  }
+  
+  return action
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Helper function to map API role to filter role
+const mapRoleToFilter = (apiRole) => {
+  const roleMap = {
+    'Business Admin': 'Admin',
+    'Admin': 'Admin',
+    'User': 'User',
+    'Staff': 'Supervisor',
+    'Supervisor': 'Supervisor',
+  };
+  
+  return roleMap[apiRole] || apiRole;
+};
+
+// Helper function to format date
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleDateString('en-US', { month: 'short' });
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
 
 export default function Activity() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
+  const [activitiesData, setActivitiesData] = useState([]);
+  const [isFetching, setIsFetching] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
-  // Filter data based on active filter
-  const filteredData = useMemo(() => {
-    if (activeFilter === 'All') {
-      return allActivitiesData;
-    }
-    return allActivitiesData.filter(item => item.role === activeFilter);
-  }, [activeFilter]);
+  // Fetch data from API
+  useEffect(() => {
+    const fetchActivities = async () => {
+      setIsFetching(true);
+      try {
+        // Build query params
+        const params = new URLSearchParams();
+        params.append('page', currentPage.toString());
+        params.append('per_page', '10');
+
+        const response = await apiFetch(`/manage-activity?${params.toString()}`, {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          // Handle common permission errors with a clear message
+          if (response.status === 403 || response.status === 401) {
+            toast.error('You do not have permission to view activities');
+            setActivitiesData([]);
+            setTotalPages(1);
+            setTotalItems(0);
+            return;
+          }
+
+          if (response.status === 404) {
+            toast.error('Activities endpoint not found');
+            setActivitiesData([]);
+            setTotalPages(1);
+            setTotalItems(0);
+            return;
+          }
+
+          throw new Error('Failed to fetch activities');
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          // Map API data to table structure
+          let mappedData = result.data.data.map((item, index) => {
+            const role = item.user?.roles?.[0]?.name || 'Unknown';
+            const mappedRole = mapRoleToFilter(role);
+            
+            return {
+              id: item.id,
+              no: String((currentPage - 1) * 10 + index + 1).padStart(2, '0'),
+              createdBy: item.user?.name || 'Unknown',
+              date: formatDate(item.created_at),
+              role: mappedRole,
+              activities: formatAction(item.action),
+            };
+          });
+
+          // Filter by role if not 'All' (client-side filtering)
+          if (activeFilter !== 'All') {
+            mappedData = mappedData.filter(item => item.role === activeFilter);
+          }
+
+          setActivitiesData(mappedData);
+          setTotalPages(result.data.last_page || 1);
+          setTotalItems(result.data.total || 0);
+        } else {
+          // No data case
+          setActivitiesData([]);
+          setTotalPages(1);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+        toast.error(error.message || 'Failed to load activities');
+        setActivitiesData([]);
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    fetchActivities();
+  }, [activeFilter, currentPage]);
 
   useEffect(() => {
     // Reset to first page when filter changes
@@ -126,10 +151,7 @@ export default function Activity() {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    // Fetch data for the page here if needed
   };
-
-  const totalPages = Math.ceil(filteredData.length / 10);
 
   const columns = [
     {
@@ -193,16 +215,24 @@ export default function Activity() {
       </div>
 
       {/* Table */}
-      <ReusableTable
-        key={activeFilter} // Reset pagination when filter changes
-        columns={columns}
-        data={filteredData}
-        itemsPerPage={10}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-        headerBgColor="bg-[#E0E7FF]"
-        stripedRows={true}
-      />
+      {isFetching ? (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-500">Loading activities...</div>
+          </div>
+        </div>
+      ) : (
+        <ReusableTable
+          key={activeFilter} // Reset pagination when filter changes
+          columns={columns}
+          data={activitiesData}
+          itemsPerPage={10}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          headerBgColor="bg-[#E0E7FF]"
+          stripedRows={true}
+        />
+      )}
     </div>
   );
 }

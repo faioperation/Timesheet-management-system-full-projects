@@ -55,7 +55,6 @@ export const getRoleBasedMenuItems = (role) => {
       { Title: 'users', pathname: '/user/userlist', iconKey: 'users' },
       { Title: 'timesheet', pathname: '/timesheet', iconKey: 'timesheet' },
       { Title: 'scheduler', pathname: '/scheduler', iconKey: 'scheduler' },
-      { Title: 'activity', pathname: '/activity', iconKey: 'activity' },
       { Title: 'settings', pathname: '/settings/profile', iconKey: 'settings' },
     ];
   }

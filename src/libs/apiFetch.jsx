@@ -24,6 +24,9 @@ const setCookie = (name, value, days = 7) => {
   document.cookie = `${name}=${value}; path=/; expires=${expires.toUTCString()}; ${secureFlag}SameSite=Strict`;
 };
 
+// NOTE: We no longer hard-clear cookies or force redirect on token refresh
+// errors from the generic apiFetch flow. Logout is handled explicitly via
+// the exported `logout` helper below.
 const clearCookies = () => {
   const isSecure =
     typeof window !== "undefined" && window.location.protocol === "https:";
@@ -89,8 +92,8 @@ const refreshToken = async () => {
       }
     } catch (error) {
       console.error("Token refresh error:", error);
-      clearCookies();
-      redirectToLogin();
+      // Do not auto-logout here; let the calling code decide how to handle
+      // an expired/invalid token to avoid unexpected forced logouts.
       throw error;
     } finally {
       isRefreshing = false;
@@ -104,8 +107,11 @@ const refreshToken = async () => {
 export const apiFetch = async (endpoint, options = {}) => {
   const token = getCookie("auth_token");
 
+  const isFormData = options.body instanceof FormData;
+
   const headers = {
-    "Content-Type": "application/json",
+    // For JSON requests we set Content-Type, for FormData the browser will set it automatically
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     Accept: "application/json",
     ...options.headers,
   };
@@ -131,16 +137,19 @@ export const apiFetch = async (endpoint, options = {}) => {
   if (response.status === 401) {
     try {
       const newToken = await refreshToken();
-      
-      // Retry the original request with new token
-      headers["Authorization"] = `Bearer ${newToken}`;
-      response = await fetch(`${BASE_URL}${endpoint}`, {
-        ...options,
-        headers,
-      });
+
+      if (newToken) {
+        // Retry the original request with new token
+        headers["Authorization"] = `Bearer ${newToken}`;
+        response = await fetch(`${BASE_URL}${endpoint}`, {
+          ...options,
+          headers,
+        });
+      }
+      // If no new token, fall through and return the original 401 response
     } catch (error) {
-      // Refresh failed, user will be redirected to login
-      throw error;
+      // Refresh failed; return the original 401 so callers can handle it.
+      console.error("apiFetch: refresh failed, returning original response");
     }
   }
 

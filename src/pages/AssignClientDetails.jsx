@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { FaPlus } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { apiFetch } from '../libs/apiFetch';
 
 export default function AssignClientDetails() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { userId, clientId } = location.state || {};
   const [formData, setFormData] = useState({
     invoiceTo: 'Client',
     clientName: '',
@@ -53,18 +56,61 @@ export default function AssignClientDetails() {
     setFormData(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const handleSubmit = () => {
-    console.log('Update client details:', formData);
-    // Save logic here
-    // Show success toast message
-    toast.success('Client details updated successfully!', {
-      position: 'top-right',
-      autoClose: 3000,
-    });
-    // Navigate to userlist after a short delay
-    setTimeout(() => {
-      navigate('/user/userlist');
-    }, 500);
+  const handleSubmit = async () => {
+    try {
+      if (!userId) {
+        toast.error('Missing user information for assignment');
+        return;
+      }
+
+      // Build payload based on provided API contract
+      const payload = {
+        user_id: userId,
+        party_id: clientId || null, // client ID (optional for now)
+        client_rate: Number(formData.clientRate) || 0,
+        other_rate: Number(formData.other) || 0,
+        w2: Number(formData.w2) || 0,
+        c2c_or_other: Number(formData.consultantRate) || 0,
+        ptax: Number(formData.payTax) || 0,
+        time_sheet_period: (formData.timesheetPeriod || '').toLowerCase(),
+        start_date: formData.startDate || null,
+        end_date: formData.endDate || null,
+        // For now we assume single fixed IDs for managers/recruiter;
+        // these can be wired to real IDs when backend/user data is available.
+        account_manager_id: 1,
+        account_manager_commission: Number(formData.accountManagerCommission) || 0,
+        business_development_manager_id: 2,
+        business_development_manager_commission: Number(formData.bdManagerCommission) || 0,
+        recruiter_id: 3,
+        recruiter_commission: Number(formData.recruiterCommission) || 0,
+        invoice_to: formData.invoiceTo || 'Client',
+      };
+
+      const response = await apiFetch('/user-details', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || !result.success) {
+        const message = result && (result.message || result.error);
+        throw new Error(message || 'Failed to assign client details');
+      }
+
+      toast.success('Client details updated successfully!', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+
+      // Navigate to userlist after a short delay
+      setTimeout(() => {
+        navigate('/user/userlist');
+      }, 500);
+    } catch (error) {
+      console.error('Error assigning client details:', error);
+      toast.error(error.message || 'Failed to update client details');
+    }
   };
 
   const handleCancel = () => {

@@ -147,9 +147,71 @@ export default function UserList() {
             throw new Error('Failed to fetch employees');
           }
         } else if (activeFilter === 'User') {
-          // Fetch users data - you may need to add this endpoint
-          // For now, keeping empty array
-          setAllUsersData([]);
+          // Fetch user details assignments
+          const response = await apiFetch('/user-details', {
+            method: 'GET',
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              // Extract unique user_ids from user-details response
+              const userIds = [...new Set(result.data.map(item => item.user_id).filter(Boolean))];
+              
+              // Fetch user data for each user_id in parallel
+              const userDataPromises = userIds.map(async (userId) => {
+                try {
+                  const userResponse = await apiFetch(`/user/${userId}`, {
+                    method: 'GET',
+                  });
+                  
+                  if (userResponse.ok) {
+                    const userResult = await userResponse.json();
+                    return userResult.success && userResult.data ? userResult.data : null;
+                  }
+                  return null;
+                } catch (error) {
+                  console.error(`Error fetching user ${userId}:`, error);
+                  return null;
+                }
+              });
+
+              const userDataArray = await Promise.all(userDataPromises);
+              
+              // Create a map of user_id to user data for quick lookup
+              const userDataMap = {};
+              userDataArray.forEach((userData, index) => {
+                if (userData) {
+                  userDataMap[userIds[index]] = userData;
+                }
+              });
+
+              // Map user-details data with fetched user data
+              const mappedData = result.data.map(item => {
+                const userDetailsUser = item.user || {};
+                const fetchedUser = userDataMap[item.user_id] || {};
+                
+                // Use fetched user data if available, otherwise fallback to user-details user data
+                const user = Object.keys(fetchedUser).length > 0 ? fetchedUser : userDetailsUser;
+                const primaryRole = user.roles && user.roles[0] ? user.roles[0].name : null;
+
+                return {
+                  id: item.id,
+                  name: user.name || '',
+                  email: user.email || '',
+                  phone: user.phone || '',
+                  role: primaryRole || 'User',
+                  status: item.active ? 'Active' : 'Inactive',
+                };
+              });
+
+              setAllUsersData(mappedData);
+            } else {
+              setAllUsersData([]);
+            }
+          } else {
+            throw new Error('Failed to fetch user details');
+          }
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -363,16 +425,6 @@ export default function UserList() {
     }
   };
 
-  if (isFetching) {
-    return (
-      <div className="w-full pb-10">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-gray-500">Loading data...</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full pb-10">
 
@@ -407,15 +459,21 @@ export default function UserList() {
       </div>
 
 
-      <ReusableTable
-        key={activeFilter} 
-        columns={columns}
-        data={filteredData}
-        itemsPerPage={10}
-        onPageChange={handlePageChange}
-        headerBgColor="bg-gray-100"
-        stripedRows={true}
-      />
+      {isFetching ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-500">Loading data...</div>
+        </div>
+      ) : (
+        <ReusableTable
+          key={activeFilter}
+          columns={columns}
+          data={filteredData}
+          itemsPerPage={10}
+          onPageChange={handlePageChange}
+          headerBgColor="bg-gray-100"
+          stripedRows={true}
+        />
+      )}
 
 
       <AddClientVendorEmployeeModal
