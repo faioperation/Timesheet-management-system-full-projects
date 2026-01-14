@@ -84,9 +84,6 @@ export default function Profile() {
         if (result.success && result.data) {
           const data = result.data;
 
-          console.log("Profile data from API:", data);
-
-          // Set all form data from API response
           setFormData({
             name: data.name || "",
             email: data.email || "",
@@ -104,7 +101,6 @@ export default function Profile() {
 
           // Handle profile image URL
           if (data.image) {
-            // If image is a relative URL, convert it to full URL
             let imageUrl = data.image;
             console.log("Original image URL from API:", imageUrl);
 
@@ -113,7 +109,7 @@ export default function Profile() {
               !imageUrl.startsWith("http") &&
               !imageUrl.startsWith("data:")
             ) {
-              // If it's a relative path, prepend the API base URL
+
               if (imageUrl.startsWith("/")) {
                 imageUrl = `${API_BASE_URL}${imageUrl}`;
               } else {
