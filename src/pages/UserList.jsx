@@ -197,6 +197,7 @@ export default function UserList() {
 
                 return {
                   id: item.id,
+                  userId: item.user_id || user.id || null,
                   name: user.name || '',
                   email: user.email || '',
                   phone: user.phone || '',
@@ -263,8 +264,12 @@ export default function UserList() {
   };
 
   const handleView = (row) => {
-    console.log('View clicked for:', row);
-    // Navigate to view user page or open modal
+    if (row.userId) {
+      const safeName = row.name ? encodeURIComponent(row.name) : "user";
+      navigate(`/user/view/${safeName}`, { state: { userId: row.userId } });
+    } else {
+      toast.error('User id not found');
+    }
   };
 
   const handlePageChange = (page) => {

@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { FiEdit2 } from "react-icons/fi";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { FaPaperclip } from "react-icons/fa";
-import { apiFetch, API_BASE_URL } from "../../libs/apiFetch";
+import { apiFetch, logout } from "../../libs/apiFetch";
 import { toast } from "react-toastify";
 import ChangePasswordModal from "../../components/ChangePasswordModal";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
+  const navigate = useNavigate();
+  const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL;
   const [formData, setFormData] = useState({});
   const [isEditing, setIsEditing] = useState({
     name: false,
@@ -15,12 +18,25 @@ export default function Profile() {
   });
   const [imageFile, setImageFile] = useState(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState(
-    "/assets/profilePlaceholder.png"
-  );
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImageRetry, setProfileImageRetry] = useState(false);
   const [signaturePreview, setSignaturePreview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+
+  const buildImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith("http") || path.startsWith("data:")) {
+      return path;
+    }
+    const normalizedBase = IMAGE_BASE_URL
+      ? IMAGE_BASE_URL.replace(/\/+$/, "")
+      : "";
+    const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+    return normalizedBase
+      ? `${normalizedBase}/${normalizedPath}`
+      : path;
+  };
 
   // Helper function to get auth token
   const getAuthToken = () => {
@@ -76,7 +92,12 @@ export default function Profile() {
         });
 
         if (!response.ok) {
-          throw new Error("Unauthorized Access");
+          if (response.status === 401 || response.status === 403) {
+            toast.error("Session expired. Please login again.");
+            await logout({ navigate });
+            return;
+          }
+          throw new Error("Failed to load profile");
         }
 
         const result = await response.json();
@@ -101,46 +122,19 @@ export default function Profile() {
 
           // Handle profile image URL
           if (data.image) {
-            let imageUrl = data.image;
-            console.log("Original image URL from API:", imageUrl);
-
-            if (
-              imageUrl &&
-              !imageUrl.startsWith("http") &&
-              !imageUrl.startsWith("data:")
-            ) {
-
-              if (imageUrl.startsWith("/")) {
-                imageUrl = `${API_BASE_URL}${imageUrl}`;
-              } else {
-                imageUrl = `${API_BASE_URL}/${imageUrl}`;
-              }
-            }
-
-            console.log("Final image URL:", imageUrl);
-            setProfileImage(imageUrl);
+            const profileLink = buildImageUrl(data.image);
+            setProfileImage(profileLink || null);
           } else {
-            console.log("No image data from API");
+            setProfileImage(null);
           }
 
           // Handle signature URL
           if (data.signature) {
-            // If signature is a relative URL, convert it to full URL
-            let signatureUrl = data.signature;
-            if (
-              signatureUrl &&
-              !signatureUrl.startsWith("http") &&
-              !signatureUrl.startsWith("data:")
-            ) {
-              // If it's a relative path, prepend the API base URL
-              if (signatureUrl.startsWith("/")) {
-                signatureUrl = `${API_BASE_URL}${signatureUrl}`;
-              } else {
-                signatureUrl = `${API_BASE_URL}/${signatureUrl}`;
-              }
-            }
+            const signatureUrl = buildImageUrl(data.signature);
             setFormData((prev) => ({ ...prev, signature: data.signature }));
             setSignaturePreview(signatureUrl);
+          } else {
+            setSignaturePreview(null);
           }
         }
       } catch (error) {
@@ -249,24 +243,8 @@ export default function Profile() {
         if (result.success) {
           // Update image URL if returned from API
           if (result.data && result.data.image) {
-            let imageUrl = result.data.image;
-            console.log("Image URL from upload response:", imageUrl);
-
-            // If image is a relative URL, convert it to full URL
-            if (
-              imageUrl &&
-              !imageUrl.startsWith("http") &&
-              !imageUrl.startsWith("data:")
-            ) {
-              if (imageUrl.startsWith("/")) {
-                imageUrl = `${API_BASE_URL}${imageUrl}`;
-              } else {
-                imageUrl = `${API_BASE_URL}/${imageUrl}`;
-              }
-            }
-
-            console.log("Final image URL after upload:", imageUrl);
-            setProfileImage(imageUrl);
+            const imageUrl = buildImageUrl(result.data.image);
+            setProfileImage(imageUrl || null);
           }
           toast.success("Profile image uploaded successfully");
         } else {
@@ -317,19 +295,7 @@ export default function Profile() {
         if (result.success) {
           // Update signature URL if returned from API
           if (result.data && result.data.signature) {
-            let signatureUrl = result.data.signature;
-            // If signature is a relative URL, convert it to full URL
-            if (
-              signatureUrl &&
-              !signatureUrl.startsWith("http") &&
-              !signatureUrl.startsWith("data:")
-            ) {
-              if (signatureUrl.startsWith("/")) {
-                signatureUrl = `${API_BASE_URL}${signatureUrl}`;
-              } else {
-                signatureUrl = `${API_BASE_URL}/${signatureUrl}`;
-              }
-            }
+            const signatureUrl = buildImageUrl(result.data.signature);
             setSignaturePreview(signatureUrl);
           }
           toast.success("Signature uploaded successfully");
@@ -368,19 +334,37 @@ export default function Profile() {
               <div className="w-full h-[500px]  rounded-lg overflow-hidden mb-4 bg-gray-100 border border-gray-200">
                 <img
                   key={profileImage}
-                  src={profileImage || "/assets/profilePlaceholder.png"}
+                  src={profileImage || ""}
                   alt="Profile"
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // If image fails to load, show placeholder
-                    console.error("Image failed to load:", e.target.src);
-                    const placeholder = "/assets/profilePlaceholder.png";
-                    if (
-                      e.target.src !== placeholder &&
-                      !e.target.src.includes(placeholder)
-                    ) {
-                      e.target.onerror = null; // Prevent infinite loop
-                      e.target.src = placeholder;
+                  onError={async (e) => {
+                    console.error("Profile image failed to load:", e.target.src);
+                    if (profileImageRetry || !profileImage) {
+                      return;
+                    }
+                    try {
+                      const token = getAuthToken();
+                      if (!token) return;
+                      setProfileImageRetry(true);
+
+                      const imageResponse = await fetch(profileImage, {
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      });
+                      if (!imageResponse.ok) {
+                        console.error(
+                          "Profile image fetch failed:",
+                          imageResponse.status,
+                          imageResponse.statusText
+                        );
+                        return;
+                      }
+                      const blob = await imageResponse.blob();
+                      const objectUrl = URL.createObjectURL(blob);
+                      setProfileImage(objectUrl);
+                    } catch (error) {
+                      console.error("Profile image fetch error:", error);
                     }
                   }}
                   onLoad={() => {

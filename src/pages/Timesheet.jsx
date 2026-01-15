@@ -8,6 +8,7 @@ export default function Timesheet() {
   const [filterPeriod, setFilterPeriod] = useState('Weekly');
   const [showDropdown, setShowDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedTimesheet, setSelectedTimesheet] = useState(null);
 
   // Sample data matching the image
   const allTimesheetData = [
@@ -131,8 +132,11 @@ export default function Timesheet() {
   };
 
   const handleView = (row) => {
-    console.log('View clicked for:', row);
-    // Navigate to view page or open modal
+    setSelectedTimesheet(row);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTimesheet(null);
   };
 
   const getStatusBadgeClass = (status) => {
@@ -270,6 +274,55 @@ export default function Timesheet() {
         headerBgColor="bg-[#E0E7FF]"
         stripedRows={true}
       />
+
+      {selectedTimesheet && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Timesheet Details</h3>
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-500">Created by</p>
+                <p className="text-gray-800 font-medium">{selectedTimesheet.createdBy}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Client</p>
+                <p className="text-gray-800 font-medium">{selectedTimesheet.client}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Period</p>
+                <p className="text-gray-800 font-medium">{selectedTimesheet.period}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Upload Date</p>
+                <p className="text-gray-800 font-medium">{selectedTimesheet.uploadDate}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Status</p>
+                <p className="text-gray-800 font-medium">{selectedTimesheet.status}</p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="px-4 py-2 rounded-lg bg-[#5069E5] text-white hover:bg-[#3d52c7] transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

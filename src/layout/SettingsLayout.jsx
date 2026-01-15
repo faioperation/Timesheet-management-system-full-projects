@@ -57,8 +57,8 @@ const SettingsLayout = () => {
   return (
     <div className="w-full pb-10">
       {/* Settings Tabs Navigation - Matching Image Design */}
-      <div className="bg-white rounded-lg shadow-sm mb-6">
-        <nav className="flex space-x-0 border-b border-gray-200">
+      <div className="rounded-lg mb-6">
+        <nav className="flex space-x-0">
           {tabs.map((tab, index) => {
             const active = isActive(tab.path);
             return (

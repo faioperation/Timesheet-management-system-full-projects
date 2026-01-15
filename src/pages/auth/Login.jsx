@@ -62,6 +62,10 @@ export default function Login() {
         const isSecure = window.location.protocol === 'https:';
 
         document.cookie = `auth_token=${result.token}; path=/; max-age=${maxAge}; ${isSecure ? 'Secure;' : ''} SameSite=Strict`;
+        // Also store access token in localStorage to survive refresh
+        if (result.token) {
+          window.localStorage.setItem("access_token", result.token);
+        }
         if (result.role) {
           document.cookie = `user_role=${result.role}; path=/; max-age=${maxAge}; ${isSecure ? 'Secure;' : ''} SameSite=Strict`;
         }

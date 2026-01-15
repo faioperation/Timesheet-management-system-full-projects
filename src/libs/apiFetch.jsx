@@ -2,6 +2,7 @@ const BASE_URL = "/api";
 // Use import.meta.env for Vite environment variables
 // VITE_ prefix is required for client-side access
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+export const Image_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 
 // Flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false;
@@ -13,6 +14,23 @@ const getCookie = (name) => {
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop().split(";").shift();
   return null;
+};
+
+const getLocalToken = () => {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem("access_token");
+};
+
+const setLocalToken = (token) => {
+  if (typeof window === "undefined") return;
+  if (token) {
+    window.localStorage.setItem("access_token", token);
+  }
+};
+
+const clearLocalToken = () => {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("access_token");
 };
 
 const setCookie = (name, value, days = 7) => {
@@ -37,6 +55,7 @@ const clearCookies = () => {
   document.cookie = `user_role=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
   document.cookie = `user_name=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
   document.cookie = `user_email=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
+  clearLocalToken();
 };
 
 const redirectToLogin = () => {
@@ -72,6 +91,8 @@ const refreshToken = async () => {
       if (result.success && result.data && result.data.token) {
         // Update auth_token cookie with new token
         setCookie("auth_token", result.data.token);
+        // Store token in localStorage too
+        setLocalToken(result.data.token);
         
         // Update other user data if provided
         if (result.data.user) {
@@ -105,7 +126,7 @@ const refreshToken = async () => {
 };
 
 export const apiFetch = async (endpoint, options = {}) => {
-  const token = getCookie("auth_token");
+  const token = getLocalToken() || getCookie("auth_token");
 
   const isFormData = options.body instanceof FormData;
 
@@ -194,6 +215,7 @@ export const logout = async (options = {}) => {
     document.cookie = `user_name=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
     // Clear user_email cookie
     document.cookie = `user_email=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
+    clearLocalToken();
 
     // Navigate to login page
     if (navigate) {
@@ -216,6 +238,7 @@ export const logout = async (options = {}) => {
     document.cookie = `user_role=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
     document.cookie = `user_name=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
     document.cookie = `user_email=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
+    clearLocalToken();
 
     if (typeof window !== "undefined") {
       window.location.href = "/login";

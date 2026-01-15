@@ -13,7 +13,8 @@ import Template from "../pages/settings/Template";
 import Company from "../pages/settings/Company";
 import RolePermission from "../pages/settings/RolePermission";
 import Subscription from "../pages/settings/Subscription";
-import Timesheet from "../pages/Timesheet";
+import TimesheetRoute from "../pages/TimesheetRoute";
+import TimesheetReport from "../pages/TimesheetReport";
 import UserDashboard from "../pages/dashboard/UserDashboard";
 import BusinessAdminDashboard from "../pages/dashboard/BusinessAdminDashboard";
 import SupervisorDashboard from "../pages/dashboard/SupervisorDashboard";
@@ -23,6 +24,7 @@ import Scheduler from "../pages/Scheduler";
 import UserList from "../pages/UserList";
 import AddUser from "../pages/AddUser";
 import AssignClientDetails from "../pages/AssignClientDetails";
+import UserProfileView from "../pages/UserProfileView";
 
 // Helper function to redirect based on role
 function HomeRedirect() {
@@ -143,6 +145,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'user/view/:userName',
+        element: (
+          <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
+            <UserProfileView />
+          </RoleBasedRoute>
+        ),
+      },
+      {
         path: 'user/add',
         element: (
           <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
@@ -161,7 +171,11 @@ const router = createBrowserRouter([
       // Other routes - Available to all authenticated users based on role
       {
         path: 'timesheet',
-        element: <Timesheet />,
+        element: <TimesheetRoute />,
+      },
+      {
+        path: 'timesheet/report/:timesheetId',
+        element: <TimesheetReport />,
       },
       {
         path: 'timesheet/create',

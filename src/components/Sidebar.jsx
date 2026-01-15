@@ -97,6 +97,9 @@ function Sidebar({ onClose }) {
             ) {
               isActive = true;
             }
+            if (navlink.Title === "users" && Pathname.startsWith("/user/")) {
+              isActive = true;
+            }
 
             const hasSubItems = navlink.subItems && navlink.subItems.length > 0;
             const isHovered = hoveredItem === idx;
