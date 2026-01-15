@@ -29,6 +29,7 @@ export default function UserTimesheet() {
     if (!status) return 'Pending';
     const value = status.toString().toLowerCase();
     if (value === 'reject') return 'Rejected';
+    if (value === 'submitted') return 'Pending';
     return value.charAt(0).toUpperCase() + value.slice(1);
   };
 
