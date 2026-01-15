@@ -14,13 +14,13 @@ import Company from "../pages/settings/Company";
 import RolePermission from "../pages/settings/RolePermission";
 import Subscription from "../pages/settings/Subscription";
 import TimesheetRoute from "../pages/TimesheetRoute";
+import Scheduler from "../pages/Scheduler";
 import TimesheetReport from "../pages/TimesheetReport";
 import UserDashboard from "../pages/dashboard/UserDashboard";
 import BusinessAdminDashboard from "../pages/dashboard/BusinessAdminDashboard";
 import SupervisorDashboard from "../pages/dashboard/SupervisorDashboard";
 import CreateTimesheet from "../pages/timesheet/CreateTimesheet";
 import Activity from "../pages/Activity";
-import Scheduler from "../pages/Scheduler";
 import UserList from "../pages/UserList";
 import AddUser from "../pages/AddUser";
 import AssignClientDetails from "../pages/AssignClientDetails";
@@ -174,20 +174,20 @@ const router = createBrowserRouter([
         element: <TimesheetRoute />,
       },
       {
-        path: 'timesheet/report/:timesheetId',
-        element: <TimesheetReport />,
-      },
-      {
-        path: 'timesheet/create',
-        element: <CreateTimesheet />,
-      },
-      {
         path: 'scheduler',
         element: (
           <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
             <Scheduler />
           </RoleBasedRoute>
         ),
+      },
+      {
+        path: 'timesheet/report/:timesheetId',
+        element: <TimesheetReport />,
+      },
+      {
+        path: 'timesheet/create',
+        element: <CreateTimesheet />,
       },
       {
         path: 'activity',
