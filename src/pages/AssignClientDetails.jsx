@@ -13,6 +13,7 @@ export default function AssignClientDetails() {
   const [clients, setClients] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [internalUsers, setInternalUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('Client');
   const [pendingSelectType, setPendingSelectType] = useState(null);
@@ -94,16 +95,32 @@ export default function AssignClientDetails() {
     }));
   };
 
+  const fetchInternalUsers = async () => {
+    const response = await apiFetch('/internalusers', { method: 'GET' });
+    if (!response.ok) {
+      throw new Error('Failed to fetch internal users');
+    }
+    const result = await response.json();
+    const data = result.success && result.data ? result.data : [];
+    return data.map(item => ({
+      id: item.id,
+      name: item.name || '',
+      role: (item.role || '').toLowerCase(),
+    }));
+  };
+
   const refreshParties = async () => {
     try {
-      const [clientsData, vendorsData, employeesData] = await Promise.all([
+      const [clientsData, vendorsData, employeesData, internalUsersData] = await Promise.all([
         fetchClients(),
         fetchVendors(),
         fetchEmployees(),
+        fetchInternalUsers(),
       ]);
       setClients(clientsData);
       setVendors(vendorsData);
       setEmployees(employeesData);
+      setInternalUsers(internalUsersData);
       if (pendingSelectType === 'Client' && clientsData.length > 0) {
         setFormData(prev => ({
           ...prev,
@@ -159,13 +176,11 @@ export default function AssignClientDetails() {
         time_sheet_period: (formData.timesheetPeriod || '').toLowerCase(),
         start_date: formData.startDate || null,
         end_date: formData.endDate || null,
-        // For now we assume single fixed IDs for managers/recruiter;
-        // these can be wired to real IDs when backend/user data is available.
-        account_manager_id: 1,
+        account_manager_id: formData.accountManager || null,
         account_manager_commission: Number(formData.accountManagerCommission) || 0,
-        business_development_manager_id: 2,
+        business_development_manager_id: formData.bdManager || null,
         business_development_manager_commission: Number(formData.bdManagerCommission) || 0,
-        recruiter_id: 3,
+        recruiter_id: formData.recruiter || null,
         recruiter_commission: Number(formData.recruiterCommission) || 0,
         invoice_to: formData.invoiceTo || 'Client',
       };
@@ -203,12 +218,19 @@ export default function AssignClientDetails() {
 
   return (
     <div className="w-full pb-10">
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-2xl font-bold text-black mb-6">Update client details</h2>
+      <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8">
+        <div className="flex flex-col gap-2 mb-6">
+          <h2 className="text-2xl font-bold text-black">Update client details</h2>
+          <p className="text-sm text-gray-500">
+            Assign a client or vendor and set rates, dates, and commissions.
+          </p>
+        </div>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Top Section - Row 1 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Assignment</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Invoice to */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -308,9 +330,12 @@ export default function AssignClientDetails() {
               />
             </div>
           </div>
+          </div>
 
           {/* Top Section - Row 2 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Schedule</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Timesheet period */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -354,9 +379,12 @@ export default function AssignClientDetails() {
               />
             </div>
           </div>
+          </div>
 
           {/* Top Section - Row 3 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Other Rates</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Other */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -429,9 +457,12 @@ export default function AssignClientDetails() {
             </div>
             <div></div>
           </div>
+          </div>
 
           {/* Middle Section - Radio Buttons */}
-          <div className="flex gap-6">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Type</h3>
+            <div className="flex flex-wrap gap-6">
             <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
@@ -454,10 +485,13 @@ export default function AssignClientDetails() {
               />
               <span className="ml-2 text-sm font-medium text-gray-700">1099 C2C</span>
             </label>
+            </div>
           </div>
 
           {/* Middle Section - Row 2 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {formData.employeeType === 'W2' ? (
               <>
                 {/* W2 */}
@@ -546,10 +580,11 @@ export default function AssignClientDetails() {
                 <div></div>
               </>
             )}
+            </div>
           </div>
 
           {/* Bottom Section - Commission Details */}
-          <div className="space-y-6 pt-4 border-t border-gray-200">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 space-y-6">
             <h3 className="text-lg font-semibold text-gray-800">Commission Details</h3>
 
             {/* Account manager */}
@@ -565,8 +600,13 @@ export default function AssignClientDetails() {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
                     <option value="">Select</option>
-                    <option value="Manager 1">Manager 1</option>
-                    <option value="Manager 2">Manager 2</option>
+                    {internalUsers
+                      .filter(user => user.role === 'account_manager')
+                      .map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.name}
+                        </option>
+                      ))}
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
@@ -630,8 +670,13 @@ export default function AssignClientDetails() {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
                     <option value="">Select</option>
-                    <option value="BD Manager 1">BD Manager 1</option>
-                    <option value="BD Manager 2">BD Manager 2</option>
+                    {internalUsers
+                      .filter(user => user.role === 'bd_manager')
+                      .map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.name}
+                        </option>
+                      ))}
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
@@ -695,8 +740,13 @@ export default function AssignClientDetails() {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
                     <option value="">Select</option>
-                    <option value="Recruiter 1">Recruiter 1</option>
-                    <option value="Recruiter 2">Recruiter 2</option>
+                    {internalUsers
+                      .filter(user => user.role === 'recruiter')
+                      .map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.name}
+                        </option>
+                      ))}
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
