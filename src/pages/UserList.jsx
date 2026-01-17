@@ -8,6 +8,17 @@ import { toast } from 'react-toastify';
 
 export default function UserList() {
   const navigate = useNavigate();
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+  };
+  const userRole = getCookie("user_role");
+  const normalizedRole = decodeURIComponent(userRole || "").trim().toLowerCase();
+  const isBusinessAdmin = normalizedRole === "business admin";
+  const canAssignClient =
+    isBusinessAdmin || normalizedRole === "supervisor" || normalizedRole === "staff";
   const [activeFilter, setActiveFilter] = useState('User');
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -146,72 +157,41 @@ export default function UserList() {
           } else {
             throw new Error('Failed to fetch employees');
           }
-        } else if (activeFilter === 'User') {
-          // Fetch user details assignments
-          const response = await apiFetch('/user-details', {
+        } else if (activeFilter === 'User' || activeFilter === 'Internal User') {
+          const endpoint = activeFilter === 'Internal User' ? '/internalusers' : '/users';
+          const response = await apiFetch(endpoint, {
             method: 'GET',
           });
 
           if (response.ok) {
             const result = await response.json();
             if (result.success && result.data) {
-              // Extract unique user_ids from user-details response
-              const userIds = [...new Set(result.data.map(item => item.user_id).filter(Boolean))];
-              
-              // Fetch user data for each user_id in parallel
-              const userDataPromises = userIds.map(async (userId) => {
-                try {
-                  const userResponse = await apiFetch(`/user/${userId}`, {
-                    method: 'GET',
-                  });
-                  
-                  if (userResponse.ok) {
-                    const userResult = await userResponse.json();
-                    return userResult.success && userResult.data ? userResult.data : null;
-                  }
-                  return null;
-                } catch (error) {
-                  console.error(`Error fetching user ${userId}:`, error);
-                  return null;
-                }
-              });
-
-              const userDataArray = await Promise.all(userDataPromises);
-              
-              // Create a map of user_id to user data for quick lookup
-              const userDataMap = {};
-              userDataArray.forEach((userData, index) => {
-                if (userData) {
-                  userDataMap[userIds[index]] = userData;
-                }
-              });
-
-              // Map user-details data with fetched user data
-              const mappedData = result.data.map(item => {
-                const userDetailsUser = item.user || {};
-                const fetchedUser = userDataMap[item.user_id] || {};
-                
-                // Use fetched user data if available, otherwise fallback to user-details user data
-                const user = Object.keys(fetchedUser).length > 0 ? fetchedUser : userDetailsUser;
-                const primaryRole = user.roles && user.roles[0] ? user.roles[0].name : null;
+              const mappedData = result.data.map((item) => {
+                const primaryRole =
+                  item.roles && item.roles[0] ? item.roles[0].name : item.role;
+                const isActive =
+                  typeof item.active === 'boolean'
+                    ? item.active
+                    : typeof item.status === 'string'
+                    ? item.status.toLowerCase() === 'active'
+                    : true;
 
                 return {
                   id: item.id,
-                  userId: item.user_id || user.id || null,
-                  name: user.name || '',
-                  email: user.email || '',
-                  phone: user.phone || '',
+                  userId: item.id || item.user_id || null,
+                  name: item.name || '',
+                  email: item.email || '',
+                  phone: item.phone || '',
                   role: primaryRole || 'User',
-                  status: item.active ? 'Active' : 'Inactive',
+                  status: isActive ? 'Active' : 'Inactive',
                 };
               });
-
               setAllUsersData(mappedData);
             } else {
               setAllUsersData([]);
             }
           } else {
-            throw new Error('Failed to fetch user details');
+            throw new Error('Failed to fetch users');
           }
         }
       } catch (error) {
@@ -239,7 +219,12 @@ export default function UserList() {
     if (activeFilter === 'Employee') {
       return employeeData;
     }
-    // For User tab, return user data
+    if (activeFilter === 'User') {
+      return allUsersData.filter((user) => user.role === 'User');
+    }
+    if (activeFilter === 'Internal User') {
+      return allUsersData.filter((user) => user.role !== 'User');
+    }
     return allUsersData;
   }, [activeFilter, clientData, vendorData, employeeData, allUsersData]);
 
@@ -252,8 +237,17 @@ export default function UserList() {
   };
 
   const handleAddUser = () => {
+    if (
+      (activeFilter === "User" || activeFilter === "Internal User") &&
+      !isBusinessAdmin
+    ) {
+      toast.error("Only Business Admin can add users");
+      return;
+    }
     if (activeFilter === 'Client' || activeFilter === 'Vendor' || activeFilter === 'Employee') {
       setIsModalOpen(true);
+    } else if (activeFilter === 'Internal User') {
+      navigate('/user/add-internal');
     } else {
       navigate('/user/add');
     }
@@ -267,6 +261,13 @@ export default function UserList() {
     if (row.userId) {
       const safeName = row.name ? encodeURIComponent(row.name) : "user";
       navigate(`/user/view/${safeName}`, { state: { userId: row.userId } });
+    } else {
+      toast.error('User id not found');
+    }
+  };
+  const handleAssignClient = (row) => {
+    if (row.userId) {
+      navigate('/user/assign-client-details', { state: { userId: row.userId } });
     } else {
       toast.error('User id not found');
     }
@@ -399,13 +400,23 @@ export default function UserList() {
       label: 'Action',
       className: 'text-left',
       render: (row) => (
-        <button
-          onClick={() => handleView(row)}
-          className="flex items-center gap-1 text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
-        >
-          <FaEye size={14} />
-          <span>View</span>
-        </button>
+        <div className="flex items-center gap-3 w-full">
+          <button
+            onClick={() => handleView(row)}
+            className="flex items-center gap-1 text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
+          >
+            <FaEye size={14} />
+            <span>View</span>
+          </button>
+          {canAssignClient && (
+            <button
+              onClick={() => handleAssignClient(row)}
+              className="ml-auto px-3 py-1.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+            >
+              Assign client
+            </button>
+          )}
+        </div>
       ),
     },
   ];
@@ -413,12 +424,14 @@ export default function UserList() {
 
   const columns = (activeFilter === 'Client' || activeFilter === 'Vendor' || activeFilter === 'Employee') ? clientColumns : userColumns;
 
-  const filterTabs = ['User', 'Client', 'Vendor', 'Employee'];
+  const filterTabs = ['User', 'Internal User', 'Client', 'Vendor', 'Employee'];
 
   const getAddButtonText = () => {
     switch (activeFilter) {
       case 'User':
         return 'Add User';
+      case 'Internal User':
+        return 'Add Internal User';
       case 'Employee':
         return 'Add Employee';
       case 'Vendor':
@@ -454,13 +467,17 @@ export default function UserList() {
           ))}
         </div>
 
-        <button
-          onClick={handleAddUser}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium whitespace-nowrap"
-        >
-          <FaPlus size={14} />
-          {getAddButtonText()}
-        </button>
+        {(activeFilter === "User" || activeFilter === "Internal User"
+          ? isBusinessAdmin
+          : true) && (
+          <button
+            onClick={handleAddUser}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium whitespace-nowrap"
+          >
+            <FaPlus size={14} />
+            {getAddButtonText()}
+          </button>
+        )}
       </div>
 
 

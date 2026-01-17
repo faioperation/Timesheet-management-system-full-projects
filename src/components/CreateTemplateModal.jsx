@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { FaTimes, FaArrowRight } from 'react-icons/fa';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 
 const CreateTemplateModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({

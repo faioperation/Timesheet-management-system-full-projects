@@ -1,8 +1,9 @@
-const BASE_URL = "/api";
 // Use import.meta.env for Vite environment variables
 // VITE_ prefix is required for client-side access
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const Image_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL;
+const normalizeBaseUrl = (base) => (base ? base.replace(/\/+$/, "") : "");
+const BASE_URL = normalizeBaseUrl(API_BASE_URL) || "/api";
 
 // Flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false;
@@ -136,6 +137,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     Accept: "application/json",
     ...options.headers,
   };
+  const credentials = options.credentials || "include";
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -146,12 +148,14 @@ export const apiFetch = async (endpoint, options = {}) => {
     return fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       headers,
+      credentials,
     });
   }
 
   let response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials,
   });
 
   // If 401 Unauthorized, try to refresh token
@@ -165,6 +169,7 @@ export const apiFetch = async (endpoint, options = {}) => {
         response = await fetch(`${BASE_URL}${endpoint}`, {
           ...options,
           headers,
+          credentials,
         });
       }
       // If no new token, fall through and return the original 401 response

@@ -59,7 +59,7 @@ export default function AddUser() {
 
       // Map role text to backend role_id (based on seed data: 2=Business Admin/Admin, 3=Supervisor/Staff, 4=User)
       const roleMap = {
-        Admin: 2,
+        "Business Admin": 2,
         Supervisor: 3,
         User: 4,
       };
@@ -215,9 +215,9 @@ export default function AddUser() {
                 onChange={(e) => handleInputChange("role", e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
               >
-                <option value="User">User</option>
-                <option value="Admin">Admin</option>
                 <option value="Supervisor">Supervisor</option>
+                <option value="User">User</option>
+                <option value="Business Admin">Business Admin</option>
               </select>
               <IoMdArrowDropdown
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
