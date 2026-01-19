@@ -29,6 +29,10 @@ export default function CompanyView() {
         ));
     };
 
+    const handleInputChange = (field, value) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
     const companyUsers = [
         { id: 1, name: 'Flores, Juanita', email: 'jessica.hanson@example.com', role: 'Admin' },
         { id: 2, name: 'Nguyen, Shane', email: 'bill.sanders@example.com', role: 'Lake Evan' },
@@ -51,9 +55,9 @@ export default function CompanyView() {
                         <input
                             type="text"
                             value={formData.name}
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-500 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
+                            onChange={(e) => handleInputChange("name", e.target.value)}
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-800 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
                             placeholder="Enter Name"
-                            readOnly
                         />
                     </div>
                     <div className="space-y-2">
@@ -61,9 +65,9 @@ export default function CompanyView() {
                         <input
                             type="text"
                             value={formData.address}
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-500 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
+                            onChange={(e) => handleInputChange("address", e.target.value)}
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-800 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
                             placeholder="Address"
-                            readOnly
                         />
                     </div>
                     <div className="space-y-2">
@@ -71,9 +75,9 @@ export default function CompanyView() {
                         <input
                             type="text"
                             value={formData.folder}
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-500 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
+                            onChange={(e) => handleInputChange("folder", e.target.value)}
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-800 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
                             placeholder="Enter folder"
-                            readOnly
                         />
                     </div>
                     <div className="space-y-2">
@@ -81,9 +85,9 @@ export default function CompanyView() {
                         <input
                             type="text"
                             value={formData.details}
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-500 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
+                            onChange={(e) => handleInputChange("details", e.target.value)}
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-800 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
                             placeholder="Details"
-                            readOnly
                         />
                     </div>
                 </div>
