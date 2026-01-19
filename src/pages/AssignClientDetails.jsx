@@ -228,321 +228,43 @@ export default function AssignClientDetails() {
 
         <div className="space-y-8">
           {/* Top Section - Row 1 */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+          <div className="rounded-lg ">
             <h3 className="text-base font-semibold text-gray-800 mb-4">Assignment</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Invoice to */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Invoice to<span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.invoiceTo}
-                  onChange={(e) => handleInputChange('invoiceTo', e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                >
-                  <option value="Client">Client</option>
-                  <option value="Vendor">Vendor</option>
-                </select>
-                <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-              </div>
-            </div>
-            {/* Client name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Client name<span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <select
-                    value={formData.clientId}
-                    onChange={(e) => handleInputChange('clientId', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                  >
-                    <option value="">Select client</option>
-                    {clients.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {client.name}
-                      </option>
-                    ))}
-                  </select>
-                  <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalType('Client');
-                    setPendingSelectType('Client');
-                    setIsModalOpen(true);
-                  }}
-                  className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
-                >
-                  <FaPlus size={14} />
-                </button>
-              </div>
-            </div>
-            {/* Vendor name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vendor name<span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <select
-                    value={formData.vendorId}
-                    onChange={(e) => handleInputChange('vendorId', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                  >
-                    <option value="">Select vendor</option>
-                    {vendors.map((vendor) => (
-                      <option key={vendor.id} value={vendor.id}>
-                        {vendor.name}
-                      </option>
-                    ))}
-                  </select>
-                  <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalType('Vendor');
-                    setPendingSelectType('Vendor');
-                    setIsModalOpen(true);
-                  }}
-                  className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
-                >
-                  <FaPlus size={14} />
-                </button>
-              </div>
-            </div>
-            {/* Client rate */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Client rate<span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.clientRate}
-                onChange={(e) => handleInputChange('clientRate', e.target.value)}
-                placeholder="Enter client rate"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-              />
-            </div>
-          </div>
-          </div>
-
-          {/* Top Section - Row 2 */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-4">Schedule</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Timesheet period */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Timesheet period<span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.timesheetPeriod}
-                  onChange={(e) => handleInputChange('timesheetPeriod', e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                >
-                  <option value="Weekly">Weekly</option>
-                  <option value="Monthly">Monthly</option>
-                  <option value="Yearly">Yearly</option>
-                </select>
-                <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-              </div>
-            </div>
-            {/* Start date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start date<span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => handleInputChange('startDate', e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-              />
-            </div>
-            {/* End date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                End date<span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => handleInputChange('endDate', e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-              />
-            </div>
-          </div>
-          </div>
-
-          {/* Top Section - Row 3 */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-4">Other Rates</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Other */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Other
-              </label>
-              <input
-                type="text"
-                value={formData.other}
-                onChange={(e) => handleInputChange('other', e.target.value)}
-                placeholder="Enter c2c/other"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-              />
-            </div>
-            {/* Other rate type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Other rate type<span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.otherRateType}
-                  onChange={(e) => handleInputChange('otherRateType', e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                >
-                  <option value="Percentage">Percentage</option>
-                  <option value="Fixed">Fixed</option>
-                </select>
-                <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-              </div>
-            </div>
-            {/* Recursive */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Recursive
-              </label>
-              <div className="flex items-center gap-3">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.recursive}
-                    onChange={() => handleCheckboxChange('recursive')}
-                    className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2 rounded"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Recursive</span>
+            <div className="flex items-center gap-4">
+              {/* Invoice to */}
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Invoice to<span className="text-red-500">*</span>
                 </label>
-                <div className="relative flex-1">
+                <div className="relative">
                   <select
-                    value={formData.recursiveMonth}
-                    onChange={(e) => handleInputChange('recursiveMonth', e.target.value)}
-                    disabled={!formData.recursive}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer disabled:bg-gray-100 disabled:text-gray-400"
+                    value={formData.invoiceTo}
+                    onChange={(e) => handleInputChange('invoiceTo', e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
-                    <option value="">Select month</option>
-                    <option value="1">January</option>
-                    <option value="2">February</option>
-                    <option value="3">March</option>
-                    <option value="4">April</option>
-                    <option value="5">May</option>
-                    <option value="6">June</option>
-                    <option value="7">July</option>
-                    <option value="8">August</option>
-                    <option value="9">September</option>
-                    <option value="10">October</option>
-                    <option value="11">November</option>
-                    <option value="12">December</option>
+                    <option value="Client">Client</option>
+                    <option value="Vendor">Vendor</option>
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
               </div>
-            </div>
-            <div></div>
-          </div>
-          </div>
-
-          {/* Middle Section - Radio Buttons */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Type</h3>
-            <div className="flex flex-wrap gap-6">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="radio"
-                name="employeeType"
-                value="W2"
-                checked={formData.employeeType === 'W2'}
-                onChange={(e) => handleInputChange('employeeType', e.target.value)}
-                className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2"
-              />
-              <span className="ml-2 text-sm font-medium text-gray-700">W2</span>
-            </label>
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="radio"
-                name="employeeType"
-                value="1099 C2C"
-                checked={formData.employeeType === '1099 C2C'}
-                onChange={(e) => handleInputChange('employeeType', e.target.value)}
-                className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2"
-              />
-              <span className="ml-2 text-sm font-medium text-gray-700">1099 C2C</span>
-            </label>
-            </div>
-          </div>
-
-          {/* Middle Section - Row 2 */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {formData.employeeType === 'W2' ? (
-              <>
-                {/* W2 */}
-                <div>
+              {/* Client name */}
+              {formData.invoiceTo === 'Client' && (
+                <div className="w-full">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    W2<span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.w2}
-                    onChange={(e) => handleInputChange('w2', e.target.value)}
-                    placeholder="Enter W2"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-                  />
-                </div>
-                {/* Pay tax */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pay tax<span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.payTax}
-                    onChange={(e) => handleInputChange('payTax', e.target.value)}
-                    placeholder="Enter amount"
-                    min="0"
-                    step="0.01"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-                  />
-                </div>
-                <div></div>
-                <div></div>
-              </>
-            ) : (
-              <>
-                {/* Employee */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Employee<span className="text-red-500">*</span>
+                    Client name<span className="text-red-500">*</span>
                   </label>
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
                       <select
-                        value={formData.employeeId}
-                        onChange={(e) => handleInputChange('employeeId', e.target.value)}
+                        value={formData.clientId}
+                        onChange={(e) => handleInputChange('clientId', e.target.value)}
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                       >
-                        <option value="">Select employee</option>
-                        {employees.map((employee) => (
-                          <option key={employee.id} value={employee.id}>
-                            {employee.name}
+                        <option value="">Select client</option>
+                        {clients.map((client) => (
+                          <option key={client.id} value={client.id}>
+                            {client.name}
                           </option>
                         ))}
                       </select>
@@ -551,8 +273,8 @@ export default function AssignClientDetails() {
                     <button
                       type="button"
                       onClick={() => {
-                        setModalType('Employee');
-                        setPendingSelectType('Employee');
+                        setModalType('Client');
+                        setPendingSelectType('Client');
                         setIsModalOpen(true);
                       }}
                       className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
@@ -561,34 +283,314 @@ export default function AssignClientDetails() {
                     </button>
                   </div>
                 </div>
-                {/* Employee rate */}
-                <div>
+              )}
+              {/* Vendor name */}
+              {formData.invoiceTo === 'Vendor' && (
+                <div className="w-full">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Employee rate<span className="text-red-500">*</span>
+                    Vendor name<span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="number"
-                    value={formData.employeeRate}
-                    onChange={(e) => handleInputChange('employeeRate', e.target.value)}
-                    placeholder="Enter rate"
-                    min="0"
-                    step="0.01"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-                  />
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        value={formData.vendorId}
+                        onChange={(e) => handleInputChange('vendorId', e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                      >
+                        <option value="">Select vendor</option>
+                        {vendors.map((vendor) => (
+                          <option key={vendor.id} value={vendor.id}>
+                            {vendor.name}
+                          </option>
+                        ))}
+                      </select>
+                      <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalType('Vendor');
+                        setPendingSelectType('Vendor');
+                        setIsModalOpen(true);
+                      }}
+                      className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+                    >
+                      <FaPlus size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div></div>
-                <div></div>
-              </>
-            )}
+              )}
+              {/* Client rate */}
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Rate<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.clientRate}
+                  onChange={(e) => handleInputChange('clientRate', e.target.value)}
+                  placeholder="Enter rate"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                />
+              </div>
             </div>
           </div>
 
+          {/* Top Section - Row 2 */}
+          <div className="rounded-lg ">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Schedule</h3>
+            <div className="flex items-center gap-4">
+              {/* Timesheet period */}
+              <div className='w-full'>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Timesheet period<span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={formData.timesheetPeriod}
+                    onChange={(e) => handleInputChange('timesheetPeriod', e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                  >
+                    <option value="Weekly">Weekly</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Yearly">Yearly</option>
+                  </select>
+                  <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                </div>
+              </div>
+              {/* Start date */}
+              <div className='w-full'>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start date<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => handleInputChange('startDate', e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                />
+              </div>
+              {/* End date */}
+              <div className='w-full'>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  End date<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => handleInputChange('endDate', e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Top Section - Row 3 */}
+          <div className="rounded-lg ">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Other Rates</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Other */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Other
+                </label>
+                <input
+                  type="text"
+                  value={formData.other}
+                  onChange={(e) => handleInputChange('other', e.target.value)}
+                  placeholder="Enter c2c/other"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                />
+              </div>
+              {/* Other rate type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Other rate type<span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={formData.otherRateType}
+                    onChange={(e) => handleInputChange('otherRateType', e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                  >
+                    <option value="Percentage">Percentage</option>
+                    <option value="Fixed">Fixed</option>
+                  </select>
+                  <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                </div>
+              </div>
+              {/* Recursive */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Recursive
+                </label>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.recursive}
+                      onChange={() => handleCheckboxChange('recursive')}
+                      className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Recursive</span>
+                  </label>
+                  <div className="relative flex-1">
+                    <select
+                      value={formData.recursiveMonth}
+                      onChange={(e) => handleInputChange('recursiveMonth', e.target.value)}
+                      disabled={!formData.recursive}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer disabled:bg-gray-100 disabled:text-gray-400"
+                    >
+                      <option value="">Select month</option>
+                      <option value="1">January</option>
+                      <option value="2">February</option>
+                      <option value="3">March</option>
+                      <option value="4">April</option>
+                      <option value="5">May</option>
+                      <option value="6">June</option>
+                      <option value="7">July</option>
+                      <option value="8">August</option>
+                      <option value="9">September</option>
+                      <option value="10">October</option>
+                      <option value="11">November</option>
+                      <option value="12">December</option>
+                    </select>
+                    <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                  </div>
+                </div>
+              </div>
+              <div></div>
+            </div>
+          </div>
+
+          <div className='flex items-center gap-8'>
+            {/* Middle Section - Radio Buttons */}
+          <div className="rounded-lg ">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Type</h3>
+            <div className="flex flex-wrap gap-6">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="employeeType"
+                  value="W2"
+                  checked={formData.employeeType === 'W2'}
+                  onChange={(e) => handleInputChange('employeeType', e.target.value)}
+                  className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2"
+                />
+                <span className="ml-2 text-sm font-medium text-gray-700">W2</span>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="employeeType"
+                  value="1099 C2C"
+                  checked={formData.employeeType === '1099 C2C'}
+                  onChange={(e) => handleInputChange('employeeType', e.target.value)}
+                  className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2"
+                />
+                <span className="ml-2 text-sm font-medium text-gray-700">1099 C2C</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Middle Section - Row 2 */}
+          <div className="flex-1 rounded-lg ">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Details</h3>
+            <div className="flex items-center gap-4">
+              {formData.employeeType === 'W2' ? (
+                <>
+                  {/* W2 */}
+                  <div className='w-full'>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      W2<span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.w2}
+                      onChange={(e) => handleInputChange('w2', e.target.value)}
+                      placeholder="Enter W2"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                    />
+                  </div>
+                  {/* Pay tax */}
+                  <div className='w-full'>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pay tax<span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.payTax}
+                      onChange={(e) => handleInputChange('payTax', e.target.value)}
+                      placeholder="Enter amount"
+                      min="0"
+                      step="0.01"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Employee */}
+                  <div className='w-full'>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Employee<span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <select
+                          value={formData.employeeId}
+                          onChange={(e) => handleInputChange('employeeId', e.target.value)}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                        >
+                          <option value="">Select employee</option>
+                          {employees.map((employee) => (
+                            <option key={employee.id} value={employee.id}>
+                              {employee.name}
+                            </option>
+                          ))}
+                        </select>
+                        <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModalType('Employee');
+                          setPendingSelectType('Employee');
+                          setIsModalOpen(true);
+                        }}
+                        className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+                      >
+                        <FaPlus size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  {/* Employee rate */}
+                  <div className='w-full'>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Employee rate<span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.employeeRate}
+                      onChange={(e) => handleInputChange('employeeRate', e.target.value)}
+                      placeholder="Enter rate"
+                      min="0"
+                      step="0.01"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          </div>
+
           {/* Bottom Section - Commission Details */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 space-y-6">
+          <div className="rounded-lg  space-y-6">
             <h3 className="text-lg font-semibold text-gray-800">Commission Details</h3>
 
             {/* Account manager */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Account manager<span className="text-red-500">*</span>
@@ -658,7 +660,7 @@ export default function AssignClientDetails() {
             </div>
 
             {/* BD Manager */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   BD Manager<span className="text-red-500">*</span>
@@ -728,7 +730,7 @@ export default function AssignClientDetails() {
             </div>
 
             {/* Recruiter */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Recruiter<span className="text-red-500">*</span>
@@ -804,7 +806,7 @@ export default function AssignClientDetails() {
               onClick={handleSubmit}
               className="px-6 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium"
             >
-              Update client details
+              Assign client details
             </button>
             <button
               onClick={handleCancel}

@@ -97,7 +97,7 @@ function Sidebar({ onClose }) {
             ) {
               isActive = true;
             }
-            if (navlink.Title === "users" && Pathname.startsWith("/user/")) {
+            if (navlink.Title === "users" && Pathname.startsWith("/users")) {
               isActive = true;
             }
 
@@ -107,9 +107,8 @@ function Sidebar({ onClose }) {
             return (
               <li
                 key={idx}
-                className={`w-full relative ${
-                  isActive ? "text-white" : "text-[#0C0C0D]"
-                } hover:text-white transition-colors duration-200`}
+                className={`w-full relative ${isActive ? "text-white" : "text-[#0C0C0D]"
+                  } hover:text-white transition-colors duration-200`}
                 onMouseEnter={() => hasSubItems && setHoveredItem(idx)}
                 onMouseLeave={() => setHoveredItem(null)}
               >
@@ -124,36 +123,36 @@ function Sidebar({ onClose }) {
 
                 {/* Sub-menu dropdown */}
                 {hasSubItems && isHovered && (
-                  <div className="absolute left-full top-0 ml-2 bg-[#5069E5] rounded-lg shadow-lg min-w-[180px] py-2 z-50">
-                    <div className="px-4 py-2 border-b border-[#CED2E5]">
-                      <p className="text-white font-semibold text-base">
-                        {navlink.Title.charAt(0).toUpperCase() +
-                          navlink.Title.slice(1)}
-                      </p>
+                  <div className="absolute left-full top-0 pl-2 z-50">
+                    <div className="bg-[#5069E5] rounded-lg shadow-lg min-w-[180px] py-2">
+                      <div className="px-4 py-2 border-b border-[#CED2E5]">
+                        <p className="text-white font-semibold text-base">
+                          {navlink.Title.charAt(0).toUpperCase() +
+                            navlink.Title.slice(1)}
+                        </p>
+                      </div>
+                      {navlink.subItems.map((subItem, subIdx) => {
+                        const isSubActive =
+                          Pathname === subItem.pathname ||
+                          Pathname.startsWith(subItem.pathname + "/");
+                        return (
+                          <Link
+                            key={subIdx}
+                            to={subItem.pathname}
+                            onClick={handleLinkClick}
+                            className={`block px-4 py-2 text-sm transition-colors ${isSubActive
+                                ? "text-white bg-white/20"
+                                : "text-white/80 hover:text-white hover:bg-white/10"
+                              } ${subIdx < navlink.subItems.length - 1
+                                ? "border-b border-[#CED2E5]"
+                                : ""
+                              }`}
+                          >
+                            {subItem.Title}
+                          </Link>
+                        );
+                      })}
                     </div>
-                    {navlink.subItems.map((subItem, subIdx) => {
-                      const isSubActive =
-                        Pathname === subItem.pathname ||
-                        Pathname.startsWith(subItem.pathname + "/");
-                      return (
-                        <Link
-                          key={subIdx}
-                          to={subItem.pathname}
-                          onClick={handleLinkClick}
-                          className={`block px-4 py-2 text-sm transition-colors ${
-                            isSubActive
-                              ? "text-white bg-white/20"
-                              : "text-white/80 hover:text-white hover:bg-white/10"
-                          } ${
-                            subIdx < navlink.subItems.length - 1
-                              ? "border-b border-[#CED2E5]"
-                              : ""
-                          }`}
-                        >
-                          {subItem.Title}
-                        </Link>
-                      );
-                    })}
                   </div>
                 )}
               </li>
@@ -163,9 +162,8 @@ function Sidebar({ onClose }) {
       </div>
       <div>
         <div
-          className={`${
-            Pathname === "/logout" ? "text-white" : "text-[#0C0C0D]"
-          } text-xl sm:text-2xl text-center cursor-pointer`}
+          className={`${Pathname === "/logout" ? "text-white" : "text-[#0C0C0D]"
+            } text-xl sm:text-2xl text-center cursor-pointer`}
         >
           <div
             className="flex flex-col items-center py-2 hover:text-white transition-colors"

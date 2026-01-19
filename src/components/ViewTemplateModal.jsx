@@ -1,71 +1,90 @@
-import React from 'react';
-import { FaTimes } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { FaTimes, FaCopy, FaCheck } from 'react-icons/fa';
 
 const ViewTemplateModal = ({ isOpen, onClose, template }) => {
+  const [copiedField, setCopiedField] = useState(null);
+
   if (!isOpen || !template) return null;
+
+  const handleCopy = (text, field) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-100 rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+      <div className="bg-gray-100 rounded-lg shadow-xl w-full max-w-lg overflow-hidden">
         <div className="bg-white rounded-lg m-2 p-6">
-          {/* Header */}
-          <div className="flex justify-between items-start mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Hey!</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800">Template Details</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
-              <FaTimes size={20} />
+              <FaTimes size={18} />
             </button>
           </div>
 
-          {/* Content */}
-          <div className="space-y-4 mb-6">
-            {/* Template Name */}
+          <div className="space-y-6">
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Template Name</p>
-              <p className="text-base text-gray-900 font-semibold">{template.name || 'Default template'}</p>
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-xs uppercase font-bold text-indigo-500 tracking-wider">Title</p>
+                <button
+                  onClick={() => handleCopy(template.name || 'Default template', 'title')}
+                  className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 hover:text-indigo-700 transition-colors uppercase"
+                >
+                  {copiedField === 'title' ? (
+                    <>
+                      <FaCheck size={10} className="text-green-500" />
+                      <span className="text-green-500">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaCopy size={10} />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 font-semibold text-gray-900">
+                {template.name || 'Default template'}
+              </div>
             </div>
 
-            {/* Template Type */}
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Template type</p>
-              <p className="text-base text-gray-900 font-semibold">{template.type || 'Timesheet submit'}</p>
-            </div>
-
-            {/* Subject */}
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Subject</p>
-              <p className="text-base text-gray-900 font-semibold">{template.subject || 'Timesheet submit, {{start_date}} To {{end_date}}'}</p>
-            </div>
-
-            {/* Permission */}
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Permission</p>
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  User
-                </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Admin
-                </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Supervisor
-                </span>
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-xs uppercase font-bold text-indigo-500 tracking-wider">Body</p>
+                <button
+                  onClick={() => handleCopy(template.body || '', 'body')}
+                  className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 hover:text-indigo-700 transition-colors uppercase"
+                >
+                  {copiedField === 'body' ? (
+                    <>
+                      <FaCheck size={10} className="text-green-500" />
+                      <span className="text-green-500">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaCopy size={10} />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 min-h-[150px] text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {template.body || 'No content available.'}
               </div>
             </div>
           </div>
 
-          {/* Footer - Dates */}
-          <div className="flex justify-between items-end pt-4 border-t border-gray-200">
-            <div>
-              <p className="text-xs font-medium text-gray-600 mb-1">Start</p>
-              <p className="text-sm font-semibold text-green-600">20 Nov 2025</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs font-medium text-gray-600 mb-1">End</p>
-              <p className="text-sm font-semibold text-red-600">20 Dec 2025</p>
-            </div>
+          <div className="mt-8 flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-6 py-2.5 bg-[#5069E5] text-white rounded-xl font-bold hover:bg-[#3d52c7] transition-all"
+            >
+              Close
+            </button>
           </div>
         </div>
       </div>

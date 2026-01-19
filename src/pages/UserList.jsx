@@ -173,8 +173,8 @@ export default function UserList() {
                   typeof item.active === 'boolean'
                     ? item.active
                     : typeof item.status === 'string'
-                    ? item.status.toLowerCase() === 'active'
-                    : true;
+                      ? item.status.toLowerCase() === 'active'
+                      : true;
 
                 return {
                   id: item.id,
@@ -206,7 +206,7 @@ export default function UserList() {
   }, [activeFilter]);
 
 
-  
+
 
 
   const filteredData = useMemo(() => {
@@ -223,7 +223,10 @@ export default function UserList() {
       return allUsersData.filter((user) => user.role === 'User');
     }
     if (activeFilter === 'Internal User') {
-      return allUsersData.filter((user) => user.role !== 'User');
+      const internalRoles = ['account_manager', 'bd_manager', 'recruiter', 'staff', 'supervisor'];
+      return allUsersData.filter((user) =>
+        internalRoles.includes(user.role?.toLowerCase()) || user.role !== 'User'
+      );
     }
     return allUsersData;
   }, [activeFilter, clientData, vendorData, employeeData, allUsersData]);
@@ -238,7 +241,7 @@ export default function UserList() {
 
   const handleAddUser = () => {
     if (
-      (activeFilter === "User" || activeFilter === "Internal User") &&
+      (activeFilter === "User") &&
       !isBusinessAdmin
     ) {
       toast.error("Only Business Admin can add users");
@@ -260,7 +263,12 @@ export default function UserList() {
   const handleView = (row) => {
     if (row.userId) {
       const safeName = row.name ? encodeURIComponent(row.name) : "user";
-      navigate(`/user/view/${safeName}`, { state: { userId: row.userId } });
+      navigate(`/user/view/${safeName}`, {
+        state: {
+          userId: row.userId,
+          isInternal: activeFilter === 'Internal User' || row.role !== 'User'
+        }
+      });
     } else {
       toast.error('User id not found');
     }
@@ -408,7 +416,7 @@ export default function UserList() {
             <FaEye size={14} />
             <span>View</span>
           </button>
-          {canAssignClient && (
+          {canAssignClient && activeFilter === 'User' && (
             <button
               onClick={() => handleAssignClient(row)}
               className="ml-auto px-3 py-1.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
@@ -455,10 +463,9 @@ export default function UserList() {
               onClick={() => handleFilterChange(filter)}
               className={`
                 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors
-                ${
-                  activeFilter === filter
-                    ? 'bg-[#E0E7FF] text-[#5069E5]'
-                    : 'bg-white text-gray-600 hover:text-gray-900'
+                ${activeFilter === filter
+                  ? 'bg-[#E0E7FF] text-[#5069E5]'
+                  : 'bg-white text-gray-600 hover:text-gray-900'
                 }
               `}
             >
@@ -467,17 +474,28 @@ export default function UserList() {
           ))}
         </div>
 
-        {(activeFilter === "User" || activeFilter === "Internal User"
+        {(activeFilter === "User"
           ? isBusinessAdmin
           : true) && (
-          <button
-            onClick={handleAddUser}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium whitespace-nowrap"
-          >
-            <FaPlus size={14} />
-            {getAddButtonText()}
-          </button>
-        )}
+            <div className="flex gap-2">
+              {(activeFilter === 'User' || activeFilter === 'Internal User') && isBusinessAdmin && (
+                <button
+                  onClick={() => navigate('/user/add-internal')}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#E0E7FF] text-[#5069E5] rounded-lg hover:bg-[#c7d2fe] transition-colors font-medium whitespace-nowrap"
+                >
+                  <FaPlus size={14} />
+                  Add Internal User
+                </button>
+              )}
+              <button
+                onClick={handleAddUser}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium whitespace-nowrap"
+              >
+                <FaPlus size={14} />
+                {getAddButtonText()}
+              </button>
+            </div>
+          )}
       </div>
 
 

@@ -1,36 +1,27 @@
-// Role utility functions for routing and menu management
 
-/**
- * Get the dashboard path based on user role
- */
 export const getRoleBasedDashboard = (role) => {
   const roleMap = {
     'System Admin': '/dashboard/system-admin',
     'Business Admin': '/dashboard/business-admin',
-    'supervisor': '/dashboard/supervisor',
-    'Staff': '/dashboard/supervisor', // Staff (from backend) and supervisor are the same role
-    'staff': '/dashboard/supervisor', // lowercase staff (if any)
+    'Staff': '/dashboard/supervisor',
     'User': '/dashboard/user',
   };
 
   return roleMap[role] || '/dashboard/business-admin'; // Default fallback
 };
 
-/**
- * Get menu items based on user role
- */
 export const getRoleBasedMenuItems = (role) => {
   // System Admin menu
   if (role === 'System Admin') {
     return [
       { Title: 'home', pathname: '/dashboard/system-admin', iconKey: 'home' },
-      { 
-        Title: 'company', 
-        pathname: '/dashboard/system-admin/company', 
+      {
+        Title: 'company',
+        pathname: '/dashboard/company',
         iconKey: 'company',
         subItems: [
-          { Title: 'Add Company', pathname: '/dashboard/system-admin/company/add' },
-          { Title: 'Company List', pathname: '/dashboard/system-admin/company/list' },
+          { Title: 'Add Company', pathname: '/company/add' },
+          { Title: 'Company List', pathname: '/dashboard/company' },
         ]
       },
     ];

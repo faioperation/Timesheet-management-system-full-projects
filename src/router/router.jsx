@@ -26,6 +26,10 @@ import AddUser from "../pages/AddUser";
 import AddInternalUser from "../pages/AddInternalUser";
 import AssignClientDetails from "../pages/AssignClientDetails";
 import UserProfileView from "../pages/UserProfileView";
+import SystemAdminDashboard from "../pages/dashboard/SystemAdminDashboard";
+import AddCompany from "../pages/dashboard/AddCompany";
+import CompanyList from "../pages/dashboard/CompanyList";
+import CompanyView from "../pages/dashboard/CompanyView";
 
 // Helper function to redirect based on role
 function HomeRedirect() {
@@ -40,9 +44,7 @@ function HomeRedirect() {
     const roleMap = {
       'System Admin': '/dashboard/system-admin',
       'Business Admin': '/dashboard/business-admin',
-      'supervisor': '/dashboard/supervisor',
-      'Staff': '/dashboard/supervisor', // Staff (from backend) and supervisor are the same role
-      'staff': '/dashboard/supervisor', // lowercase staff (if any)
+      'Staff': '/dashboard/supervisor',
       'User': '/dashboard/user',
     };
     return roleMap[role] || '/dashboard/business-admin';
@@ -50,17 +52,16 @@ function HomeRedirect() {
 
   const userRole = getCookie('user_role');
   const token = getCookie('auth_token');
-  
+
   if (token && userRole) {
     const dashboardPath = getRoleBasedDashboard(userRole);
     return <Navigate to={dashboardPath} replace />;
   }
-  
+
   return <Navigate to="/login" replace />;
 }
 
 const router = createBrowserRouter([
-  // Public routes - No layout
   {
     path: '/login',
     element: <Login />,
@@ -81,7 +82,6 @@ const router = createBrowserRouter([
     path: '/change-password',
     element: <ChangePassword />,
   },
-  // Protected routes with Dashboard Layout
   {
     element: (
       <ProtectedRoute>
@@ -89,17 +89,17 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      // Root path - redirect based on role
+
       {
         index: true,
         element: <HomeRedirect />,
       },
-      // Dashboard routes - Role based
+
       {
         path: 'dashboard/system-admin',
         element: (
           <RoleBasedRoute allowedRoles={['System Admin']}>
-            <div>System Admin Dashboard</div>
+            <SystemAdminDashboard />
           </RoleBasedRoute>
         ),
       },
@@ -114,7 +114,7 @@ const router = createBrowserRouter([
       {
         path: 'dashboard/supervisor',
         element: (
-          <RoleBasedRoute allowedRoles={['supervisor', 'Staff', 'staff']}>
+          <RoleBasedRoute allowedRoles={['Staff']}>
             <SupervisorDashboard />
           </RoleBasedRoute>
         ),
@@ -127,20 +127,34 @@ const router = createBrowserRouter([
           </RoleBasedRoute>
         ),
       },
-      // System Admin Company routes
       {
-        path: 'dashboard/system-admin/company/*',
+        path: 'company/add',
         element: (
           <RoleBasedRoute allowedRoles={['System Admin']}>
-            <div>Company Management (To be implemented)</div>
+            <AddCompany />
           </RoleBasedRoute>
         ),
       },
-      // User list route (for Business Admin and Supervisor)
+      {
+        path: 'dashboard/company',
+        element: (
+          <RoleBasedRoute allowedRoles={['System Admin']}>
+            <CompanyList />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: 'dashboard/company/view/:id',
+        element: (
+          <RoleBasedRoute allowedRoles={['System Admin']}>
+            <CompanyView />
+          </RoleBasedRoute>
+        ),
+      },
       {
         path: 'user/userlist',
         element: (
-          <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
+          <RoleBasedRoute allowedRoles={['Business Admin', 'Staff']}>
             <UserList />
           </RoleBasedRoute>
         ),
@@ -148,7 +162,7 @@ const router = createBrowserRouter([
       {
         path: 'user/view/:userName',
         element: (
-          <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
+          <RoleBasedRoute allowedRoles={['Business Admin', 'Staff']}>
             <UserProfileView />
           </RoleBasedRoute>
         ),
@@ -172,12 +186,11 @@ const router = createBrowserRouter([
       {
         path: 'user/assign-client-details',
         element: (
-          <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
+          <RoleBasedRoute allowedRoles={['Business Admin', 'Staff']}>
             <AssignClientDetails />
           </RoleBasedRoute>
         ),
       },
-      // Other routes - Available to all authenticated users based on role
       {
         path: 'timesheet',
         element: <TimesheetRoute />,
@@ -185,7 +198,7 @@ const router = createBrowserRouter([
       {
         path: 'scheduler',
         element: (
-          <RoleBasedRoute allowedRoles={['Business Admin', 'supervisor', 'Staff', 'staff']}>
+          <RoleBasedRoute allowedRoles={['Business Admin', 'Staff']}>
             <Scheduler />
           </RoleBasedRoute>
         ),
@@ -206,7 +219,6 @@ const router = createBrowserRouter([
           </RoleBasedRoute>
         ),
       },
-      // Settings routes with SettingsLayout
       {
         path: 'settings',
         element: <SettingsLayout />,
@@ -234,7 +246,7 @@ const router = createBrowserRouter([
           {
             path: 'template',
             element: (
-              <RoleBasedRoute allowedRoles={['supervisor', 'Staff', 'staff', 'Business Admin', 'System Admin']}>
+              <RoleBasedRoute allowedRoles={['Staff', 'Business Admin']}>
                 <Template />
               </RoleBasedRoute>
             ),

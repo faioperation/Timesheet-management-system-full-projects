@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 export default function UserProfileView() {
   const { userName } = useParams();
   const location = useLocation();
-  const userId = location.state?.userId;
+  const { userId, isInternal } = location.state || {};
   const navigate = useNavigate();
   const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL;
   const [isLoading, setIsLoading] = useState(true);
@@ -30,8 +30,16 @@ export default function UserProfileView() {
     const fetchUser = async () => {
       try {
         setIsLoading(true);
-        const response = await apiFetch(`/user/${userId}`, { method: "GET" });
+        let response;
+        if (isInternal) {
+          response = await apiFetch(`/internaluser/${userId}`, { method: "GET" });
+        } else {
+          response = await apiFetch(`/user/${userId}`, { method: "GET" });
+        }
+
         if (!response.ok) {
+          // If isInternal was true and failed, or if it wasn't specified but failed, try the other one as fallback?
+          // For now let's just use the direct logic. If isInternal is true, we use internaluser/${userId}
           throw new Error("Failed to load user profile");
         }
         const result = await response.json();
@@ -77,7 +85,9 @@ export default function UserProfileView() {
   }
 
   const roleName =
-    userData.roles && userData.roles[0] ? userData.roles[0].name : "User";
+    userData.roles && userData.roles[0]
+      ? userData.roles[0].name
+      : userData.role || "User";
   const statusLabel =
     userData.active === 1 || userData.active === true ? "Active" : "Inactive";
 

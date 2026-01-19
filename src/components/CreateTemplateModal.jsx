@@ -1,26 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { FaTimes, FaArrowRight } from 'react-icons/fa';
 import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
+import { apiFetch } from '../libs/apiFetch';
+import { toast } from 'react-toastify';
 
 const CreateTemplateModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     parameterInsertOn: 'Subject', // 'Subject' or 'template'
-    templateType: 'Timesheet submit',
-    templateName: 'Timesheet Name',
-    usedBy: {
-      admin: false,
-      user: false,
-      supervisor: false,
-    },
-    subject: 'This is subject {{ Client name }}',
-    templateBody: '<p>Hello,</p><p>Timesheet is submit for client: {{ User First name }}</p><p>for time period: 09/15/2025 To 09/21/2025</p><p>Please check and approve.</p><p>Thank you.</p>',
+    templateType: 'TimeSheet Submitted',
+    templateName: '',
+    used_by: [], // Array of role IDs
+    subject: '',
+    templateBody: '',
   });
 
+  const [roles, setRoles] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await apiFetch('/roles');
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setRoles(result.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching roles:', err);
+      }
+    };
+    if (isOpen) fetchRoles();
+  }, [isOpen]);
+
   const parameters = [
-    { label: 'User first name', placeholder: 'User First name' },
-    { label: 'User last name', placeholder: 'User Last name' },
+    { label: 'User first name', placeholder: 'User first name' },
+    { label: 'User last name', placeholder: 'User last name' },
     { label: 'Client name', placeholder: 'Client name' },
     { label: 'Start date', placeholder: 'Start date' },
     { label: 'End date', placeholder: 'End date' },
@@ -34,14 +50,15 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCheckboxChange = (field) => {
-    setFormData(prev => ({
-      ...prev,
-      usedBy: {
-        ...prev.usedBy,
-        [field]: !prev.usedBy[field],
-      },
-    }));
+  const handleCheckboxChange = (roleId) => {
+    setFormData(prev => {
+      const isSelected = prev.used_by.includes(roleId);
+      if (isSelected) {
+        return { ...prev, used_by: prev.used_by.filter(id => id !== roleId) };
+      } else {
+        return { ...prev, used_by: [...prev.used_by, roleId] };
+      }
+    });
   };
 
   const handleParameterClick = (param) => {
@@ -50,16 +67,61 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
       handleInputChange('subject', formData.subject + ' ' + placeholder);
     } else {
       const currentBody = formData.templateBody;
-      // Insert placeholder at cursor position or at the end
       const newBody = currentBody.replace(/<\/p>$/, ' ' + placeholder + '</p>');
-      handleInputChange('templateBody', newBody);
+      const finalBody = currentBody === '' ? `<p>${placeholder}</p>` : newBody;
+      handleInputChange('templateBody', finalBody);
     }
   };
 
-  const handleSave = () => {
-    // Save logic here
-    console.log('Save template:', formData);
-    onClose();
+  const stripHtml = (html) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  };
+
+  const handleSave = async () => {
+    if (!formData.templateName || !formData.subject || !formData.templateType) {
+      toast.warning('Please fill in all required fields');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        template_name: formData.templateName,
+        template_type: formData.templateType,
+        subject: formData.subject,
+        body: stripHtml(formData.templateBody),
+        used_by: formData.used_by
+      };
+
+      const response = await apiFetch('/email-template', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        toast.success('Template created successfully');
+        onClose(true); // Close and refresh
+        // Reset form
+        setFormData({
+          parameterInsertOn: 'Subject',
+          templateType: 'timesheet_submit',
+          templateName: '',
+          used_by: [],
+          subject: '',
+          templateBody: '',
+        });
+      } else {
+        throw new Error(result.message || 'Failed to create template');
+      }
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast.error(error.message || 'Error saving template');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -97,7 +159,7 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 Parameter Insert on
               </h3>
-              
+
               {/* Radio Buttons */}
               <div className="space-y-3 mb-6">
                 <label className="flex items-center cursor-pointer">
@@ -152,9 +214,9 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                     onChange={(e) => handleInputChange('templateType', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
                   >
-                    <option value="Timesheet submit">Timesheet submit</option>
-                    <option value="Timesheet resubmit">Timesheet resubmit</option>
-                    <option value="Submission">Submission</option>
+                    <option value="TimeSheet Approved">TimeSheet Approved</option>
+                    <option value="TimeSheet Submitted">TimeSheet Submitted</option>
+                    <option value="TimeSheet Rejected">TimeSheet Rejected</option>
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
@@ -170,6 +232,7 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                   value={formData.templateName}
                   onChange={(e) => handleInputChange('templateName', e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                  placeholder="Timesheet Submit Template simple"
                 />
               </div>
 
@@ -178,34 +241,22 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Template is used by
                 </label>
-                <div className="flex gap-6">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.usedBy.admin}
-                      onChange={() => handleCheckboxChange('admin')}
-                      className="w-4 h-4 text-[#5069E5] border-gray-300 rounded focus:ring-[#5069E5] focus:ring-2"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Admin</span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.usedBy.user}
-                      onChange={() => handleCheckboxChange('user')}
-                      className="w-4 h-4 text-[#5069E5] border-gray-300 rounded focus:ring-[#5069E5] focus:ring-2"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">User</span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.usedBy.supervisor}
-                      onChange={() => handleCheckboxChange('supervisor')}
-                      className="w-4 h-4 text-[#5069E5] border-gray-300 rounded focus:ring-[#5069E5] focus:ring-2"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Supervisor</span>
-                  </label>
+                <div className="flex flex-wrap gap-6">
+                  {roles.length > 0 ? (
+                    roles.map((role) => (
+                      <label key={role.id} className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.used_by.includes(role.id)}
+                          onChange={() => handleCheckboxChange(role.id)}
+                          className="w-4 h-4 text-[#5069E5] border-gray-300 rounded focus:ring-[#5069E5] focus:ring-2"
+                        />
+                        <span className="ml-2 text-sm text-gray-700 capitalize">{role.name}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400">Loading roles...</p>
+                  )}
                 </div>
               </div>
 
@@ -219,7 +270,7 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                   value={formData.subject}
                   onChange={(e) => handleInputChange('subject', e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-                  placeholder="This is subject {{ Client name }}"
+                  placeholder="Timesheet submitted for {{ Client name }}"
                 />
               </div>
 
@@ -247,15 +298,17 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
         <div className="flex justify-end gap-4 p-6 border-t border-gray-200">
           <button
             onClick={handleCancel}
-            className="px-6 py-2.5 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-colors font-medium"
+            disabled={isSaving}
+            className="px-6 py-2.5 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-colors font-medium disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium"
+            disabled={isSaving}
+            className="px-6 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium disabled:opacity-50"
           >
-            Save
+            {isSaving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>

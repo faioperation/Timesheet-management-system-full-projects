@@ -1,160 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import ReusableTable from '../../components/ReusableTable';
 import CreateTemplateModal from '../../components/CreateTemplateModal';
 import ViewTemplateModal from '../../components/ViewTemplateModal';
+import { apiFetch } from '../../libs/apiFetch';
+import { toast } from 'react-toastify';
 
 export default function Template() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [isFetching, setIsFetching] = useState(false);
 
-  // Sample template data matching the image
-  const templateData = [
-    {
-      id: 1,
-      no: '01',
-      name: 'Default template',
-      type: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      body: `Hello,
+  const fetchTemplates = async () => {
+    setIsFetching(true);
+    try {
+      const response = await apiFetch('/email-template', { method: 'GET' });
+      const result = await response.json();
 
-Timesheet is submit for client : {{client_name}}
-for time period: {{start_date}} To {{end_date}}
+      if (response.ok && result.success) {
+        // Map API data to our table structure if needed
+        const mappedData = (result.data || []).map((item, index) => ({
+          id: item.id,
+          no: (index + 1).toString().padStart(2, '0'),
+          name: item.template_name,
+          type: item.template_type,
+          subject: item.subject,
+          body: item.body,
+          used_by: item.used_by || []
+        }));
+        setTemplates(mappedData);
+      } else {
+        throw new Error(result.message || 'Failed to fetch templates');
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      toast.error(error.message || 'Failed to load templates');
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
-Please check and approve.
-
-Thank you.`,
-    },
-    {
-      id: 2,
-      no: '02',
-      name: 'Timesheet resubmit',
-      type: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      body: `Hello,
-
-Timesheet is submit for client : {{client_name}}
-for time period: {{start_date}} To {{end_date}}
-
-Please check and approve.
-
-Thank you.`,
-    },
-    {
-      id: 3,
-      no: '03',
-      name: 'Timesheet resubmit',
-      type: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      body: `Hello,
-
-Timesheet is submit for client : {{client_name}}
-for time period: {{start_date}} To {{end_date}}
-
-Please check and approve.
-
-Thank you.`,
-    },
-    {
-      id: 4,
-      no: '04',
-      name: 'Timesheet resubmit',
-      type: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      body: `Hello,
-
-Timesheet is submit for client : {{client_name}}
-for time period: {{start_date}} To {{end_date}}
-
-Please check and approve.
-
-Thank you.`,
-    },
-    {
-      id: 5,
-      no: '05',
-      name: 'Timesheet resubmit',
-      type: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      body: `Hello,
-
-Timesheet is submit for client : {{client_name}}
-for time period: {{start_date}} To {{end_date}}
-
-Please check and approve.
-
-Thank you.`,
-    },
-    {
-      id: 6,
-      no: '07',
-      name: 'Timesheet resubmit',
-      type: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      body: `Hello,
-
-Timesheet is submit for client : {{client_name}}
-for time period: {{start_date}} To {{end_date}}
-
-Please check and approve.
-
-Thank you.`,
-    },
-    {
-      id: 7,
-      no: '08',
-      name: 'Timesheet resubmit',
-      type: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      body: `Hello,
-
-Timesheet is submit for client : {{client_name}}
-for time period: {{start_date}} To {{end_date}}
-
-Please check and approve.
-
-Thank you.`,
-    },
-    {
-      id: 8,
-      no: '09',
-      name: 'Timesheet resubmit',
-      type: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      subject: 'Timesheet submit, {{start_date}} To {{end_date}}',
-      body: `Hello,
-
-Timesheet is submit for client : {{client_name}}
-for time period: {{start_date}} To {{end_date}}
-
-Please check and approve.
-
-Thank you.`,
-    },
-    {
-      id: 9,
-      no: '10',
-      name: 'Submission',
-      type: 'Submission, {{start_date}} To {{end_date}}',
-      subject: 'Submission, {{start_date}} To {{end_date}}',
-      body: `Hello,
-
-Timesheet is submit for client : {{client_name}}
-for time period: {{start_date}} To {{end_date}}
-
-Please check and approve.
-
-Thank you.`,
-    },
-  ];
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
 
   const handleCreateTemplate = () => {
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = (refresh = false) => {
     setIsModalOpen(false);
+    if (refresh === true) {
+      fetchTemplates();
+    }
   };
 
   const handleViewTemplate = (template) => {
@@ -240,14 +141,19 @@ Thank you.`,
       </div>
 
       {/* Reusable Table */}
-      <ReusableTable
-        columns={columns}
-        data={templateData}
-        itemsPerPage={10}
-        totalPages={25}
-        onPageChange={handlePageChange}
-        showPagination={true}
-      />
+      {isFetching ? (
+        <div className="flex justify-center items-center py-20">
+          <p className="text-gray-500 font-medium">Loading templates...</p>
+        </div>
+      ) : (
+        <ReusableTable
+          columns={columns}
+          data={templates}
+          itemsPerPage={10}
+          onPageChange={handlePageChange}
+          showPagination={true}
+        />
+      )}
 
       {/* Create Template Modal */}
       <CreateTemplateModal

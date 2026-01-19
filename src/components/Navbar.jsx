@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { HiMenuAlt3 } from 'react-icons/hi';
-import { apiFetch, API_BASE_URL } from '../libs/apiFetch';
+import { apiFetch, API_BASE_URL, Image_BASE_URL  } from '../libs/apiFetch';
 
 function Navbar({ onMenuClick }) {
   const location = useLocation();
@@ -11,38 +11,18 @@ function Navbar({ onMenuClick }) {
   const [profileImage, setProfileImage] = useState('/assets/profilePlaceholder.png');
 
   useEffect(() => {
-    const getCookie = (name) => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    };
-
-    // Get user data from cookies first (fallback)
-    const cookieName = getCookie('user_name');
-    const cookieEmail = getCookie('user_email');
-    
-    if (cookieName) setUserName(cookieName);
-    if (cookieEmail) setUserEmail(cookieEmail);
-
-    // Fetch profile data from API
     const fetchProfileData = async () => {
       try {
         const response = await apiFetch("/profile", {
           method: "GET",
-        });
-
-        if (!response.ok) {
-          // If API fails, use cookie values
-          return;
-        }
+        });        
 
         const result = await response.json();
+
 
         if (result.success && result.data) {
           const data = result.data;
 
-          // Update user name and email from API
           if (data.name) {
             setUserName(data.name);
           }
@@ -50,32 +30,16 @@ function Navbar({ onMenuClick }) {
             setUserEmail(data.email);
           }
 
-          // Handle profile image URL
           if (data.image) {
-            let imageUrl = data.image;
-
-            if (
-              imageUrl &&
-              !imageUrl.startsWith("http") &&
-              !imageUrl.startsWith("data:")
-            ) {
-              // If it's a relative path, prepend the API base URL
-              if (imageUrl.startsWith("/")) {
-                imageUrl = `${API_BASE_URL}${imageUrl}`;
-              } else {
-                imageUrl = `${API_BASE_URL}/${imageUrl}`;
-              }
-            }
-
+            let imageUrl = Image_BASE_URL + data.image;
+            
             setProfileImage(imageUrl);
           }
         }
       } catch (error) {
         console.error("Error fetching profile data:", error);
-        // Silently fail - use cookie values as fallback
       }
     };
-
     fetchProfileData();
   }, []);
 
@@ -111,7 +75,6 @@ function Navbar({ onMenuClick }) {
                 src={profileImage} 
                 alt={'Profile Image'}
                 onError={(e) => {
-                  // If image fails to load, show placeholder
                   if (e.target.src !== '/assets/profilePlaceholder.png') {
                     e.target.src = '/assets/profilePlaceholder.png';
                   }
