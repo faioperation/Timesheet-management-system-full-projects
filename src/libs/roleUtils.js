@@ -2,12 +2,12 @@
 export const getRoleBasedDashboard = (role) => {
   const roleMap = {
     'System Admin': '/dashboard/system-admin',
-    'Business Admin': '/dashboard/business-admin',
+    'Business Admin': '/dashboard/revenue',
     'Staff': '/dashboard/supervisor',
     'User': '/dashboard/user',
   };
 
-  return roleMap[role] || '/dashboard/business-admin'; // Default fallback
+  return roleMap[role] || '/dashboard/revenue'; // Default fallback
 };
 
 export const getRoleBasedMenuItems = (role) => {
@@ -30,7 +30,16 @@ export const getRoleBasedMenuItems = (role) => {
   // Business Admin menu
   if (role === 'Business Admin') {
     return [
-      { Title: 'dashboard', pathname: '/dashboard/business-admin', iconKey: 'dashboard' },
+      {
+        Title: 'dashboard',
+        pathname: '/dashboard/revenue',
+        iconKey: 'dashboard',
+        subItems: [
+          { Title: 'Revenue Dashboard', pathname: '/dashboard/revenue' },
+          { Title: 'Consultant Dashboard', pathname: '/dashboard/consultant' },
+          { Title: 'Hours Dashboard', pathname: '/dashboard/hours' },
+        ]
+      },
       { Title: 'users', pathname: '/user/userlist', iconKey: 'users' },
       { Title: 'timesheet', pathname: '/timesheet', iconKey: 'timesheet' },
       { Title: 'scheduler', pathname: '/scheduler', iconKey: 'scheduler' },

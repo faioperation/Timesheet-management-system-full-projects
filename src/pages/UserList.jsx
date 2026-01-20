@@ -184,6 +184,7 @@ export default function UserList() {
                   phone: item.phone || '',
                   role: primaryRole || 'User',
                   status: isActive ? 'Active' : 'Inactive',
+                  hasClientAssigned: item.client_id ? true : false,
                 };
               });
               setAllUsersData(mappedData);
@@ -417,12 +418,21 @@ export default function UserList() {
             <span>View</span>
           </button>
           {canAssignClient && activeFilter === 'User' && (
-            <button
-              onClick={() => handleAssignClient(row)}
-              className="ml-auto px-3 py-1.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
-            >
-              Assign client
-            </button>
+            row.hasClientAssigned ? (
+              <button
+                disabled
+                className="ml-auto px-3 py-1.5 rounded-md bg-gray-100 text-gray-400 font-medium cursor-not-allowed"
+              >
+                Already Assigned
+              </button>
+            ) : (
+              <button
+                onClick={() => handleAssignClient(row)}
+                className="ml-auto px-3 py-1.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+              >
+                Assign client
+              </button>
+            )
           )}
         </div>
       ),
@@ -478,7 +488,7 @@ export default function UserList() {
           ? isBusinessAdmin
           : true) && (
             <div className="flex gap-2">
-              {(activeFilter === 'User' || activeFilter === 'Internal User') && isBusinessAdmin && (
+              {activeFilter === 'Internal User' && isBusinessAdmin && (
                 <button
                   onClick={() => navigate('/user/add-internal')}
                   className="flex items-center gap-2 px-4 py-2.5 bg-[#E0E7FF] text-[#5069E5] rounded-lg hover:bg-[#c7d2fe] transition-colors font-medium whitespace-nowrap"
@@ -487,13 +497,15 @@ export default function UserList() {
                   Add Internal User
                 </button>
               )}
-              <button
-                onClick={handleAddUser}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium whitespace-nowrap"
-              >
-                <FaPlus size={14} />
-                {getAddButtonText()}
-              </button>
+              {activeFilter !== 'Internal User' && (
+                <button
+                  onClick={handleAddUser}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium whitespace-nowrap"
+                >
+                  <FaPlus size={14} />
+                  {getAddButtonText()}
+                </button>
+              )}
             </div>
           )}
       </div>

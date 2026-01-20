@@ -165,11 +165,10 @@ export default function AddInternalUser() {
               type="text"
               value={formData.name}
               onChange={(e) => handleInputChange("name", e.target.value)}
-              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 bg-white text-gray-800 ${
-                fieldErrors.name
-                  ? "border-red-400 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-[#5069E5]"
-              }`}
+              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 bg-white text-gray-800 ${fieldErrors.name
+                ? "border-red-400 focus:ring-red-400"
+                : "border-gray-300 focus:ring-[#5069E5]"
+                }`}
               placeholder="Enter name"
             />
             {fieldErrors.name && (
@@ -186,11 +185,10 @@ export default function AddInternalUser() {
               type="email"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
-              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 bg-white text-gray-800 ${
-                fieldErrors.email
-                  ? "border-red-400 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-[#5069E5]"
-              }`}
+              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 bg-white text-gray-800 ${fieldErrors.email
+                ? "border-red-400 focus:ring-red-400"
+                : "border-gray-300 focus:ring-[#5069E5]"
+                }`}
               placeholder="Enter email"
             />
             {fieldErrors.email && (
@@ -213,11 +211,10 @@ export default function AddInternalUser() {
                   type="text"
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className={`w-full px-4 py-2.5 pl-10 border rounded-lg focus:outline-none focus:ring-2 bg-white text-gray-800 ${
-                    fieldErrors.phone
-                      ? "border-red-400 focus:ring-red-400"
-                      : "border-gray-300 focus:ring-[#5069E5]"
-                  }`}
+                  className={`w-full px-4 py-2.5 pl-10 border rounded-lg focus:outline-none focus:ring-2 bg-white text-gray-800 ${fieldErrors.phone
+                    ? "border-red-400 focus:ring-red-400"
+                    : "border-gray-300 focus:ring-[#5069E5]"
+                    }`}
                   placeholder="Enter phone"
                 />
               </div>
@@ -258,11 +255,10 @@ export default function AddInternalUser() {
               <select
                 value={formData.role}
                 onChange={(e) => handleInputChange("role", e.target.value)}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 appearance-none bg-white text-gray-800 pr-10 cursor-pointer ${
-                  fieldErrors.role
-                    ? "border-red-400 focus:ring-red-400"
-                    : "border-gray-300 focus:ring-[#5069E5]"
-                }`}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 appearance-none bg-white text-gray-800 pr-10 cursor-pointer ${fieldErrors.role
+                  ? "border-red-400 focus:ring-red-400"
+                  : "border-gray-300 focus:ring-[#5069E5]"
+                  }`}
               >
                 {ROLE_OPTIONS.map((role) => (
                   <option key={role.value} value={role.value}>
@@ -292,11 +288,10 @@ export default function AddInternalUser() {
                   onChange={(e) =>
                     handleInputChange("commissionOn", e.target.value)
                   }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 appearance-none bg-white text-gray-800 pr-10 cursor-pointer ${
-                    fieldErrors.commissionOn
-                      ? "border-red-400 focus:ring-red-400"
-                      : "border-gray-300 focus:ring-[#5069E5]"
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 appearance-none bg-white text-gray-800 pr-10 cursor-pointer ${fieldErrors.commissionOn
+                    ? "border-red-400 focus:ring-red-400"
+                    : "border-gray-300 focus:ring-[#5069E5]"
+                    }`}
                 >
                   {COMMISSION_ON_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -324,11 +319,10 @@ export default function AddInternalUser() {
                 <select
                   value={formData.rateType}
                   onChange={(e) => handleInputChange("rateType", e.target.value)}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 appearance-none bg-white text-gray-800 pr-10 cursor-pointer ${
-                    fieldErrors.rateType
-                      ? "border-red-400 focus:ring-red-400"
-                      : "border-gray-300 focus:ring-[#5069E5]"
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 appearance-none bg-white text-gray-800 pr-10 cursor-pointer ${fieldErrors.rateType
+                    ? "border-red-400 focus:ring-red-400"
+                    : "border-gray-300 focus:ring-[#5069E5]"
+                    }`}
                 >
                   {RATE_TYPE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>

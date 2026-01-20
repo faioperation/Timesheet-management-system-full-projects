@@ -91,17 +91,25 @@ function Sidebar({ onClose }) {
 
             // Special handling for settings: any /settings/* route should highlight settings menu
             let isActive = isExactMatch || isNestedMatch;
+
+            // Check if any sub-item is active
+            const hasSubItems = navlink.subItems && navlink.subItems.length > 0;
+            if (hasSubItems && !isActive) {
+              const isSubItemActive = navlink.subItems.some(sub =>
+                Pathname === sub.pathname || Pathname.startsWith(sub.pathname + "/")
+              );
+              if (isSubItemActive) isActive = true;
+            }
+
             if (
               navlink.Title === "settings" &&
               Pathname.startsWith("/settings")
             ) {
               isActive = true;
             }
-            if (navlink.Title === "users" && Pathname.startsWith("/users")) {
+            if (navlink.Title === "users" && Pathname.startsWith("/user")) {
               isActive = true;
             }
-
-            const hasSubItems = navlink.subItems && navlink.subItems.length > 0;
             const isHovered = hoveredItem === idx;
 
             return (
@@ -124,11 +132,10 @@ function Sidebar({ onClose }) {
                 {/* Sub-menu dropdown */}
                 {hasSubItems && isHovered && (
                   <div className="absolute left-full top-0 pl-2 z-50">
-                    <div className="bg-[#5069E5] rounded-lg shadow-lg min-w-[180px] py-2">
-                      <div className="px-4 py-2 border-b border-[#CED2E5]">
-                        <p className="text-white font-semibold text-base">
-                          {navlink.Title.charAt(0).toUpperCase() +
-                            navlink.Title.slice(1)}
+                    <div className="bg-[#5069E5] rounded-xl shadow-2xl min-w-[200px] py-3 border border-white/10">
+                      <div className="px-5 py-2 mb-2 border-b border-white/10">
+                        <p className="text-white font-bold text-lg tracking-wide uppercase">
+                          {navlink.Title}
                         </p>
                       </div>
                       {navlink.subItems.map((subItem, subIdx) => {
@@ -140,12 +147,9 @@ function Sidebar({ onClose }) {
                             key={subIdx}
                             to={subItem.pathname}
                             onClick={handleLinkClick}
-                            className={`block px-4 py-2 text-sm transition-colors ${isSubActive
-                                ? "text-white bg-white/20"
-                                : "text-white/80 hover:text-white hover:bg-white/10"
-                              } ${subIdx < navlink.subItems.length - 1
-                                ? "border-b border-[#CED2E5]"
-                                : ""
+                            className={`block px-5 py-2.5 text-sm transition-all duration-200 ${isSubActive
+                              ? "text-white font-bold bg-white/20"
+                              : "text-[#CED2E5] font-medium hover:text-white hover:bg-white/10"
                               }`}
                           >
                             {subItem.Title}

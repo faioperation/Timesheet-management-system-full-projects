@@ -1,193 +1,312 @@
 import React, { useState } from "react";
-import { IoMdArrowDropdown } from "react-icons/io";
-import { FaEye, FaEyeSlash, FaEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { useForm } from "react-hook-form";
+import { toast, ToastContainer } from "react-toastify";
+import { AiFillEye, AiFillEyeInvisible, AiOutlineCheckCircle, AiOutlinePlusCircle } from "react-icons/ai";
+import { FiChevronDown } from "react-icons/fi";
+import { apiFetch } from "../../libs/apiFetch";
 
 export default function AddCompany() {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({
-        name: "",
-        email: "",
-        phone: "",
-        gender: "Male",
-        role: "Business Admin",
-        password: "",
-        confirmPassword: "",
-    });
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [viewPass, setViewPass] = useState(false);
+    const [viewConPass, setViewConPass] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleInputChange = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const handleSubmit = async () => {
-        if (
-            !formData.name ||
-            !formData.email ||
-            !formData.phone ||
-            !formData.password ||
-            !formData.confirmPassword
-        ) {
-            toast.error("Please fill in all required fields");
-            return;
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        watch,
+    } = useForm({
+        defaultValues: {
+            gender: "Male",
+            maritalStatus: "Single",
+            role: "Business Admin"
         }
+    });
 
-        if (formData.password !== formData.confirmPassword) {
-            toast.error("Password and Confirm Password do not match");
-            return;
-        }
+    const password = watch("password");
 
-        // Implementation of submission logic would go here
+    const onSubmit = async (formData) => {
         setIsSubmitting(true);
-        setTimeout(() => {
-            toast.success("Company added successfully");
-            setIsSubmitting(false);
-            navigate("/dashboard/system-admin/company");
-        }, 1000);
-    };
+        try {
+            const response = await apiFetch("/business", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: formData.adminName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    gender: formData.gender,
+                    marritat_status: formData.maritalStatus,
+                    company_name: formData.companyName,
+                    address: formData.address,
+                    password: formData.password,
+                    role: "Business Admin"
+                }),
+            });
 
-    const handleCancel = () => {
-        navigate(-1);
+            const contentType = response.headers.get("content-type");
+            let result;
+            if (contentType && contentType.includes("application/json")) {
+                result = await response.json();
+            } else {
+                const text = await response.text();
+                throw new Error(text || "Failed to parse server response");
+            }
+
+            if (response.ok) {
+                toast.success("Company Added Successfully!", {
+                    position: "top-right",
+                    theme: "colored"
+                });
+                setTimeout(() => navigate("/dashboard/company"), 1500);
+            } else {
+                toast.error(result.message || "Failed to add company", {
+                    position: "top-right",
+                    theme: "colored"
+                });
+            }
+        } catch (error) {
+            toast.error(`Error: ${error.message || "An unexpected error occurred"}`, {
+                position: "top-right",
+                theme: "colored"
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <div className="w-full pb-10">
-            <div className="bg-[#F0F0F2] min-h-screen p-6 rounded-lg">
-                <div className="max-w-4xl mx-auto space-y-6">
-                    {/* Name */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Name<span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => handleInputChange("name", e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5069E5] bg-white text-gray-800 placeholder-gray-400"
-                            placeholder="Naresh Vyas"
-                        />
-                    </div>
+        <div className="w-full h-full font-['Inter',_sans-serif]">
+            <ToastContainer />
 
-                    {/* Email */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Email<span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => handleInputChange("email", e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5069E5] bg-white text-gray-800 placeholder-gray-400"
-                            placeholder="example@gmail.com"
-                        />
-                    </div>
+            <div className="flex items-center justify-between mb-8 px-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-[#0F172A] mb-1 tracking-tight">Add New Company</h1>
+                    <p className="text-[#64748B] text-sm font-medium">Create a new business admin and company profile</p>
+                </div>
+                <button
+                    onClick={() => navigate(-1)}
+                    className="px-5 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm font-bold text-[#64748B] hover:border-[#5069E5] hover:text-[#5069E5] transition-all shadow-sm active:scale-95"
+                >
+                    Back to List
+                </button>
+            </div>
 
-                    {/* Phone and Gender Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Phone<span className="text-red-500">*</span>
+            <div className="bg-white rounded-[24px] border border-[#E2E8F0] shadow-xl shadow-[#5069E5]/5 overflow-hidden mx-4 mb-10">
+                <form onSubmit={handleSubmit(onSubmit)} className="p-8 lg:p-12">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+
+                        {/* Business Admin Name */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-[#334155] px-1 uppercase tracking-wider">
+                                Business Admin Name <span className="text-red-500">*</span>
                             </label>
-                            <div className="relative">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none border-r pr-2 border-gray-200">
-                                    <FaEdit size={14} />
-                                </div>
-                                <input
-                                    type="text"
-                                    value={formData.phone}
-                                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                                    className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5069E5] bg-white text-gray-800 placeholder-gray-400"
-                                    placeholder="+889737671565"
-                                />
-                            </div>
+                            <input
+                                type="text"
+                                className={`w-full px-4 py-3.5 rounded-xl border ${errors.adminName ? 'border-red-400 focus:ring-red-100' : 'border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4`}
+                                placeholder="Naresh Vyas"
+                                {...register("adminName", { required: "Name is required" })}
+                            />
+                            {errors.adminName && (
+                                <span className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.adminName.message}</span>
+                            )}
                         </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+
+                        {/* Company Name */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-[#334155] px-1 uppercase tracking-wider">
+                                Company Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                className={`w-full px-4 py-3.5 rounded-xl border ${errors.companyName ? 'border-red-400 focus:ring-red-100' : 'border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4`}
+                                placeholder="Tech Innovators Inc."
+                                {...register("companyName", { required: "Company name is required" })}
+                            />
+                            {errors.companyName && (
+                                <span className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.companyName.message}</span>
+                            )}
+                        </div>
+
+                        {/* Email */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-[#334155] px-1 uppercase tracking-wider">
+                                Email Address <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="email"
+                                className={`w-full px-4 py-3.5 rounded-xl border ${errors.email ? 'border-red-400 focus:ring-red-100' : 'border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4`}
+                                placeholder="example@gmail.com"
+                                {...register("email", {
+                                    required: "Email is required",
+                                    pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: "Invalid email" }
+                                })}
+                            />
+                            {errors.email && (
+                                <span className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.email.message}</span>
+                            )}
+                        </div>
+
+                        {/* Mobile */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-[#334155] px-1 uppercase tracking-wider">
+                                Phone Number <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="tel"
+                                className={`w-full px-4 py-3.5 rounded-xl border ${errors.phone ? 'border-red-400 focus:ring-red-100' : 'border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4`}
+                                placeholder="+1 (555) 000-0000"
+                                {...register("phone", { required: "Phone is required" })}
+                            />
+                            {errors.phone && (
+                                <span className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.phone.message}</span>
+                            )}
+                        </div>
+
+                        {/* Gender */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-[#334155] px-1 uppercase tracking-wider">
                                 Gender
                             </label>
                             <div className="relative">
                                 <select
-                                    value={formData.gender}
-                                    onChange={(e) => handleInputChange("gender", e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                                    className="w-full px-4 py-3.5 rounded-xl border border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10 bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4 appearance-none cursor-pointer font-medium"
+                                    {...register("gender")}
                                 >
                                     <option value="Male">Male</option>
                                     <option value="Female">Female</option>
                                     <option value="Other">Other</option>
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none bg-gray-100 rounded p-0.5">
-                                    <IoMdArrowDropdown className="text-gray-500" size={18} />
+                                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#64748B]">
+                                    <FiChevronDown size={20} />
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Password and Confirm Password Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Password
+                        {/* Marital Status */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-[#334155] px-1 uppercase tracking-wider">
+                                Marital Status
                             </label>
                             <div className="relative">
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    value={formData.password}
-                                    onChange={(e) => handleInputChange("password", e.target.value)}
-                                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5069E5] bg-white text-gray-800"
-                                    placeholder="test3124"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                <select
+                                    className="w-full px-4 py-3.5 rounded-xl border border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10 bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4 appearance-none cursor-pointer font-medium"
+                                    {...register("maritalStatus")}
                                 >
-                                    {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-                                </button>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Divorced">Divorced</option>
+                                    <option value="Widowed">Widowed</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#64748B]">
+                                    <FiChevronDown size={20} />
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Confirm password<span className="text-red-500">*</span>
+
+                        {/* Address */}
+                        <div className="flex flex-col gap-1.5 col-span-1 md:col-span-2">
+                            <label className="text-sm font-bold text-[#334155] px-1 uppercase tracking-wider">
+                                Address
+                            </label>
+                            <textarea
+                                rows={3}
+                                className="w-full px-4 py-3.5 rounded-xl border border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10 bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4 resize-none"
+                                placeholder="123 Business Avenue, Suite 100..."
+                                {...register("address")}
+                            />
+                        </div>
+
+                        {/* Password */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-[#334155] px-1 uppercase tracking-wider">
+                                Admin Password <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
                                 <input
-                                    type={showConfirmPassword ? "text" : "password"}
-                                    value={formData.confirmPassword}
-                                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5069E5] bg-white text-gray-800"
+                                    type={viewPass ? "text" : "password"}
+                                    className={`w-full px-4 py-3.5 rounded-xl border ${errors.password ? 'border-red-400 focus:ring-red-100' : 'border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4 pr-12`}
                                     placeholder="••••••••"
+                                    {...register("password", {
+                                        required: "Password is required",
+                                        minLength: { value: 6, message: "Min 6 characters" }
+                                    })}
                                 />
                                 <button
                                     type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#94A3B8] hover:text-[#5069E5] transition-colors"
+                                    onClick={() => setViewPass(!viewPass)}
                                 >
-                                    {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                                    {viewPass ? <AiFillEye size={22} /> : <AiFillEyeInvisible size={22} />}
                                 </button>
                             </div>
+                            {errors.password && (
+                                <span className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.password.message}</span>
+                            )}
                         </div>
+
+                        {/* Confirm Password */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-[#334155] px-1 uppercase tracking-wider">
+                                Confirm Password <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={viewConPass ? "text" : "password"}
+                                    className={`w-full px-4 py-3.5 rounded-xl border ${errors.confirmPassword ? 'border-red-400 focus:ring-red-100' : 'border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4 pr-12`}
+                                    placeholder="••••••••"
+                                    {...register("confirmPassword", {
+                                        required: "Confirm password is required",
+                                        validate: (val) => val === password || "Passwords do not match"
+                                    })}
+                                />
+                                <button
+                                    type="button"
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#94A3B8] hover:text-[#5069E5] transition-colors"
+                                    onClick={() => setViewConPass(!viewConPass)}
+                                >
+                                    {viewConPass ? <AiFillEye size={22} /> : <AiFillEyeInvisible size={22} />}
+                                </button>
+                            </div>
+                            {errors.confirmPassword && (
+                                <span className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.confirmPassword.message}</span>
+                            )}
+                        </div>
+
                     </div>
 
-                    {/* Buttons */}
-                    <div className="flex justify-center gap-4 pt-8">
+                    <div className="mt-12 flex justify-end gap-5">
                         <button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className="px-10 py-3 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-semibold shadow-sm"
-                        >
-                            {isSubmitting ? "Adding..." : "Add user"}
-                        </button>
-                        <button
-                            onClick={handleCancel}
-                            className="px-10 py-3 bg-[#FFF5F5] text-[#FF5A5A] rounded-lg hover:bg-[#FFEAEA] transition-colors font-semibold shadow-sm"
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            className="px-10 py-4 border border-[#E2E8F0] rounded-xl font-bold text-[#64748B] hover:bg-[#F8FAFC] transition-all active:scale-[0.98]"
                         >
                             Cancel
                         </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="px-10 py-4 bg-[#5069E5] hover:bg-[#3E52C1] text-white rounded-xl font-bold flex items-center gap-3 transition-all active:scale-[0.98] shadow-lg shadow-[#5069E5]/20 disabled:opacity-70"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <span>Adding Company...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <AiOutlinePlusCircle size={22} />
+                                    <span>Add Company</span>
+                                </>
+                            )}
+                        </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     );

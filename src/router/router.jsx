@@ -30,6 +30,9 @@ import SystemAdminDashboard from "../pages/dashboard/SystemAdminDashboard";
 import AddCompany from "../pages/dashboard/AddCompany";
 import CompanyList from "../pages/dashboard/CompanyList";
 import CompanyView from "../pages/dashboard/CompanyView";
+import RevenueDashboard from "../pages/dashboard/RevenueDashboard";
+import ConsultantDashboard from "../pages/dashboard/ConsultantDashboard";
+import HoursDashboard from "../pages/dashboard/HoursDashboard";
 
 // Helper function to redirect based on role
 function HomeRedirect() {
@@ -43,11 +46,11 @@ function HomeRedirect() {
   const getRoleBasedDashboard = (role) => {
     const roleMap = {
       'System Admin': '/dashboard/system-admin',
-      'Business Admin': '/dashboard/business-admin',
+      'Business Admin': '/dashboard/revenue',
       'Staff': '/dashboard/supervisor',
       'User': '/dashboard/user',
     };
-    return roleMap[role] || '/dashboard/business-admin';
+    return roleMap[role] || '/dashboard/revenue';
   };
 
   const userRole = getCookie('user_role');
@@ -105,9 +108,29 @@ const router = createBrowserRouter([
       },
       {
         path: 'dashboard/business-admin',
+        element: <Navigate to="/dashboard/revenue" replace />,
+      },
+      {
+        path: 'dashboard/revenue',
         element: (
           <RoleBasedRoute allowedRoles={['Business Admin']}>
-            <BusinessAdminDashboard />
+            <RevenueDashboard />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: 'dashboard/consultant',
+        element: (
+          <RoleBasedRoute allowedRoles={['Business Admin']}>
+            <ConsultantDashboard />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: 'dashboard/hours',
+        element: (
+          <RoleBasedRoute allowedRoles={['Business Admin']}>
+            <HoursDashboard />
           </RoleBasedRoute>
         ),
       },

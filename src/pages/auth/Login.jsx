@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import React, { useState } from "react";
-import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
+import { AiFillEye, AiFillEyeInvisible, AiOutlineCheckCircle, AiOutlineLogin } from "react-icons/ai";
 import { useForm } from "react-hook-form";
 import { apiFetch } from "../../libs/apiFetch";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import { getRoleBasedDashboard } from "../../libs/roleUtils";
 
 export default function Login() {
@@ -32,21 +32,12 @@ export default function Login() {
         }),
       });
 
-      // Handle error responses that might not be JSON
       const contentType = res.headers.get("content-type");
       let result;
-      
+
       if (contentType && contentType.includes("application/json")) {
-        try {
-          result = await res.json();
-        } catch (error) {
-          // If JSON parsing fails, clone the response and get text
-          const clonedRes = res.clone();
-          const text = await clonedRes.text();
-          throw new Error(`API Error (${res.status}): ${text || res.statusText || 'Failed to parse response'}`);
-        }
+        result = await res.json();
       } else {
-        // If response is not JSON, get text instead
         const text = await res.text();
         throw new Error(`API Error (${res.status}): ${text || res.statusText || 'Unknown error'}`);
       }
@@ -55,21 +46,31 @@ export default function Login() {
         toast.error(result.message || "Login Failed", {
           position: "top-right",
           autoClose: 3000,
+          theme: "colored"
         });
       } else if (res.ok) {
-        // Set cookie expiry based on Remember Me checkbox
-        const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 * 7; // 30 days or 7 days
+        // Check if user status is approved
+        const userStatus = result.status || result.user?.status;
+
+        if (userStatus && userStatus.toLowerCase() !== 'approved') {
+          toast.warning('Your account is currently under review. Please wait for approval.', {
+            position: "top-right",
+            autoClose: 5000,
+            theme: "colored"
+          });
+          return; // Don't proceed with login
+        }
+
+        const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 * 7;
         const isSecure = window.location.protocol === 'https:';
 
         document.cookie = `auth_token=${result.token}; path=/; max-age=${maxAge}; ${isSecure ? 'Secure;' : ''} SameSite=Strict`;
-        // Also store access token in localStorage to survive refresh
         if (result.token) {
           window.localStorage.setItem("access_token", result.token);
         }
         if (result.role) {
           document.cookie = `user_role=${result.role}; path=/; max-age=${maxAge}; ${isSecure ? 'Secure;' : ''} SameSite=Strict`;
         }
-        // Store user name and email in cookies if available
         if (result.user?.name || result.name) {
           const userName = result.user?.name || result.name;
           document.cookie = `user_name=${encodeURIComponent(userName)}; path=/; max-age=${maxAge}; ${isSecure ? 'Secure;' : ''} SameSite=Strict`;
@@ -79,25 +80,26 @@ export default function Login() {
           document.cookie = `user_email=${encodeURIComponent(userEmail)}; path=/; max-age=${maxAge}; ${isSecure ? 'Secure;' : ''} SameSite=Strict`;
         }
 
-        toast.success("Login Successful", {
+        toast.success("Login Successful!", {
           position: "top-right",
-          autoClose: 3000,
+          autoClose: 2000,
+          theme: "colored"
         });
 
-        // Redirect based on role
         const dashboardPath = getRoleBasedDashboard(result.role || 'User');
-        navigate(dashboardPath);
+        setTimeout(() => navigate(dashboardPath), 1000);
       } else {
         toast.error(result.message || "Something went wrong", {
           position: "top-right",
           autoClose: 3000,
+          theme: "colored"
         });
       }
     } catch (error) {
-      console.error("Login Error", error);
       toast.error(`Error: ${error.message || "An unexpected error occurred"}`, {
         position: "top-right",
         autoClose: 5000,
+        theme: "colored"
       });
     } finally {
       setIsLoading(false);
@@ -105,90 +107,143 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen flex justify-center items-center p-4">
-      <div className="fixed top-0 left-0 w-full h-1/2 bg-[url('/assets/loginbanner.png')] bg-no-repeat bg-cover bg-center z-0"></div>
-      <div className="bg-[#FFFFFF] w-full max-w-[600px] min-h-[500px] max-h-[600px] h-auto z-10 border border-[#CED2E5] shadow rounded-[16px] overflow-auto">
-        <div className="w-full h-full flex flex-col justify-center items-center px-4 sm:px-8 md:px-12 lg:px-24 py-6 sm:py-8 md:py-10">
-          <div className="w-full max-w-[295px] text-center mb-8 sm:mb-12 md:mb-16">
-            <h2 className="text-2xl sm:text-3xl font-semibold pb-4 text-black">
-              Welcome Back to ManageTP - 3.2.6 !
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-[#3D3D40]">
-              Sign in to continue to Time Sheet
+    <div className="min-h-screen flex justify-center items-center bg-[#F8FAFC] text-black p-4 sm:p-6 lg:p-10 font-['Inter',_sans-serif]">
+      <ToastContainer />
+
+      {/* Dynamic Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-[#5069E5]/5 blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-[#F46B6A]/5 blur-[120px]"></div>
+      </div>
+
+      <div className="bg-white w-full max-w-[1140px] z-10 border border-[#E2E8F0] shadow-2xl rounded-[24px] grid grid-cols-1 lg:grid-cols-2 overflow-hidden animate-in fade-in zoom-in duration-500">
+
+        {/* Banner Section */}
+        <div className="relative hidden lg:block overflow-hidden group">
+          <img
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            src={"/assets/loginbanner.png"}
+            alt="Login page banner"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0D2080]/80 via-transparent to-transparent flex flex-col justify-end p-12 text-white">
+            <h2 className="text-4xl font-bold mb-4 tracking-tight">Welcome Back to ManageTP</h2>
+            <p className="text-lg text-blue-100/90 leading-relaxed max-w-sm">
+              Your comprehensive solution for seamless time management and team productivity.
             </p>
+            <div className="mt-8 flex flex-col gap-3">
+              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-xl border border-white/20">
+                <AiOutlineCheckCircle className="text-green-400" size={20} />
+                <span className="text-sm font-medium">Real-time collaboration</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-xl border border-white/20">
+                <AiOutlineCheckCircle className="text-green-400" size={20} />
+                <span className="text-sm font-medium">Secure data encryption</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Form Section */}
+        <div className="px-6 sm:px-10 lg:px-16 py-12 lg:py-20 flex flex-col justify-center">
+          <div className="mb-10">
+            <div className="w-12 h-12 bg-[#5069E5] rounded-xl flex items-center justify-center text-white mb-6 shadow-lg shadow-[#5069E5]/30">
+              <AiOutlineLogin size={26} />
+            </div>
+            <h1 className="text-3xl font-bold text-[#0F172A] mb-2 tracking-tight">Login to your account</h1>
+            <p className="text-[#64748B]">Welcome back! Please enter your details.</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="w-full mb-2">
-            <fieldset className="fieldset text-black mb-4">
-              <legend className="fieldset-legend text-black">Email</legend>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Email */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold text-[#334155] px-1">
+                Email Address <span className="text-red-500">*</span>
+              </label>
               <input
                 type="email"
-                className="input py-4 border-[#CED2E5] bg-white w-full -mt-1 text-black focus:outline-none"
-                placeholder="example@gmail.com"
-                name="email"
-                {...register("email", { required: true })}
-               />
+                className={`w-full px-4 py-3.5 rounded-xl border ${errors.email ? 'border-red-400 focus:ring-red-100' : 'border-[#CBD5E1] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-white text-gray-900 transition-all outline-none focus:ring-4`}
+                placeholder="john@example.com"
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address"
+                  }
+                })}
+              />
               {errors.email && (
-                <span className="text-red-600">Email is required</span>
+                <span className="text-xs font-medium text-red-500 mt-1 ml-1">{errors.email.message}</span>
               )}
-            </fieldset>
+            </div>
 
-            <fieldset className="fieldset text-black relative">
-              <legend className="fieldset-legend text-black">Password</legend>
-              <input
-                type={`${viewPass ? "text" : "password"}`}
-                className="input py-4 border-[#CED2E5] bg-white w-full -mt-1  focus:outline-none pr-8"
-                placeholder="Enter your password"
-                name="password"
-                {...register("password", { required: true })}
-               />
-              {errors.password && (
-                <span className="text-red-600">Password is required</span>
-              )}
-              <p
-                className="absolute z-20 top-1/2 right-2 -translate-y-1/2 text-xl text-[#6D6E3] cursor-pointer"
-                onClick={() => setViewPass(!viewPass)}
-              >
-                {viewPass ? <AiFillEye  /> : <AiFillEyeInvisible  />}
-              </p>
-            </fieldset>
-            <div className="flex items-center gap-x-2 mb-8">
-              <div>
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="checkbox checkbox-sm text-black bg-[#F0F0F2] border-none -mt-[2px]"
-                 />
+            {/* Password */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-sm font-semibold text-[#334155]">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <Link to="/forgot-password" size="sm" className="text-sm font-bold text-[#5069E5] hover:underline">
+                  Forgot password?
+                </Link>
               </div>
-              <p className="text-[#6D6E73]">Remember me</p>
+              <div className="relative">
+                <input
+                  type={viewPass ? "text" : "password"}
+                  className={`w-full px-4 py-3.5 rounded-xl border ${errors.password ? 'border-red-400 focus:ring-red-100' : 'border-[#CBD5E1] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-white text-gray-900 transition-all outline-none focus:ring-4 pr-12`}
+                  placeholder="••••••••"
+                  {...register("password", { required: "Password is required" })}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#94A3B8] hover:text-[#5069E5] transition-colors"
+                  onClick={() => setViewPass(!viewPass)}
+                >
+                  {viewPass ? <AiFillEye size={22} /> : <AiFillEyeInvisible size={22} />}
+                </button>
+              </div>
+              {errors.password && (
+                <span className="text-xs font-medium text-red-500 mt-1 ml-1">{errors.password.message}</span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between py-1">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="peer hidden"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <div className="h-5 w-5 border-2 border-[#CBD5E1] rounded peer-checked:bg-[#5069E5] peer-checked:border-[#5069E5] transition-all"></div>
+                  <AiOutlineCheckCircle className="absolute inset-0 text-white opacity-0 peer-checked:opacity-100 transition-opacity p-0.5" />
+                </div>
+                <span className="text-sm font-medium text-[#64748B]">Remember for 30 days</span>
+              </label>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="bg-[#5069E5] text-white w-full py-3 sm:py-4 rounded-[4px] font-semibold text-base sm:text-lg md:text-xl cursor-pointer hover:bg-[#3d52c7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-[#5069E5] hover:bg-[#3E52C1] active:scale-[0.98] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-[#5069E5]/20 transition-all duration-200 disabled:opacity-70 disabled:active:scale-100"
             >
               {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Logging in...</span>
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Signing in...</span>
                 </div>
               ) : (
-                "Login"
+                "Sign in"
               )}
             </button>
           </form>
 
-          <div className="text-center text-base text-black space-y-2">
-            <p className="text-[#0D2080]">
-              <Link to="/forgot-password">Forgot password?</Link>
-            </p>
-            <p>
-              Don't have an account ?{" "}
-              <span className="text-[#0D2080]">
-                <Link to="/signup">Sign up</Link>
-              </span>
+          <div className="mt-10 text-center">
+            <p className="text-[#64748B] font-medium">
+              Don't have an account?{" "}
+              <Link to="/signup" className="text-[#5069E5] font-bold hover:underline decoration-2 underline-offset-4">
+                Create an account
+              </Link>
             </p>
           </div>
         </div>
