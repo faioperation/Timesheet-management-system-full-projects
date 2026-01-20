@@ -1,11 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { RxCross2 } from "react-icons/rx";
-import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../libs/apiFetch";
 import { toast, ToastContainer } from "react-toastify";
+import { AiOutlineCheckCircle, AiOutlineSafety } from "react-icons/ai";
 
-export default function verifyOTP() {
+export default function VerifyOTP() {
   const navigate = useNavigate();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [email, setEmail] = useState("");
@@ -16,18 +15,18 @@ export default function verifyOTP() {
   const inputRefs = useRef([]);
 
   useEffect(() => {
-    // Get email from localStorage
     const storedEmail = localStorage.getItem("reset_email");
     if (storedEmail) {
       setEmail(storedEmail);
     } else {
-      toast.error("No email found. Please start from forgot password page.");
+      toast.error("No email found. Please start from forgot password page.", {
+        theme: "colored"
+      });
       navigate("/forgot-password");
     }
-  }, [router]);
+  }, [navigate]);
 
   useEffect(() => {
-    // Timer countdown
     if (timer > 0) {
       const interval = setInterval(() => {
         setTimer((prev) => prev - 1);
@@ -37,20 +36,18 @@ export default function verifyOTP() {
   }, [timer]);
 
   const handleChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return; // Only allow digits
+    if (!/^\d*$/.test(value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyDown = (index, e) => {
-    // Handle backspace
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -61,7 +58,7 @@ export default function verifyOTP() {
     const otpCode = otp.join("");
 
     if (otpCode.length !== 6) {
-      toast.error("Please enter all 6 digits");
+      toast.error("Please enter all 6 digits", { theme: "colored" });
       return;
     }
 
@@ -78,17 +75,16 @@ export default function verifyOTP() {
       const result = await res.json();
 
       if (res.ok) {
-        toast.success("OTP verified successfully!");
-        // Don't remove email yet - needed for change password page
+        toast.success("OTP verified successfully!", { theme: "colored" });
         setTimeout(() => {
           navigate("/change-password");
         }, 1000);
       } else {
-        toast.error(result.message || "Invalid OTP");
+        toast.error(result.message || "Invalid OTP", { theme: "colored" });
       }
     } catch (error) {
       console.error("Verify OTP Error", error);
-      toast.error(`Error: ${error.message || "An unexpected error occurred"}`);
+      toast.error(`Error: ${error.message || "An unexpected error occurred"}`, { theme: "colored" });
     } finally {
       setIsVerifying(false);
     }
@@ -98,11 +94,7 @@ export default function verifyOTP() {
     if (timer > 0 || isResending) return;
 
     if (resendCount >= 3) {
-      toast.error("Maximum resend attempts reached. Redirecting to login...");
-      localStorage.removeItem("reset_email");
-      setTimeout(() => {
-        navigate("/change-password");
-      }, 2000);
+      toast.error("Maximum resend attempts reached. Please try again later.", { theme: "colored" });
       return;
     }
 
@@ -120,17 +112,17 @@ export default function verifyOTP() {
       const result = await res.json();
 
       if (res.ok) {
-        toast.success("OTP resent successfully!");
+        toast.success("OTP resent successfully!", { theme: "colored" });
         setResendCount((prev) => prev + 1);
-        setTimer(60); // 1 minute timer
-        setOtp(["", "", "", "", "", ""]); // Clear OTP inputs
+        setTimer(60);
+        setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       } else {
-        toast.error(result.message || "Failed to resend OTP");
+        toast.error(result.message || "Failed to resend OTP", { theme: "colored" });
       }
     } catch (error) {
       console.error("Resend OTP Error", error);
-      toast.error(`Error: ${error.message || "An unexpected error occurred"}`);
+      toast.error(`Error: ${error.message || "An unexpected error occurred"}`, { theme: "colored" });
     } finally {
       setIsResending(false);
     }
@@ -143,31 +135,58 @@ export default function verifyOTP() {
   };
 
   return (
-    <div className="h-screen flex justify-center items-center text-black p-4">
+    <div className="min-h-screen flex justify-center items-center bg-[#F8FAFC] text-black p-4 sm:p-6 lg:p-10 font-['Inter',_sans-serif]">
       <ToastContainer />
-      <div className="bg-[#FFFFFF] w-full max-w-[600px] min-h-[500px] max-h-[600px] h-auto z-10 border border-[#CED2E5] shadow rounded-[16px] relative overflow-auto">
-        <Link to={"/forgot-password"}>
-          <div className="bg-[#F2F4FF] p-2 sm:p-3 inline-flex rounded-[8px] absolute top-4 sm:top-5 right-4 sm:right-5 z-20">
-            <RxCross2 className="text-xl sm:text-2xl font-black text-[#F46B6A]" />
-          </div>
-        </Link>
 
-        <div className="w-full h-full flex flex-col justify-center items-center px-4 sm:px-8 md:px-12 lg:px-24 py-6 sm:py-8 md:py-10">
-          <div className="w-full max-w-[411px] text-center">
-            <h2 className="text-2xl sm:text-3xl font-semibold pb-4">
-              OTP Verification
-            </h2>
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-[#3D3D40]">
-              We have sent a One-Time Password (OTP) to your email:{" "}
-              <span className="text-[#5069E5] font-semibold break-all">
-                {email || "example@gmail.com"}
-              </span>
-              . Please enter it below to verify.
+      {/* Dynamic Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-[#5069E5]/5 blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-[#F46B6A]/5 blur-[120px]"></div>
+      </div>
+
+      <div className="bg-white w-full max-w-[1140px] z-10 border border-[#E2E8F0] shadow-2xl rounded-[24px] grid grid-cols-1 lg:grid-cols-2 overflow-hidden animate-in fade-in zoom-in duration-500">
+
+        {/* Banner Section */}
+        <div className="relative hidden lg:block overflow-hidden group">
+          <img
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            src={"/assets/loginbanner.png"}
+            alt="OTP verification banner"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0D2080]/80 via-transparent to-transparent flex flex-col justify-end p-12 text-white">
+            <h2 className="text-4xl font-bold mb-4 tracking-tight">Verify Your Identity</h2>
+            <p className="text-lg text-blue-100/90 leading-relaxed max-w-sm">
+              We've sent a 6-digit code to your email. Enter it below to continue with password reset.
+            </p>
+            <div className="mt-8 flex flex-col gap-3">
+              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-xl border border-white/20">
+                <AiOutlineCheckCircle className="text-green-400" size={20} />
+                <span className="text-sm font-medium">Secure verification</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-xl border border-white/20">
+                <AiOutlineCheckCircle className="text-green-400" size={20} />
+                <span className="text-sm font-medium">Code expires in 10 minutes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Form Section */}
+        <div className="px-6 sm:px-10 lg:px-16 py-12 lg:py-20 flex flex-col justify-center">
+          <div className="mb-10">
+            <div className="w-12 h-12 bg-[#5069E5] rounded-xl flex items-center justify-center text-white mb-6 shadow-lg shadow-[#5069E5]/30">
+              <AiOutlineSafety size={26} />
+            </div>
+            <h1 className="text-3xl font-bold text-[#0F172A] mb-2 tracking-tight">Enter Verification Code</h1>
+            <p className="text-[#64748B]">
+              We sent a code to{" "}
+              <span className="text-[#5069E5] font-semibold">{email || "your email"}</span>
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="w-full mt-6 sm:mt-8 mb-3">
-            <fieldset className="fieldset text-black w-full flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 flex-wrap">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* OTP Input */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
               {otp.map((digit, index) => (
                 <input
                   key={index}
@@ -179,51 +198,58 @@ export default function verifyOTP() {
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-[45px] h-[45px] sm:w-[50px] sm:h-[50px] md:w-[60px] md:h-[60px] text-center text-xl sm:text-2xl border-2 border-[#CED2E5] rounded-lg bg-white text-[#5069E5] font-bold focus:outline-none focus:border-[#5069E5] transition-colors"
+                  className="w-12 h-12 sm:w-14 sm:h-14 text-center text-2xl border-2 border-[#CBD5E1] rounded-xl bg-white text-[#5069E5] font-bold focus:outline-none focus:border-[#5069E5] focus:ring-4 focus:ring-[#5069E5]/10 transition-all"
                   placeholder="0"
                 />
               ))}
-            </fieldset>
+            </div>
 
             <button
               type="submit"
               disabled={isVerifying}
-              className="bg-[#5069E5] text-white w-full py-3 sm:py-4 rounded-[4px] font-semibold text-base sm:text-lg md:text-xl cursor-pointer hover:bg-[#3d52c7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-[#5069E5] hover:bg-[#3E52C1] active:scale-[0.98] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-[#5069E5]/20 transition-all duration-200 disabled:opacity-70 disabled:active:scale-100"
             >
               {isVerifying ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>Verifying...</span>
                 </div>
               ) : (
-                "Verify OTP"
+                "Verify Code"
               )}
             </button>
           </form>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm sm:text-base">
-            <p>Didn't receive your code?</p>
-            <button
-              onClick={handleResendOTP}
-              disabled={timer > 0 || isResending}
-              className={`text-[#5069E5] font-semibold ${
-                timer > 0 || isResending
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:cursor-pointer hover:underline"
-              }`}
-            >
-              {isResending
-                ? "Sending..."
-                : timer > 0
-                ? `Resend OTP (${formatTime(timer)})`
-                : "Resend OTP"}
-            </button>
-          </div>
-          {resendCount > 0 && (
-            <p className="text-xs sm:text-sm text-[#6D6E73] mt-2">
-              Resend attempts: {resendCount}/3
+          <div className="mt-8 text-center">
+            <p className="text-[#64748B] font-medium mb-2">
+              Didn't receive the code?{" "}
+              <button
+                onClick={handleResendOTP}
+                disabled={timer > 0 || isResending}
+                className={`text-[#5069E5] font-bold ${timer > 0 || isResending
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:underline decoration-2 underline-offset-4"
+                  }`}
+              >
+                {isResending
+                  ? "Sending..."
+                  : timer > 0
+                    ? `Resend (${formatTime(timer)})`
+                    : "Resend Code"}
+              </button>
             </p>
-          )}
+            {resendCount > 0 && (
+              <p className="text-xs text-[#94A3B8] mt-2">
+                Attempts: {resendCount}/3
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6 text-center">
+            <Link to="/forgot-password" className="text-[#64748B] font-medium hover:text-[#5069E5] transition-colors">
+              ← Back to forgot password
+            </Link>
+          </div>
         </div>
       </div>
     </div>
