@@ -23,6 +23,8 @@ export default function Profile() {
   const [signaturePreview, setSignaturePreview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [businessData, setBusinessData] = useState(null);
+  const [isLoadingBusiness, setIsLoadingBusiness] = useState(true);
 
   const buildImageUrl = (path) => {
     if (!path) return null;
@@ -111,11 +113,11 @@ export default function Profile() {
             phone: data.phone || "",
             gender: data.gender
               ? data.gender.charAt(0).toUpperCase() +
-                data.gender.slice(1).toLowerCase()
+              data.gender.slice(1).toLowerCase()
               : "",
             maritalStatus: data.marital_status
               ? data.marital_status.charAt(0).toUpperCase() +
-                data.marital_status.slice(1).toLowerCase()
+              data.marital_status.slice(1).toLowerCase()
               : "",
             signature: data.signature || null,
           });
@@ -146,6 +148,35 @@ export default function Profile() {
     };
 
     fetchProfileData();
+  }, []);
+
+  useEffect(() => {
+    const fetchBusinessData = async () => {
+      setIsLoadingBusiness(true);
+      try {
+        const response = await apiFetch("/business", {
+          method: "GET",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load business data");
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data && result.data.length > 0) {
+          // Assuming we want the first business or the user's business
+          setBusinessData(result.data[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching business data:", error);
+        // Don't show error toast as business data might be optional
+      } finally {
+        setIsLoadingBusiness(false);
+      }
+    };
+
+    fetchBusinessData();
   }, []);
 
   const handleInputChange = (field, value) => {
@@ -195,8 +226,7 @@ export default function Profile() {
       if (result.success) {
         setIsEditing((prev) => ({ ...prev, [field]: false }));
         toast.success(
-          `${
-            field.charAt(0).toUpperCase() + field.slice(1)
+          `${field.charAt(0).toUpperCase() + field.slice(1)
           } updated successfully`
         );
       } else {
@@ -628,11 +658,11 @@ export default function Profile() {
                   <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer hover:border-[#5069E5] transition-colors flex items-center justify-between">
                     <span className="text-gray-500">
                       {formData.signature &&
-                      typeof formData.signature === "object"
+                        typeof formData.signature === "object"
                         ? formData.signature.name
                         : formData.signature
-                        ? "Signature uploaded"
-                        : "No file choosen"}
+                          ? "Signature uploaded"
+                          : "No file choosen"}
                     </span>
                     <FaPaperclip className="text-gray-500" size={18} />
                   </div>
@@ -647,7 +677,7 @@ export default function Profile() {
                   </label>
                   <div className="w-full h-48 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
                     {signaturePreview.includes("data:image") ||
-                    signaturePreview.startsWith("http") ? (
+                      signaturePreview.startsWith("http") ? (
                       <img
                         src={signaturePreview}
                         alt="Signature Preview"
@@ -670,6 +700,66 @@ export default function Profile() {
                 </div>
               )}
             </div>
+
+            {/* Business Information Section */}
+            {isLoadingBusiness ? (
+              <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center py-4">
+                  <div className="text-gray-500 text-sm">Loading business data...</div>
+                </div>
+              </div>
+            ) : businessData ? (
+              <div className="mt-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Business Information</h3>
+                <div className="space-y-4 p-6 bg-gradient-to-br from-[#5069E5]/5 to-[#5069E5]/10 rounded-lg border border-[#5069E5]/20">
+                  {/* Company Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Company Name
+                    </label>
+                    <div className="px-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 font-medium">
+                      {businessData.company_name || businessData.name || 'N/A'}
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  {businessData.address && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Company Address
+                      </label>
+                      <div className="px-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800">
+                        {businessData.address}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status Badges */}
+                  <div className="flex gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Status:</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${businessData.is_active
+                          ? 'bg-[#E6F4F1] text-[#1B654A]'
+                          : 'bg-gray-200 text-gray-600'
+                        }`}>
+                        {businessData.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    {businessData.is_verified !== undefined && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">Verification:</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${businessData.is_verified
+                            ? 'bg-[#E6F4F1] text-[#1B654A]'
+                            : 'bg-[#FFF2E6] text-[#F97316]'
+                          }`}>
+                          {businessData.is_verified ? 'Verified' : 'Unverified'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

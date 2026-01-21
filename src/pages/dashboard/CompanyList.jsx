@@ -1,48 +1,156 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiAlertCircle } from 'react-icons/fi';
 import { IoMdAddCircleOutline } from 'react-icons/io';
 import { MdOutlineDynamicFeed } from 'react-icons/md';
 import ReusableTable from '../../components/ReusableTable';
+import { apiFetch } from '../../libs/apiFetch';
+import { toast } from 'react-toastify';
 
 export default function CompanyList() {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+    const [companyData, setCompanyData] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const [companyData, setCompanyData] = useState([
-        { id: 1, name: 'Flores, Juanita', address: 'Port Sigmund', status: 'Verify', active: 'active_alert' },
-        { id: 2, name: 'Nguyen, Shane', address: 'Lake Evan', status: 'Verify', active: 'active_alert' },
-        { id: 3, name: 'Miles, Esther', address: '97607 Josiah Fields', status: 'Verify', active: 'active_alert' },
-        { id: 4, name: 'Henry, Arthur', address: '580 Shaniya Viaduct', status: 'Verify', active: 'inactive_alert' },
-        { id: 5, name: 'Cooper, Kristin', address: 'North Lloydbury', status: 'Unverified', active: 'alert_action' },
-        { id: 6, name: 'Nguyen, Shane', address: '0709 Kub Street', status: 'Unverified', active: 'inactive_action' },
-        { id: 7, name: 'Black, Marvin', address: 'North Lloydbury', status: 'Verify', active: 'active_alert' },
-    ]);
+    useEffect(() => {
+        fetchBusinessData();
+    }, []);
 
-    const handleToggleActive = (id) => {
+    const fetchBusinessData = async () => {
+        setIsLoading(true);
+        try {
+            const response = await apiFetch('/business', {
+                method: 'GET',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch business data');
+            }
+
+            const result = await response.json();
+
+            if (result.data) {
+                // Transform data to match table structure
+                const transformedData = result.data.map(business => ({
+                    id: business.id,
+                    name: business.name, // Company name
+                    email: business.email, // Company email (non-editable by company)
+                    phone: business.phone,
+                    ownerName: business.owner?.name || 'N/A', // Owner name from data.owner.name
+                    status: business.status,
+                    // Keep original data for reference
+                    owner: business.owner,
+                    permission: business.permission,
+                    users: business.users
+                }));
+                return setCompanyData(transformedData);
+            }
+
+        } catch (error) {
+            console.error('Error fetching business data:', error);
+            toast.error('Failed to load company data');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleToggleActive = async (id) => {
+        const company = companyData.find(item => item.id === id);
+        if (!company) {
+            console.error('Company not found:', id);
+            return;
+        }
+
+        const currentStatus = company.status?.toLowerCase();
+        const newActiveState = currentStatus !== 'active';
+        const statusValue = newActiveState ? 'active' : 'inactive';
+
+        console.log('Toggling business:', { id, currentState: company.status, newState: statusValue });
+
+        // Optimistically update UI
         setCompanyData(prev => prev.map(item => {
             if (item.id === id) {
-                let nextActive = item.active;
-                if (item.active === 'active_alert') nextActive = 'inactive_alert';
-                else if (item.active === 'inactive_alert') nextActive = 'active_alert';
-                else if (item.active === 'alert_action') nextActive = 'inactive_action';
-                else if (item.active === 'inactive_action') nextActive = 'alert_action';
-                return { ...item, active: nextActive };
+                return { ...item, status: statusValue };
             }
             return item;
         }));
+
+        try {
+            const response = await apiFetch(`/business/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: statusValue,
+                }),
+            });
+
+            console.log('API Response status:', response.status);
+
+            // Parse response
+            const result = await response.json().catch(() => ({}));
+            console.log('API Response data:', result);
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to update status');
+            }
+
+            toast.success(`Business status updated to ${statusValue}`);
+        } catch (error) {
+            console.error('Error updating status:', error);
+            toast.error(error.message || 'Failed to update status');
+            // Revert on error
+            setCompanyData(prev => prev.map(item => {
+                if (item.id === id) {
+                    return { ...item, status: company.status };
+                }
+                return item;
+            }));
+        }
     };
 
     const columns = [
         { key: 'no', label: 'No', className: 'text-left font-medium', render: (_, index) => index + 1 },
-        { key: 'name', label: 'Name', className: 'text-left' },
-        { key: 'address', label: 'Address', className: 'text-left' },
+        {
+            key: 'name',
+            label: 'Company Name',
+            className: 'text-left',
+            render: (row) => (
+                <span className="font-medium text-gray-900">{row.name}</span>
+            )
+        },
+        {
+            key: 'email',
+            label: 'Email',
+            className: 'text-left',
+            render: (row) => (
+                <span className="text-gray-700 text-sm">{row.email}</span>
+            )
+        },
+        {
+            key: 'phone',
+            label: 'Phone',
+            className: 'text-left',
+            render: (row) => (
+                <span className="text-gray-700 text-sm">{row.phone}</span>
+            )
+        },
+        {
+            key: 'ownerName',
+            label: 'Owner Name',
+            className: 'text-left',
+            render: (row) => (
+                <span className="text-gray-700 text-sm">{row.ownerName}</span>
+            )
+        },
         {
             key: 'status',
             label: 'Status',
             className: 'text-left',
             render: (row) => (
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${row.status === 'Verify'
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${row.status === 'Verified'
                     ? 'bg-[#E6F4F1] text-[#1B654A]'
                     : 'bg-[#FFF2E6] text-[#F97316]'
                     }`}>
@@ -51,57 +159,41 @@ export default function CompanyList() {
             ),
         },
         {
-            key: 'active',
-            label: 'Active',
-            className: 'text-left',
-            render: (row) => {
-                const renderIcon = (type) => {
-                    const isActive = type.startsWith('active') || type === 'alert_action';
-                    const hasAlert = type.endsWith('alert') || type === 'alert_action' || type === 'inactive_action'; // Adjust mapping logic if needed
-
-                    // Specific mapping based on your previous icon logic:
-                    // active_alert -> isActive = true, icon = alert
-                    // inactive_alert -> isActive = false, icon = alert
-                    // alert_action -> isActive = true, icon = action
-                    // inactive_action -> isActive = false, icon = action
-
-                    const is_active_state = type.startsWith('active') || type === 'alert_action';
-
-                    return (
-                        <div className="flex items-center justify-center">
-                            {/* Toggle Switch */}
-                            <div
-                                onClick={() => handleToggleActive(row.id)}
-                                className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${is_active_state ? 'bg-[#1B654A]' : 'bg-gray-300'
-                                    }`}
-                            >
-                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${is_active_state ? 'left-6' : 'left-1'
-                                    }`}></div>
-                            </div>
-                        </div>
-                    );
-                };
-                return renderIcon(row.active);
-            },
-        },
-        {
             key: 'action',
             label: 'Action',
             className: 'text-left',
-            render: (row) => (
-                <button
-                    onClick={() => navigate(`/dashboard/company/view/${row.id}`)}
-                    className="px-4 py-1.5 bg-[#5069E5] text-white rounded-lg text-xs font-semibold hover:bg-[#3d52c7] transition-colors"
-                >
-                    View
-                </button>
-            ),
+            render: (row) => {
+                const is_active_state = row.status?.toLowerCase() === 'active';
+
+                return (
+                    <div className="flex items-center gap-3">
+                        {/* Toggle Switch */}
+                        <div
+                            onClick={() => handleToggleActive(row.id)}
+                            className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${is_active_state ? 'bg-[#1B654A]' : 'bg-gray-300'}`}
+                            title={is_active_state ? 'Active' : 'Inactive'}
+                        >
+                            <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${is_active_state ? 'left-6' : 'left-1'}`}></div>
+                        </div>
+
+                        {/* View/Update Button */}
+                        <button
+                            onClick={() => navigate(`/dashboard/company/view/${row.id}`)}
+                            className="px-4 py-1.5 bg-[#5069E5] text-white rounded-lg text-xs font-semibold hover:bg-[#3d52c7] transition-colors"
+                        >
+                            View/Update
+                        </button>
+                    </div>
+                );
+            },
         },
     ];
 
     const filteredData = companyData.filter(company =>
-        company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        company.address.toLowerCase().includes(searchQuery.toLowerCase())
+        company.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -115,7 +207,7 @@ export default function CompanyList() {
                     <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#5069E5] transition-colors" size={18} />
                     <input
                         type="text"
-                        placeholder="Search by name or address..."
+                        placeholder="Search by name, email, phone, or owner..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-12 pr-4 py-2.5 bg-white rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#5069E5]/20 focus:border-[#5069E5] text-sm shadow-sm transition-all"
@@ -124,15 +216,31 @@ export default function CompanyList() {
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <ReusableTable
-                    columns={columns}
-                    data={filteredData}
-                    itemsPerPage={7}
-                    showPagination={true}
-                    headerBgColor="bg-[#F8FAFC]"
-                    stripedRows={false}
-                    tableClassName="company-list-table"
-                />
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <div className="text-center">
+                            <div className="w-12 h-12 border-4 border-[#5069E5]/20 border-t-[#5069E5] rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-gray-500 text-sm">Loading company data...</p>
+                        </div>
+                    </div>
+                ) : companyData.length === 0 ? (
+                    <div className="flex items-center justify-center py-20">
+                        <div className="text-center">
+                            <FiAlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-500 text-sm">No companies found</p>
+                        </div>
+                    </div>
+                ) : (
+                    <ReusableTable
+                        columns={columns}
+                        data={filteredData}
+                        itemsPerPage={7}
+                        showPagination={true}
+                        headerBgColor="bg-[#F8FAFC]"
+                        stripedRows={false}
+                        tableClassName="company-list-table"
+                    />
+                )}
             </div>
 
             <style jsx="true">{`
