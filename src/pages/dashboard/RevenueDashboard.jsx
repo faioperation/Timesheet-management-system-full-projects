@@ -26,22 +26,16 @@ const salesAnalyticsData = [
     { name: "Others", value: 350 },
 ];
 
-const COLORS = ["#E5D416", "#D9DFFF", "#58CC02", "#5069E5", "#555659", "#F46B6A"];
+const COLORS = ["#F87171", "#9CA3AF", "#A5B4FC", "#A3E635", "#FDE047", "#F46B6A"];
 
-const revenueVsExpenseData = [
-    { month: "Jan", revenue: 40, expense: 20 },
-    { month: "Feb", revenue: 20, expense: 15 },
-    { month: "Mar", revenue: 52, expense: 30 },
-    { month: "Apr", revenue: 38, expense: 25 },
-    { month: "May", revenue: 42, expense: 28 },
-    { month: "Jun", revenue: 75, expense: 45 },
-    { month: "July", revenue: 98, expense: 55 },
-    { month: "Aug", revenue: 52, expense: 35 },
-    { month: "Sep", revenue: 68, expense: 40 },
-    { month: "Oct", revenue: 35, expense: 25 },
-    { month: "Nov", revenue: 92, expense: 50 },
-    { month: "Dec", revenue: 60, expense: 35 },
-];
+const monthNameToNumber = (monthName) => {
+    const months = {
+        "January": "01", "February": "02", "March": "03", "April": "04",
+        "May": "05", "June": "06", "July": "07", "August": "08",
+        "September": "09", "October": "10", "November": "11", "December": "12"
+    };
+    return months[monthName] || null;
+};
 
 const revenueReportData = Array.from({ length: 9 }, (_, i) => ({
     no: i + 1,
@@ -236,7 +230,12 @@ export default function RevenueDashboard() {
     const [selectedMonth, setSelectedMonth] = useState("All month");
     const [selectedConsultantType, setSelectedConsultantType] = useState("All");
     const [selectedUser, setSelectedUser] = useState("All user");
-    const [users, setUsers] = useState(["All user"]);
+    const [users, setUsers] = useState([{ id: 'All', name: 'All user' }]);
+    
+    const [summaryData, setSummaryData] = useState(null);
+    const [trendData, setTrendData] = useState([]);
+    const [tableData, setTableData] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const [revenueFilter, setRevenueFilter] = useState("Monthly");
     const [salesFilter, setSalesFilter] = useState("Monthly");
@@ -258,8 +257,7 @@ export default function RevenueDashboard() {
                 if (response.ok) {
                     const result = await response.json();
                     if (result.success && Array.isArray(result.data)) {
-                        const userNames = result.data.map((u) => u.name);
-                        setUsers(["All user", ...userNames]);
+                        setUsers([{ id: 'All', name: 'All user' }, ...result.data]);
                     }
                 }
             } catch (error) {
@@ -268,6 +266,82 @@ export default function RevenueDashboard() {
         };
         fetchUsers();
     }, []);
+
+    const fetchDashboardData = async () => {
+        setIsLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (selectedYear) params.append('year', selectedYear);
+            
+            const monthNum = monthNameToNumber(selectedMonth);
+            if (monthNum) params.append('month', monthNum);
+            
+            if (selectedConsultantType !== 'All') {
+                params.append('consultant_type', selectedConsultantType);
+            }
+            
+            const userObj = users.find(u => u.name === selectedUser);
+            if (userObj && userObj.id !== 'All') {
+                params.append('manager_id', userObj.id);
+            }
+
+            // Group by mapping
+            const groupByMap = {
+                "Monthly": "month",
+                "Weekly": "week",
+                "Yearly": "year"
+            };
+            params.append('group_by', groupByMap[revenueFilter] || 'month');
+
+            // 1. Fetch Summary
+            const summaryRes = await apiFetch(`/chart/summary?${params.toString()}`);
+            if (summaryRes.ok) {
+                const result = await summaryRes.json();
+                if (result.success) {
+                    setSummaryData(result.data);
+                }
+            }
+
+            // 2. Fetch Trend
+            const trendRes = await apiFetch(`/chart/trend?${params.toString()}`);
+            if (trendRes.ok) {
+                const result = await trendRes.json();
+                if (result.success) {
+                    setTrendData(result.data);
+                }
+            }
+
+            // 3. Fetch Report for Table
+            const reportRes = await apiFetch(`/report/generate?${params.toString()}`);
+            if (reportRes.ok) {
+                const result = await reportRes.json();
+                if (result.success) {
+                    const mappedTableData = result.data.map((item, index) => ({
+                        no: index + 1,
+                        name: `${item.user?.name || "N/A"} / ${item.client?.name || "N/A"}`,
+                        totalHours: item.total_hours || "0.00",
+                        revenue: item.gross_margin || "0.00",
+                        totalExpense: item.expanse || "0.00",
+                        gMargin: item.gross_margin || "0.00",
+                        totalCommission: item.internal_expanse || "0.00",
+                        nMargin: item.net_margin || "0.00",
+                        acmComm: (parseFloat(item.total_hours || 0) * (item.user_detail?.account_manager_commission || 0)).toFixed(2),
+                        recCo: (parseFloat(item.total_hours || 0) * (item.user_detail?.recruiter_commission || 0)).toFixed(2),
+                        ...item
+                    }));
+                    setTableData(mappedTableData);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [selectedYear, selectedMonth, selectedConsultantType, selectedUser, revenueFilter]);
 
     // Dynamic date for header
     const currentDate = new Date();
@@ -347,7 +421,7 @@ export default function RevenueDashboard() {
                     <FilterDropdown
                         label="User"
                         value={selectedUser}
-                        options={users}
+                        options={users.map(u => u.name)}
                         onSelect={setSelectedUser}
                     />
                 </div>
@@ -369,7 +443,11 @@ export default function RevenueDashboard() {
                     <div className="flex-1 h-[340px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart
-                                data={revenueVsExpenseData}
+                                data={trendData.map(item => ({
+                                    month: item.period,
+                                    revenue: item.gross_margin,
+                                    expense: item.expense
+                                }))}
                                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                             >
                                 <defs>
@@ -395,9 +473,7 @@ export default function RevenueDashboard() {
                                     tickLine={false}
                                     axisLine={false}
                                     tick={{ fill: "#64748B", fontSize: 12, fontWeight: 500 }}
-                                    tickFormatter={(value) => value === 0 ? "0" : `$ ${value}k`}
-                                    domain={[0, 100]}
-                                    ticks={[0, 20, 40, 60, 80, 100]}
+                                    tickFormatter={(value) => `$${value}`}
                                 />
                                 <Tooltip
                                     cursor={{ stroke: '#5069E5', strokeWidth: 1 }}
@@ -447,7 +523,9 @@ export default function RevenueDashboard() {
                             <span className="font-semibold text-sm">Total expense</span>
                         </div>
                         <div className="flex items-center gap-4">
-                            <p className="text-[42px] font-black text-[#0F172A] leading-none">$ 532,36</p>
+                            <p className="text-[42px] font-black text-[#0F172A] leading-none">
+                                $ {summaryData?.total_expense?.toLocaleString() || "0.00"}
+                            </p>
                             <div className="flex items-center gap-1 text-[#4ADE80] text-lg font-bold">
                                 <IoMdArrowDropup className="text-2xl" />
                                 <span>12%</span>
@@ -481,11 +559,11 @@ export default function RevenueDashboard() {
                                 <PieChart>
                                     <Pie
                                         data={[
-                                            { name: "Gross revenue", value: 350, color: "#F87171" },
-                                            { name: "Revenue", value: 150, color: "#9CA3AF" },
-                                            { name: "Gross margin", value: 200, color: "#A5B4FC" },
-                                            { name: "Net margin", value: 150, color: "#A3E635" },
-                                            { name: "Commission", value: 400, color: "#FDE047" },
+                                            { name: "Gross revenue", value: summaryData?.total_gross_margin || 0, color: "#F87171" },
+                                            { name: "Revenue", value: summaryData?.total_hours || 0, color: "#9CA3AF" },
+                                            { name: "Gross margin", value: summaryData?.total_gross_margin || 0, color: "#A5B4FC" },
+                                            { name: "Net margin", value: summaryData?.total_net_margin || 0, color: "#A3E635" },
+                                            { name: "Commission", value: summaryData?.total_internal_expense || 0, color: "#FDE047" },
                                         ]}
                                         cx="50%"
                                         cy="50%"
@@ -509,7 +587,9 @@ export default function RevenueDashboard() {
                             </ResponsiveContainer>
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">TOTAL</span>
-                                <span className="text-2xl font-black text-[#0F172A]">1.3k</span>
+                                <span className="text-2xl font-black text-[#0F172A]">
+                                    {summaryData?.timesheet_count || 0}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -541,7 +621,7 @@ export default function RevenueDashboard() {
                 <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
                     <ReusableTable
                         columns={reportColumns}
-                        data={revenueReportData}
+                        data={tableData}
                         itemsPerPage={10}
                         showPagination={true}
                         headerBgColor="bg-[#F8FAFF]"
