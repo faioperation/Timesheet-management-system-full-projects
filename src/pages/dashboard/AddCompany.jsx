@@ -30,22 +30,26 @@ export default function AddCompany() {
     const onSubmit = async (formData) => {
         setIsSubmitting(true);
         try {
+            // Create FormData object (API expects form-data, not JSON)
+            const formDataPayload = new FormData();
+            formDataPayload.append('name', formData.adminName);
+            formDataPayload.append('email', formData.email);
+            formDataPayload.append('password', formData.password);
+            formDataPayload.append('phone', formData.phone);
+            formDataPayload.append('address', formData.address || '');
+            formDataPayload.append('gender', formData.gender.toLowerCase());  // Convert to lowercase
+            formDataPayload.append('marital_status', formData.maritalStatus.toLowerCase());  // Convert to lowercase
+            formDataPayload.append('company_name', formData.companyName);
+            formDataPayload.append('role_id', '2');  // Business Admin role ID
+
+            console.log('Add Company FormData:');
+            for (let [key, value] of formDataPayload.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+
             const response = await apiFetch("/business", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    name: formData.adminName,
-                    email: formData.email,
-                    phone: formData.phone,
-                    gender: formData.gender,
-                    marritat_status: formData.maritalStatus,
-                    company_name: formData.companyName,
-                    address: formData.address,
-                    password: formData.password,
-                    role: "Business Admin"
-                }),
+                body: formDataPayload,  // Send FormData (no Content-Type header needed)
             });
 
             const contentType = response.headers.get("content-type");
@@ -57,6 +61,8 @@ export default function AddCompany() {
                 throw new Error(text || "Failed to parse server response");
             }
 
+            console.log('Add Company Response:', result);
+
             if (response.ok) {
                 toast.success("Company Added Successfully!", {
                     position: "top-right",
@@ -64,12 +70,14 @@ export default function AddCompany() {
                 });
                 setTimeout(() => navigate("/dashboard/company"), 1500);
             } else {
+                console.error('API Error:', result);
                 toast.error(result.message || "Failed to add company", {
                     position: "top-right",
                     theme: "colored"
                 });
             }
         } catch (error) {
+            console.error('Catch Error:', error);
             toast.error(`Error: ${error.message || "An unexpected error occurred"}`, {
                 position: "top-right",
                 theme: "colored"

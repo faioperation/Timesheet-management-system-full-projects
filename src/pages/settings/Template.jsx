@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import ReusableTable from '../../components/ReusableTable';
 import CreateTemplateModal from '../../components/CreateTemplateModal';
+import UpdateTemplateModal from '../../components/UpdateTemplateModal';
 import ViewTemplateModal from '../../components/ViewTemplateModal';
 import { apiFetch } from '../../libs/apiFetch';
 import { toast } from 'react-toastify';
@@ -10,8 +11,10 @@ export default function Template() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [templates, setTemplates] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
 
   const fetchTemplates = async () => {
@@ -29,8 +32,10 @@ export default function Template() {
           type: item.template_type,
           subject: item.subject,
           body: item.body,
-          used_by: item.used_by || []
+          used_by: item.used_by || item.usedBy || []
         }));
+        console.log('Templates raw data:', result.data);
+        console.log('Templates mapped data:', mappedData);
         setTemplates(mappedData);
       } else {
         throw new Error(result.message || 'Failed to fetch templates');
@@ -43,7 +48,20 @@ export default function Template() {
     }
   };
 
+  const fetchRoles = async () => {
+    try {
+      const response = await apiFetch('/roles', { method: 'GET' });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setRoles(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+    }
+  };
+
   useEffect(() => {
+    fetchRoles();
     fetchTemplates();
   }, []);
 
@@ -66,6 +84,19 @@ export default function Template() {
   const handleCloseViewModal = () => {
     setIsViewModalOpen(false);
     setSelectedTemplate(null);
+  };
+
+  const handleUpdateTemplate = (template) => {
+    setSelectedTemplate(template);
+    setIsUpdateModalOpen(true);
+  };
+
+  const handleCloseUpdateModal = (refresh = false) => {
+    setIsUpdateModalOpen(false);
+    setSelectedTemplate(null);
+    if (refresh === true) {
+      fetchTemplates();
+    }
   };
 
   const handlePageChange = (page) => {
@@ -98,31 +129,61 @@ export default function Template() {
       key: 'permission',
       label: 'Permission',
       className: 'text-left',
-      render: () => (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            Admin
-          </span>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            User
-          </span>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Supervisor
-          </span>
-        </div>
-      ),
+      render: (row) => {
+        const usedBy = row.used_by || [];
+
+        // Helper to get consistent colors for tags
+        const getTagStyles = (roleId) => {
+          const styles = [
+            'bg-yellow-100 text-yellow-800',
+            'bg-blue-100 text-blue-800',
+            'bg-green-100 text-green-800',
+            'bg-purple-100 text-purple-800',
+            'bg-pink-100 text-pink-800',
+            'bg-orange-100 text-orange-800',
+          ];
+          return styles[roleId % styles.length] || styles[0];
+        };
+
+        return (
+          <div className="flex items-center gap-2 flex-wrap">
+            {usedBy.map((item, idx) => {
+              // Row's used_by can be IDs or objects with role_id
+              const roleId = typeof item === 'object' ? item.role_id : item;
+              const role = roles.find(r => r.id === roleId);
+
+              if (!role) return null;
+
+              return (
+                <span key={idx} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTagStyles(roleId)}`}>
+                  {role.name}
+                </span>
+              );
+            })}
+            {usedBy.length === 0 && <span className="text-gray-400 text-xs italic">No roles assigned</span>}
+          </div>
+        );
+      },
     },
     {
       key: 'action',
       label: 'Action',
       className: 'text-left',
       render: (row) => (
-        <button
-          onClick={() => handleViewTemplate(row)}
-          className="text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
-        >
-          View
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleViewTemplate(row)}
+            className="text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
+          >
+            View
+          </button>
+          <button
+            onClick={() => handleUpdateTemplate(row)}
+            className="text-green-600 hover:text-green-800 font-medium transition-colors"
+          >
+            Update
+          </button>
+        </div>
       ),
     },
   ];
@@ -166,7 +227,17 @@ export default function Template() {
         isOpen={isViewModalOpen}
         onClose={handleCloseViewModal}
         template={selectedTemplate}
+        roles={roles}
       />
+
+      {/* Update Template Modal */}
+      {isUpdateModalOpen && (
+        <UpdateTemplateModal
+          isOpen={isUpdateModalOpen}
+          onClose={handleCloseUpdateModal}
+          template={selectedTemplate}
+        />
+      )}
     </div>
   );
 }

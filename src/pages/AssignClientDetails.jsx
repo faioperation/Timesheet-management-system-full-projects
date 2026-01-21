@@ -159,10 +159,27 @@ export default function AssignClientDetails() {
         return;
       }
 
+      // First, fetch user data to get user_details.id
+      const userResponse = await apiFetch(`/user/${userId}`, {
+        method: 'GET',
+      });
+
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+
+      const userData = await userResponse.json();
+      const userDetailsId = userData.data?.user_details?.id;
+
+      if (!userDetailsId) {
+        throw new Error('User details not found. Please contact support.');
+      }
+
+      console.log('User Details ID:', userDetailsId);
+
       // Build payload based on provided API contract
       const isW2 = formData.employeeType === 'W2';
       const payload = {
-        user_id: userId,
         party_id:
           formData.invoiceTo === 'Vendor'
             ? formData.vendorId || null
@@ -185,7 +202,9 @@ export default function AssignClientDetails() {
         invoice_to: formData.invoiceTo || 'Client',
       };
 
-      const response = await apiFetch('/user-details', {
+      console.log('Assign Client Payload:', payload);
+
+      const response = await apiFetch(`/user-details/${userDetailsId}`, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -435,27 +454,38 @@ export default function AssignClientDetails() {
                     <span className="ml-2 text-sm text-gray-700">Recursive</span>
                   </label>
                   <div className="relative flex-1">
-                    <select
-                      value={formData.recursiveMonth}
-                      onChange={(e) => handleInputChange('recursiveMonth', e.target.value)}
-                      disabled={!formData.recursive}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer disabled:bg-gray-100 disabled:text-gray-400"
-                    >
-                      <option value="">Select month</option>
-                      <option value="1">January</option>
-                      <option value="2">February</option>
-                      <option value="3">March</option>
-                      <option value="4">April</option>
-                      <option value="5">May</option>
-                      <option value="6">June</option>
-                      <option value="7">July</option>
-                      <option value="8">August</option>
-                      <option value="9">September</option>
-                      <option value="10">October</option>
-                      <option value="11">November</option>
-                      <option value="12">December</option>
-                    </select>
-                    <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                    {formData.recursive ? (
+                      <input
+                        type="text"
+                        value="All months"
+                        readOnly
+                        disabled
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-800 cursor-not-allowed"
+                      />
+                    ) : (
+                      <>
+                        <select
+                          value={formData.recursiveMonth}
+                          onChange={(e) => handleInputChange('recursiveMonth', e.target.value)}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                        >
+                          <option value="">Select month</option>
+                          <option value="1">January</option>
+                          <option value="2">February</option>
+                          <option value="3">March</option>
+                          <option value="4">April</option>
+                          <option value="5">May</option>
+                          <option value="6">June</option>
+                          <option value="7">July</option>
+                          <option value="8">August</option>
+                          <option value="9">September</option>
+                          <option value="10">October</option>
+                          <option value="11">November</option>
+                          <option value="12">December</option>
+                        </select>
+                        <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -465,124 +495,124 @@ export default function AssignClientDetails() {
 
           <div className='flex items-center gap-8'>
             {/* Middle Section - Radio Buttons */}
-          <div className="rounded-lg ">
-            <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Type</h3>
-            <div className="flex flex-wrap gap-6">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="employeeType"
-                  value="W2"
-                  checked={formData.employeeType === 'W2'}
-                  onChange={(e) => handleInputChange('employeeType', e.target.value)}
-                  className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2"
-                />
-                <span className="ml-2 text-sm font-medium text-gray-700">W2</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="employeeType"
-                  value="1099 C2C"
-                  checked={formData.employeeType === '1099 C2C'}
-                  onChange={(e) => handleInputChange('employeeType', e.target.value)}
-                  className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2"
-                />
-                <span className="ml-2 text-sm font-medium text-gray-700">1099 C2C</span>
-              </label>
+            <div className="rounded-lg ">
+              <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Type</h3>
+              <div className="flex flex-wrap gap-6">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="employeeType"
+                    value="W2"
+                    checked={formData.employeeType === 'W2'}
+                    onChange={(e) => handleInputChange('employeeType', e.target.value)}
+                    className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">W2</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="employeeType"
+                    value="1099 C2C"
+                    checked={formData.employeeType === '1099 C2C'}
+                    onChange={(e) => handleInputChange('employeeType', e.target.value)}
+                    className="w-4 h-4 text-[#5069E5] focus:ring-[#5069E5] focus:ring-2"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">1099 C2C</span>
+                </label>
+              </div>
             </div>
-          </div>
 
-          {/* Middle Section - Row 2 */}
-          <div className="flex-1 rounded-lg ">
-            <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Details</h3>
-            <div className="flex items-center gap-4">
-              {formData.employeeType === 'W2' ? (
-                <>
-                  {/* W2 */}
-                  <div className='w-full'>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      W2<span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.w2}
-                      onChange={(e) => handleInputChange('w2', e.target.value)}
-                      placeholder="Enter W2"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-                    />
-                  </div>
-                  {/* Pay tax */}
-                  <div className='w-full'>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pay tax<span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.payTax}
-                      onChange={(e) => handleInputChange('payTax', e.target.value)}
-                      placeholder="Enter amount"
-                      min="0"
-                      step="0.01"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* Employee */}
-                  <div className='w-full'>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Employee<span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <select
-                          value={formData.employeeId}
-                          onChange={(e) => handleInputChange('employeeId', e.target.value)}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                        >
-                          <option value="">Select employee</option>
-                          {employees.map((employee) => (
-                            <option key={employee.id} value={employee.id}>
-                              {employee.name}
-                            </option>
-                          ))}
-                        </select>
-                        <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setModalType('Employee');
-                          setPendingSelectType('Employee');
-                          setIsModalOpen(true);
-                        }}
-                        className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
-                      >
-                        <FaPlus size={14} />
-                      </button>
+            {/* Middle Section - Row 2 */}
+            <div className="flex-1 rounded-lg ">
+              <h3 className="text-base font-semibold text-gray-800 mb-4">Employee Details</h3>
+              <div className="flex items-center gap-4">
+                {formData.employeeType === 'W2' ? (
+                  <>
+                    {/* W2 */}
+                    <div className='w-full'>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        W2<span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.w2}
+                        onChange={(e) => handleInputChange('w2', e.target.value)}
+                        placeholder="Enter W2"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                      />
                     </div>
-                  </div>
-                  {/* Employee rate */}
-                  <div className='w-full'>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Employee rate<span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.employeeRate}
-                      onChange={(e) => handleInputChange('employeeRate', e.target.value)}
-                      placeholder="Enter rate"
-                      min="0"
-                      step="0.01"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-                    />
-                  </div>
-                </>
-              )}
+                    {/* Pay tax */}
+                    <div className='w-full'>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Pay tax<span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.payTax}
+                        onChange={(e) => handleInputChange('payTax', e.target.value)}
+                        placeholder="Enter amount"
+                        min="0"
+                        step="0.01"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Employee */}
+                    <div className='w-full'>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Employee<span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <select
+                            value={formData.employeeId}
+                            onChange={(e) => handleInputChange('employeeId', e.target.value)}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                          >
+                            <option value="">Select employee</option>
+                            {employees.map((employee) => (
+                              <option key={employee.id} value={employee.id}>
+                                {employee.name}
+                              </option>
+                            ))}
+                          </select>
+                          <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setModalType('Employee');
+                            setPendingSelectType('Employee');
+                            setIsModalOpen(true);
+                          }}
+                          className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+                        >
+                          <FaPlus size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    {/* Employee rate */}
+                    <div className='w-full'>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Employee rate<span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.employeeRate}
+                        onChange={(e) => handleInputChange('employeeRate', e.target.value)}
+                        placeholder="Enter rate"
+                        min="0"
+                        step="0.01"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
           </div>
 
           {/* Bottom Section - Commission Details */}
@@ -603,7 +633,7 @@ export default function AssignClientDetails() {
                   >
                     <option value="">Select</option>
                     {internalUsers
-                      .filter(user => user.role === 'account_manager')
+                      .filter(user => user.role === 'ac_manager')  // Fixed: was 'account_manager'
                       .map(user => (
                         <option key={user.id} value={user.id}>
                           {user.name}

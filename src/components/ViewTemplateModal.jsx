@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import { FaTimes, FaCopy, FaCheck } from 'react-icons/fa';
 
-const ViewTemplateModal = ({ isOpen, onClose, template }) => {
+const ViewTemplateModal = ({ isOpen, onClose, template, roles = [] }) => {
   const [copiedField, setCopiedField] = useState(null);
 
   if (!isOpen || !template) return null;
+
+  const usedBy = template.used_by || [];
+  const assignedRoles = usedBy.map(item => {
+    const roleId = typeof item === 'object' ? item.role_id : item;
+    return roles.find(r => r.id === roleId);
+  }).filter(Boolean);
 
   const handleCopy = (text, field) => {
     navigator.clipboard.writeText(text);
@@ -74,6 +80,25 @@ const ViewTemplateModal = ({ isOpen, onClose, template }) => {
               </div>
               <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 min-h-[150px] text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
                 {template.body || 'No content available.'}
+              </div>
+            </div>
+
+            {/* Permissions / Roles */}
+            <div>
+              <p className="text-xs uppercase font-bold text-indigo-500 tracking-wider mb-2">Permissions</p>
+              <div className="flex flex-wrap gap-2">
+                {assignedRoles.length > 0 ? (
+                  assignedRoles.map((role, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                    >
+                      {role.name}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-400 text-sm italic">No roles assigned</span>
+                )}
               </div>
             </div>
           </div>

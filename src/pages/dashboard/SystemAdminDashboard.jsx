@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiUsers, FiBriefcase, FiCompass } from 'react-icons/fi';
-import { PiBuildingsLight } from 'react-icons/pi'; // If available, otherwise FiBriefcase
+import { PiBuildingsLight } from 'react-icons/pi';
+import { apiFetch } from '../../libs/apiFetch';
 
-const StatCard = ({ title, value, percentage, icon: Icon, iconColor, iconBg, badgeColor, badgeText }) => {
+const StatCard = ({ title, value, percentage, icon: Icon, iconColor, iconBg, badgeColor, badgeText, isLoading }) => {
     return (
         <div className="bg-white rounded-xl shadow-sm p-6 flex flex-col gap-4 border border-gray-100">
             <div className="flex items-center gap-3">
@@ -13,11 +14,17 @@ const StatCard = ({ title, value, percentage, icon: Icon, iconColor, iconBg, bad
             <div>
                 <p className="text-gray-500 text-sm font-medium">{title}</p>
                 <div className="flex items-center gap-2 mt-1">
-                    <h3 className="text-2xl font-bold text-gray-800">{value}</h3>
-                    {badgeColor && (
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}`}>
-                            {badgeText}
-                        </span>
+                    {isLoading ? (
+                        <div className="w-12 h-8 bg-gray-200 animate-pulse rounded"></div>
+                    ) : (
+                        <>
+                            <h3 className="text-2xl font-bold text-gray-800">{value}</h3>
+                            {badgeColor && (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}`}>
+                                    {badgeText}
+                                </span>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -26,10 +33,64 @@ const StatCard = ({ title, value, percentage, icon: Icon, iconColor, iconBg, bad
 };
 
 export default function SystemAdminDashboard() {
+    const [isLoading, setIsLoading] = useState(true);
+    const [businessStats, setBusinessStats] = useState({
+        total: 0,
+        active: 0,
+        totalUsers: 0,
+    });
+
+    useEffect(() => {
+        fetchBusinessStatistics();
+    }, []);
+
+    const fetchBusinessStatistics = async () => {
+        setIsLoading(true);
+        try {
+            const response = await apiFetch('/business', {
+                method: 'GET',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch business data');
+            }
+
+            const result = await response.json();
+            console.log('Business data:', result);
+
+            if (result.data && Array.isArray(result.data)) {
+                const businesses = result.data;
+                const totalBusinesses = businesses.length;
+
+                // Count active businesses (status === 1 or status === 'active')
+                const activeBusinesses = businesses.filter(
+                    business => business.status === 1 || business.status === 'active'
+                ).length;
+
+                // Count total users across all businesses
+                const totalUsers = businesses.reduce((sum, business) => {
+                    return sum + (business.users?.length || 0);
+                }, 0);
+
+                console.log('Statistics:', { totalBusinesses, activeBusinesses, totalUsers });
+
+                setBusinessStats({
+                    total: totalBusinesses,
+                    active: activeBusinesses,
+                    totalUsers: totalUsers,
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching business statistics:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const stats = [
         {
             title: 'Total Company',
-            value: '05',
+            value: businessStats.total.toString().padStart(2, '0'),
             badgeText: '0%',
             badgeColor: 'bg-gray-100 text-gray-500',
             icon: FiCompass,
@@ -38,8 +99,10 @@ export default function SystemAdminDashboard() {
         },
         {
             title: 'Active Business',
-            value: '10',
-            badgeText: '+15%',
+            value: businessStats.active.toString().padStart(2, '0'),
+            badgeText: businessStats.total > 0
+                ? `${Math.round((businessStats.active / businessStats.total) * 100)}%`
+                : '0%',
             badgeColor: 'bg-[#DCFCE7] text-[#1B654A]',
             icon: FiBriefcase,
             iconColor: 'text-[#1B654A]',
@@ -47,7 +110,7 @@ export default function SystemAdminDashboard() {
         },
         {
             title: 'Total User',
-            value: '12',
+            value: businessStats.totalUsers.toString().padStart(2, '0'),
             badgeText: '+10%',
             badgeColor: 'bg-[#DCFCE7] text-[#1B654A]',
             icon: FiUsers,
@@ -60,7 +123,7 @@ export default function SystemAdminDashboard() {
         <div className="w-full pb-10">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {stats.map((stat, index) => (
-                    <StatCard key={index} {...stat} />
+                    <StatCard key={index} {...stat} isLoading={isLoading} />
                 ))}
             </div>
         </div>

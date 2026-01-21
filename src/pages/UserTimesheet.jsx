@@ -56,6 +56,7 @@ export default function UserTimesheet() {
       uploadDate,
       status,
       userId,
+      subject: item.subject || item.email_subject || '-',
     };
   };
 
@@ -89,8 +90,8 @@ export default function UserTimesheet() {
         const list = Array.isArray(result.data?.data)
           ? result.data.data
           : Array.isArray(result.data)
-          ? result.data
-          : [];
+            ? result.data
+            : [];
 
         const mapped = list.map(normalizeTimesheet);
         setTimesheets(mapped);
@@ -175,6 +176,11 @@ export default function UserTimesheet() {
       className: 'text-left',
     },
     {
+      key: 'subject',
+      label: 'Subject',
+      className: 'text-left',
+    },
+    {
       key: 'status',
       label: 'Status',
       className: 'text-left',
@@ -230,9 +236,8 @@ export default function UserTimesheet() {
                   <button
                     key={option}
                     onClick={() => handlePeriodChange(option)}
-                    className={`w-full text-left px-4 py-2 hover:bg-[#E0E7FF] transition-colors ${
-                      filterPeriod === option ? 'bg-[#E0E7FF] text-[#5069E5]' : 'text-gray-800'
-                    }`}
+                    className={`w-full text-left px-4 py-2 hover:bg-[#E0E7FF] transition-colors ${filterPeriod === option ? 'bg-[#E0E7FF] text-[#5069E5]' : 'text-gray-800'
+                      }`}
                   >
                     {option}
                   </button>

@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 const CreateTemplateModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     parameterInsertOn: 'Subject', // 'Subject' or 'template'
-    templateType: 'TimeSheet Submitted',
+    templateType: 'Timesheet Submit',
     templateName: '',
     used_by: [], // Array of role IDs
     subject: '',
@@ -52,11 +52,11 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
 
   const handleCheckboxChange = (roleId) => {
     setFormData(prev => {
-      const isSelected = prev.used_by.includes(roleId);
+      const isSelected = prev.used_by.includes(Number(roleId));
       if (isSelected) {
-        return { ...prev, used_by: prev.used_by.filter(id => id !== roleId) };
+        return { ...prev, used_by: prev.used_by.filter(id => Number(id) !== Number(roleId)) };
       } else {
-        return { ...prev, used_by: [...prev.used_by, roleId] };
+        return { ...prev, used_by: [...prev.used_by, Number(roleId)] };
       }
     });
   };
@@ -95,6 +95,8 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
         used_by: formData.used_by
       };
 
+      console.log('Final Payload:', payload);
+
       const response = await apiFetch('/email-template', {
         method: 'POST',
         body: JSON.stringify(payload)
@@ -107,14 +109,17 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
         // Reset form
         setFormData({
           parameterInsertOn: 'Subject',
-          templateType: 'timesheet_submit',
+          templateType: 'Timesheet Submit',
           templateName: '',
           used_by: [],
           subject: '',
           templateBody: '',
         });
       } else {
-        throw new Error(result.message || 'Failed to create template');
+        const errorDetail = result.errors
+          ? Object.values(result.errors).flat().join(', ')
+          : result.message || 'Failed to create template';
+        throw new Error(errorDetail);
       }
     } catch (error) {
       console.error('Error saving template:', error);
@@ -214,9 +219,9 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                     onChange={(e) => handleInputChange('templateType', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
                   >
-                    <option value="TimeSheet Approved">TimeSheet Approved</option>
-                    <option value="TimeSheet Submitted">TimeSheet Submitted</option>
-                    <option value="TimeSheet Rejected">TimeSheet Rejected</option>
+                    <option value="Timesheet Approve">TimeSheet Approved</option>
+                    <option value="Timesheet Submit">TimeSheet Submitted</option>
+                    <option value="Timesheet Reject">TimeSheet Rejected</option>
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>

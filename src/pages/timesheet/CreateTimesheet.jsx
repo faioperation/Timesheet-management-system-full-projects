@@ -281,10 +281,13 @@ export default function CreateTimesheet() {
       }
 
       if (formData.emailTemplate) {
-        payload.append('mail_template_id', '1');
+        payload.append('mail_template_id', String(formData.emailTemplate));
       }
       if (formData.emailTo) {
         payload.append('send_to', formData.emailTo);
+      }
+      if (formData.emailSubject) {
+        payload.append('subject', formData.emailSubject);
       }
 
       timesheetEntries.forEach((entry, index) => {
@@ -337,17 +340,17 @@ export default function CreateTimesheet() {
               <div className="absolute inset-0 opacity-5 pointer-events-none" style={{
                 backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #000 10px, #000 20px)',
               }}></div>
-              
+
               {/* Folder Icon */}
               <div className="relative z-10">
                 <svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
                   {/* Folder body */}
-                  <path d="M30 40 L70 40 L85 55 L170 55 L170 140 L30 140 Z" fill="#E0E7FF" stroke="#C7D2FE" strokeWidth="2"/>
+                  <path d="M30 40 L70 40 L85 55 L170 55 L170 140 L30 140 Z" fill="#E0E7FF" stroke="#C7D2FE" strokeWidth="2" />
                   {/* Folder tab */}
-                  <path d="M30 40 L70 40 L85 25 L120 25 L120 40 L70 40" fill="#10B981" stroke="#059669" strokeWidth="2"/>
+                  <path d="M30 40 L70 40 L85 25 L120 25 L120 40 L70 40" fill="#10B981" stroke="#059669" strokeWidth="2" />
                   {/* Documents inside */}
-                  <rect x="40" y="65" width="120" height="65" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1"/>
-                  <rect x="45" y="75" width="110" height="50" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1"/>
+                  <rect x="40" y="65" width="120" height="65" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
+                  <rect x="45" y="75" width="110" height="50" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
                 </svg>
               </div>
             </div>
@@ -361,9 +364,9 @@ export default function CreateTimesheet() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
               <div className="relative">
-                  <select
-                    value={formData.client}
-                    onChange={(e) => handleInputChange('client', e.target.value)}
+                <select
+                  value={formData.client}
+                  onChange={(e) => handleInputChange('client', e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                 >
                   {isClientsLoading && (
@@ -573,17 +576,17 @@ export default function CreateTimesheet() {
                     onChange={(e) => handleInputChange('emailTemplate', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
-                  {isTemplatesLoading && (
-                    <option value="">Loading...</option>
-                  )}
-                  {!isTemplatesLoading && emailTemplates.length === 0 && (
-                    <option value="">No templates found</option>
-                  )}
-                  {!isTemplatesLoading && emailTemplates.map((template) => (
-                    <option key={template.id} value={String(template.id)}>
-                      {template.name || template.subject || `Template ${template.id}`}
-                    </option>
-                  ))}
+                    {isTemplatesLoading && (
+                      <option value="">Loading...</option>
+                    )}
+                    {!isTemplatesLoading && emailTemplates.length === 0 && (
+                      <option value="">No templates found</option>
+                    )}
+                    {!isTemplatesLoading && emailTemplates.map((template) => (
+                      <option key={template.id} value={String(template.id)}>
+                        {template.name || template.subject || `Template ${template.id}`}
+                      </option>
+                    ))}
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>

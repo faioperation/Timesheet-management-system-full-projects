@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import ReusableTable from '../../components/ReusableTable';
 import { apiFetch } from '../../libs/apiFetch';
@@ -10,6 +10,7 @@ export default function CompanyView() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('access_plan');
     const [isLoading, setIsLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
     const [companyData, setCompanyData] = useState(null);
 
     const [formData, setFormData] = useState({
@@ -21,6 +22,13 @@ export default function CompanyView() {
         slug: '',
     });
 
+    // Store original data for comparison
+    const [originalData, setOriginalData] = useState({
+        formData: {},
+        accessPlanData: [],
+        userLimit: 0,
+    });
+
     const [accessPlanData, setAccessPlanData] = useState([
         { id: 1, feature: 'User can login', key: 'user_can_login', status: false },
         { id: 2, feature: 'Commission', key: 'commission', status: false },
@@ -30,6 +38,9 @@ export default function CompanyView() {
 
     const [userLimit, setUserLimit] = useState(0);
     const [companyUsers, setCompanyUsers] = useState([]);
+
+    // Track if form has changes
+    const [hasChanges, setHasChanges] = useState(false);
 
     // Fetch company data on component mount
     useEffect(() => {
@@ -53,34 +64,86 @@ export default function CompanyView() {
                 const business = result.data;
 
                 // Set form data
-                setFormData({
+                const initialFormData = {
                     name: business.name || '',
                     address: business.address || '',
                     email: business.email || '',
                     phone: business.phone || '',
                     ownerName: business.owner?.name || '',
                     slug: business.slug || '',
-                });
+                };
+                setFormData(initialFormData);
 
                 // Set access plan data from permissions
-                if (business.permission) {
-                    setAccessPlanData([
-                        { id: 1, feature: 'User can login', key: 'user_can_login', status: !!business.permission.user_can_login },
-                        { id: 2, feature: 'Commission', key: 'commission', status: !!business.permission.commission },
-                        { id: 3, feature: 'Template can add', key: 'template_can_add', status: !!business.permission.template_can_add },
-                        { id: 4, feature: 'QB integration', key: 'qb_integration', status: !!business.permission.qb_integration },
-                    ]);
-                    setUserLimit(business.permission.user_limit || 0);
-                }
+                const initialAccessPlan = [
+                    { id: 1, feature: 'User can login', key: 'user_can_login', status: !!business.permission?.user_can_login },
+                    { id: 2, feature: 'Commission', key: 'commission', status: !!business.permission?.commission },
+                    { id: 3, feature: 'Template can add', key: 'template_can_add', status: !!business.permission?.template_can_add },
+                    { id: 4, feature: 'QB integration', key: 'qb_integration', status: !!business.permission?.qb_integration },
+                ];
+                setAccessPlanData(initialAccessPlan);
 
-                // Set company users
+                const initialUserLimit = business.permission?.user_limit || 0;
+                setUserLimit(initialUserLimit);
+
+                // Store original data for comparison
+                setOriginalData({
+                    formData: { ...initialFormData },
+                    accessPlanData: JSON.parse(JSON.stringify(initialAccessPlan)),
+                    userLimit: initialUserLimit,
+                });
+
+                // Set company users and fetch role data
                 if (business.users && Array.isArray(business.users)) {
-                    setCompanyUsers(business.users.map(user => ({
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        role: user.role || 'N/A',
-                    })));
+                    console.log('Company users from API:', business.users);
+
+                    // Fetch role data for each user
+                    const usersWithRoles = await Promise.all(
+                        business.users.map(async (user) => {
+                            console.log('Processing user:', user);
+                            let roleName = 'N/A';
+
+                            // If user has role_id, fetch role details
+                            if (user.role_id) {
+                                console.log(`Fetching role for user ${user.name} with role_id: ${user.role_id}`);
+                                try {
+                                    const roleResponse = await apiFetch(`/role/${user.role_id}`, {
+                                        method: 'GET',
+                                    });
+
+                                    if (roleResponse.ok) {
+                                        const roleData = await roleResponse.json();
+                                        console.log(`Role data for ${user.name}:`, roleData);
+                                        roleName = roleData.data?.name || roleData.name || 'N/A';
+                                    } else {
+                                        console.error(`Failed to fetch role ${user.role_id}:`, roleResponse.status);
+                                    }
+                                } catch (error) {
+                                    console.error(`Error fetching role for user ${user.id}:`, error);
+                                }
+                            } else if (user.role?.name) {
+                                // Fallback to nested role object if available
+                                console.log(`Using nested role.name for ${user.name}:`, user.role.name);
+                                roleName = user.role.name;
+                            } else if (user.role) {
+                                console.log(`Using direct role for ${user.name}:`, user.role);
+                                roleName = user.role;
+                            } else {
+                                console.log(`No role data found for ${user.name}`);
+                            }
+
+                            return {
+                                id: user.id,
+                                name: user.name,
+                                email: user.email,
+                                phone: user.phone || 'N/A',
+                                role: roleName,
+                            };
+                        })
+                    );
+
+                    console.log('Users with roles:', usersWithRoles);
+                    setCompanyUsers(usersWithRoles);
                 }
 
                 setCompanyData(business);
@@ -94,6 +157,21 @@ export default function CompanyView() {
         }
     };
 
+    // Check if form has changes
+    useEffect(() => {
+        const formChanged = JSON.stringify(formData) !== JSON.stringify(originalData.formData);
+        const accessPlanChanged = JSON.stringify(accessPlanData) !== JSON.stringify(originalData.accessPlanData);
+        const userLimitChanged = userLimit !== originalData.userLimit;
+
+        setHasChanges(formChanged || accessPlanChanged || userLimitChanged);
+    }, [formData, accessPlanData, userLimit, originalData]);
+
+    // Block navigation when there are unsaved changes
+    const blocker = useBlocker(
+        ({ currentLocation, nextLocation }) =>
+            hasChanges && currentLocation.pathname !== nextLocation.pathname
+    );
+
     const handleToggle = (id) => {
         setAccessPlanData(prev => prev.map(item =>
             item.id === id ? { ...item, status: !item.status } : item
@@ -104,10 +182,77 @@ export default function CompanyView() {
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
+    const handleUserLimitChange = (increment) => {
+        if (increment) {
+            setUserLimit(prev => prev + 1);
+        } else {
+            setUserLimit(prev => prev > 0 ? prev - 1 : 0);
+        }
+    };
+
+    const handleUpdate = async () => {
+        setIsUpdating(true);
+        try {
+            // Prepare update payload with all fields at root level
+            const updatePayload = {
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                address: formData.address,
+                user_limit: userLimit,
+            };
+
+            // Add each permission as a separate field
+            accessPlanData.forEach(item => {
+                updatePayload[item.key] = item.status ? 1 : 0;
+            });
+
+            console.log('Update Payload:', updatePayload);
+
+            const response = await apiFetch(`/business/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatePayload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to update company');
+            }
+
+            const result = await response.json();
+            console.log('Update Response:', result);
+            toast.success('Company updated successfully!');
+
+            // Refresh data and reset change tracking
+            await fetchCompanyData();
+            setHasChanges(false);
+
+        } catch (error) {
+            console.error('Error updating company:', error);
+            toast.error(error.message || 'Failed to update company');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleCancel = () => {
+        if (hasChanges) {
+            if (window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                navigate(-1);
+            }
+        } else {
+            navigate(-1);
+        }
+    };
+
     const userColumns = [
         { key: 'no', label: 'No', className: 'text-left', render: (_, index) => index + 1 },
         { key: 'name', label: 'Name', className: 'text-left' },
         { key: 'email', label: 'Email', className: 'text-left' },
+        { key: 'phone', label: 'Phone', className: 'text-left' },
         { key: 'role', label: 'Role', className: 'text-left' },
     ];
 
@@ -186,19 +331,6 @@ export default function CompanyView() {
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-center gap-4 mb-10">
-                        <button className="px-10 py-2.5 bg-[#5069E5] text-white rounded-md text-sm font-semibold hover:bg-[#3d52c7] transition-colors">
-                            Add user
-                        </button>
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="px-10 py-2.5 bg-[#FFF5F5] text-[#FF5A5A] rounded-md text-sm font-semibold hover:bg-[#FFEAEA] transition-colors"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-
                     {/* Tabs Container */}
                     <div className="mb-6">
                         <div className="inline-flex bg-white rounded-full p-1 border border-gray-100 shadow-sm">
@@ -252,13 +384,13 @@ export default function CompanyView() {
                                         <span className="text-xl font-bold text-gray-800">{userLimit}</span>
                                         <div className="flex gap-2">
                                             <button
-                                                onClick={() => setUserLimit(userLimit + 1)}
+                                                onClick={() => handleUserLimitChange(true)}
                                                 className="w-6 h-6 rounded flex items-center justify-center border border-[#1B654A] text-[#1B654A] hover:bg-[#E6F4F1] transition-colors"
                                             >
                                                 <FaPlus size={10} />
                                             </button>
                                             <button
-                                                onClick={() => userLimit > 0 && setUserLimit(userLimit - 1)}
+                                                onClick={() => handleUserLimitChange(false)}
                                                 className="w-6 h-6 rounded flex items-center justify-center border border-[#F46B6A] text-[#F46B6A] hover:bg-[#FEF2F2] transition-colors"
                                             >
                                                 <FaMinus size={10} />
@@ -278,8 +410,53 @@ export default function CompanyView() {
                             />
                         )}
                     </div>
-                </div>
+
+                    {/* Action Buttons at Bottom */}
+                    <div className="flex justify-center gap-4 mt-8">
+                        <button
+                            onClick={handleUpdate}
+                            disabled={isUpdating || !hasChanges}
+                            className="px-10 py-2.5 bg-[#10B981] text-white rounded-md text-sm font-semibold hover:bg-[#059669] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isUpdating ? 'Updating...' : 'Update'}
+                        </button>
+                        <button
+                            onClick={handleCancel}
+                            className="px-10 py-2.5 bg-[#FFF5F5] text-[#FF5A5A] rounded-md text-sm font-semibold hover:bg-[#FFEAEA] transition-colors shadow-sm"
+                        >
+                            Back
+                        </button>
+                    </div>
+                </div >
             )}
+
+            {/* Navigation Blocker Modal */}
+            {
+                blocker.state === "blocked" && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">Unsaved Changes</h3>
+                            <p className="text-gray-600 mb-6">
+                                You have unsaved changes. Are you sure you want to leave this page?
+                            </p>
+                            <div className="flex gap-4 justify-end">
+                                <button
+                                    onClick={() => blocker.reset()}
+                                    className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors"
+                                >
+                                    Stay
+                                </button>
+                                <button
+                                    onClick={() => blocker.proceed()}
+                                    className="px-6 py-2.5 bg-[#FF5A5A] text-white rounded-lg text-sm font-semibold hover:bg-[#E54545] transition-colors"
+                                >
+                                    Leave
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
             <style jsx="true">{`
         .company-user-table table thead tr th {
@@ -301,6 +478,6 @@ export default function CompanyView() {
           border-bottom: none;
         }
       `}</style>
-        </div>
+        </div >
     );
 }

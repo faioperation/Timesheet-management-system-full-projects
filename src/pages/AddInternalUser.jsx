@@ -7,7 +7,7 @@ import { apiFetch } from "../libs/apiFetch";
 
 const ROLE_OPTIONS = [
   { label: "Business Development Manager", value: "bd_manager" },
-  { label: "Account Manager", value: "account_manager" },
+  { label: "Account Manager", value: "ac_manager" },  // Fixed: was 'account_manager'
   { label: "Recruiter", value: "recruiter" },
 ];
 
@@ -110,6 +110,11 @@ export default function AddInternalUser() {
         payload.append("month", formData.recursiveMonth);
       }
 
+      console.log('Internal User Payload:');
+      for (let [key, value] of payload.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+
       const response = await apiFetch("/internaluser", {
         method: "POST",
         body: payload,
@@ -126,11 +131,17 @@ export default function AddInternalUser() {
         }
       }
 
+      console.log('API Response:', result);
+      console.log('Response Status:', response.status);
+
       if (!response.ok || !result.success) {
         const errorMessage =
           (result && (result.message || result.error)) ||
           (result && result.errors && Object.values(result.errors)[0]) ||
           `Failed to create internal user (status ${response.status})`;
+
+        console.error('API Error Details:', result.errors || result);
+
         throw new Error(
           Array.isArray(errorMessage) ? errorMessage[0] : errorMessage
         );

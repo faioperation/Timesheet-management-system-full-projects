@@ -90,6 +90,7 @@ export default function Timesheet() {
       period,
       uploadDate,
       status,
+      subject: item.subject || item.email_subject || '-',
     };
   };
 
@@ -116,8 +117,8 @@ export default function Timesheet() {
         const list = Array.isArray(result.data?.data)
           ? result.data.data
           : Array.isArray(result.data)
-          ? result.data
-          : [];
+            ? result.data
+            : [];
 
         const mapped = list.map(normalizeTimesheet);
         setTimesheets(mapped);
@@ -226,6 +227,11 @@ export default function Timesheet() {
       className: 'text-left',
     },
     {
+      key: 'subject',
+      label: 'Subject',
+      className: 'text-left',
+    },
+    {
       key: 'status',
       label: 'Status',
       className: 'text-left',
@@ -283,10 +289,9 @@ export default function Timesheet() {
               onClick={() => handleFilterChange(filter)}
               className={`
                 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors border-b-2
-                ${
-                  activeFilter === filter
-                    ? 'bg-[#E0E7FF] text-[#5069E5] border-[#5069E5]'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border-transparent'
+                ${activeFilter === filter
+                  ? 'bg-[#E0E7FF] text-[#5069E5] border-[#5069E5]'
+                  : 'bg-white text-gray-600 hover:text-gray-900 border-transparent'
                 }
               `}
             >
@@ -304,11 +309,11 @@ export default function Timesheet() {
             <span>{filterPeriod}</span>
             <IoMdArrowDropdown className="text-gray-500" size={20} />
           </button>
-          
+
           {showDropdown && (
             <>
-              <div 
-                className="fixed inset-0 z-10" 
+              <div
+                className="fixed inset-0 z-10"
                 onClick={() => setShowDropdown(false)}
               ></div>
               <div className="absolute right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20 min-w-[120px]">
@@ -316,9 +321,8 @@ export default function Timesheet() {
                   <button
                     key={option}
                     onClick={() => handlePeriodChange(option)}
-                    className={`w-full text-left px-4 py-2 hover:bg-[#E0E7FF] transition-colors ${
-                      filterPeriod === option ? 'bg-[#E0E7FF] text-[#5069E5]' : 'text-gray-800'
-                    }`}
+                    className={`w-full text-left px-4 py-2 hover:bg-[#E0E7FF] transition-colors ${filterPeriod === option ? 'bg-[#E0E7FF] text-[#5069E5]' : 'text-gray-800'
+                      }`}
                   >
                     {option}
                   </button>

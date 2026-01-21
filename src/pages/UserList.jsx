@@ -166,27 +166,65 @@ export default function UserList() {
           if (response.ok) {
             const result = await response.json();
             if (result.success && result.data) {
-              const mappedData = result.data.map((item) => {
-                const primaryRole =
-                  item.roles && item.roles[0] ? item.roles[0].name : item.role;
-                const isActive =
-                  typeof item.active === 'boolean'
-                    ? item.active
-                    : typeof item.status === 'string'
-                      ? item.status.toLowerCase() === 'active'
-                      : true;
+              const users = result.data;
 
-                return {
-                  id: item.id,
-                  userId: item.id || item.user_id || null,
-                  name: item.name || '',
-                  email: item.email || '',
-                  phone: item.phone || '',
-                  role: primaryRole || 'User',
-                  status: isActive ? 'Active' : 'Inactive',
-                  hasClientAssigned: item.client_id ? true : false,
-                };
-              });
+              // Fetch individual details for each user to check party_id status
+              const mappedData = await Promise.all(
+                users.map(async (item) => {
+                  const primaryRole =
+                    item.roles && item.roles[0] ? item.roles[0].name : item.role;
+                  let isActive = true;
+                  let hasClientAssigned = false;
+                  try {
+                    // Hit /user/{id} to get detailed user information including party_id and precise status
+                    const detailResponse = await apiFetch(`/user/${item.id}`, {
+                      method: 'GET',
+                    });
+                    if (detailResponse.ok) {
+                      const detailResult = await detailResponse.json();
+                      const userData = detailResult.data;
+
+                      // Logic for Assignment
+                      if (userData?.user_details?.party_id) {
+                        hasClientAssigned = true;
+                      }
+
+                      // Logic for Status: use status string or active flag
+                      const statusStr = (userData?.status || item.status || '').toLowerCase();
+                      const activeFlag = userData?.user_details?.active ?? item.active;
+
+                      if (statusStr === 'active' || statusStr === 'approved') {
+                        isActive = true;
+                      } else if (activeFlag === 1 || activeFlag === true || activeFlag === '1') {
+                        isActive = true;
+                      } else if (statusStr === 'inactive' || statusStr === 'on vacation') {
+                        isActive = false;
+                      } else if (activeFlag === 0 || activeFlag === false || activeFlag === '0') {
+                        isActive = false;
+                      }
+                    } else {
+                      // Fallback to item level data if detail fetch fails
+                      const s = (item.status || '').toLowerCase();
+                      isActive = s === 'active' || s === 'approved' || item.active === 1 || item.active === true;
+                    }
+                  } catch (err) {
+                    console.error(`Error fetching individual details for user ${item.id}:`, err);
+                    const s = (item.status || '').toLowerCase();
+                    isActive = s === 'active' || s === 'approved' || item.active === 1 || item.active === true;
+                  }
+
+                  return {
+                    id: item.id,
+                    userId: item.id || item.user_id || null,
+                    name: item.name || '',
+                    email: item.email || '',
+                    phone: item.phone || '',
+                    role: primaryRole || 'User',
+                    status: isActive ? 'Active' : 'Inactive',
+                    hasClientAssigned: hasClientAssigned,
+                  };
+                })
+              );
               setAllUsersData(mappedData);
             } else {
               setAllUsersData([]);
@@ -419,12 +457,9 @@ export default function UserList() {
           </button>
           {canAssignClient && activeFilter === 'User' && (
             row.hasClientAssigned ? (
-              <button
-                disabled
-                className="ml-auto px-3 py-1.5 rounded-md bg-gray-100 text-gray-400 font-medium cursor-not-allowed"
-              >
-                Already Assigned
-              </button>
+              <span className="ml-auto px-3 py-1.5 text-gray-500 font-medium italic">
+                Assigned Client
+              </span>
             ) : (
               <button
                 onClick={() => handleAssignClient(row)}
@@ -440,7 +475,16 @@ export default function UserList() {
   ];
 
 
-  const columns = (activeFilter === 'Client' || activeFilter === 'Vendor' || activeFilter === 'Employee') ? clientColumns : userColumns;
+  const columns = useMemo(() => {
+    const baseColumns = (activeFilter === 'Client' || activeFilter === 'Vendor' || activeFilter === 'Employee')
+      ? clientColumns
+      : userColumns;
+
+    if (activeFilter === 'Internal User') {
+      return baseColumns.filter(col => col.key !== 'status');
+    }
+    return baseColumns;
+  }, [activeFilter, clientColumns, userColumns]);
 
   const filterTabs = ['User', 'Internal User', 'Client', 'Vendor', 'Employee'];
 

@@ -168,23 +168,138 @@ export default function UserProfileView() {
             </div>
           </div>
 
-          <div className="mt-8">
-            <p className="text-sm text-gray-500 mb-2">Signature</p>
-            <div className="w-full h-48 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
-              {signaturePreview ? (
-                <img
-                  src={signaturePreview}
-                  alt="Signature"
-                  className="max-w-full max-h-full object-contain"
-                  onError={(e) => {
-                    console.error("Signature failed to load:", e.target.src);
-                  }}
-                />
-              ) : (
-                <div className="text-gray-400 text-sm">No signature</div>
-              )}
+          {/* Internal User Specific Fields */}
+          {isInternal && userData && (
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-6">Commission Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Commission On</p>
+                  <p className="text-gray-800 font-medium">
+                    {userData.commission_on
+                      ? userData.commission_on.split('-').map(word =>
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                      ).join(' ')
+                      : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Rate Type</p>
+                  <p className="text-gray-800 font-medium">
+                    {userData.rate_type
+                      ? userData.rate_type.charAt(0).toUpperCase() + userData.rate_type.slice(1)
+                      : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Rate</p>
+                  <p className="text-gray-800 font-medium">
+                    {userData.rate
+                      ? `${userData.rate}${userData.rate_type === 'percentage' ? '%' : ''}`
+                      : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Recursive</p>
+                  <p className="text-gray-800 font-medium">
+                    {userData.recuesive === 1 || userData.recuesive === '1' || userData.recuesive === true
+                      ? "Yes"
+                      : "No"}
+                  </p>
+                </div>
+                {!(userData.recuesive === 1 || userData.recuesive === '1' || userData.recuesive === true) && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Month</p>
+                    <p className="text-gray-800 font-medium">
+                      {userData.month
+                        ? userData.month.charAt(0).toUpperCase() + userData.month.slice(1)
+                        : "-"}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Client Assignment Details - For regular users with an assigned client */}
+          {!isInternal && userData?.user_details?.party_id && (
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-6">Client Assignment Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Invoice To</p>
+                  <p className="text-gray-800 font-medium">{userData.user_details.invoice_to || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">
+                    {userData.user_details.invoice_to === 'Vendor' ? 'Vendor Name' : 'Client Name'}
+                  </p>
+                  <p className="text-gray-800 font-medium">
+                    {userData.user_details.party?.name || "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Client Rate</p>
+                  <p className="text-gray-800 font-medium">${userData.user_details.client_rate || "0"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Timesheet Period</p>
+                  <p className="text-gray-800 font-medium">
+                    {userData.user_details.time_sheet_period
+                      ? userData.user_details.time_sheet_period.charAt(0).toUpperCase() + userData.user_details.time_sheet_period.slice(1)
+                      : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Start Date</p>
+                  <p className="text-gray-800 font-medium">{userData.user_details.start_date || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">End Date</p>
+                  <p className="text-gray-800 font-medium">{userData.user_details.end_date || "-"}</p>
+                </div>
+                {userData.user_details.account_manager?.name && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Account Manager</p>
+                    <p className="text-gray-800 font-medium">{userData.user_details.account_manager.name}</p>
+                  </div>
+                )}
+                {userData.user_details.business_development_manager?.name && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">BD Manager</p>
+                    <p className="text-gray-800 font-medium">{userData.user_details.business_development_manager.name}</p>
+                  </div>
+                )}
+                {userData.user_details.recruiter?.name && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Recruiter</p>
+                    <p className="text-gray-800 font-medium">{userData.user_details.recruiter.name}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Signature - Only for regular users, not internal users */}
+          {!isInternal && (
+            <div className="mt-8">
+              <p className="text-sm text-gray-500 mb-2">Signature</p>
+              <div className="w-full h-48 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                {signaturePreview ? (
+                  <img
+                    src={signaturePreview}
+                    alt="Signature"
+                    className="max-w-full max-h-full object-contain"
+                    onError={(e) => {
+                      console.error("Signature failed to load:", e.target.src);
+                    }}
+                  />
+                ) : (
+                  <div className="text-gray-400 text-sm">No signature</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
