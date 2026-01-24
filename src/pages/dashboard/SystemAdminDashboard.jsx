@@ -41,31 +41,47 @@ export default function SystemAdminDashboard() {
     });
 
     useEffect(() => {
-        fetchDashboardStatistics();
+        fetchBusinessStatistics();
     }, []);
 
-    const fetchDashboardStatistics = async () => {
+    const fetchBusinessStatistics = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('/system-dashboard', {
+            const response = await apiFetch('/business', {
                 method: 'GET',
             });
 
             if (!response.ok) {
-                throw new Error('Failed to fetch dashboard data');
+                throw new Error('Failed to fetch business data');
             }
 
             const result = await response.json();
-            console.log('Dashboard data:', result);
+            console.log('Business data:', result);
 
-            // API returns: { business: number, activeBusiness: number, user: number }
-            setBusinessStats({
-                total: result.business || 0,
-                active: result.activeBusiness || 0,
-                totalUsers: result.user || 0,
-            });
+            if (result.data && Array.isArray(result.data)) {
+                const businesses = result.data;
+                const totalBusinesses = businesses.length;
+
+                // Count active businesses (status === 1 or status === 'active')
+                const activeBusinesses = businesses.filter(
+                    business => business.status === 1 || business.status === 'active'
+                ).length;
+
+                // Count total users across all businesses
+                const totalUsers = businesses.reduce((sum, business) => {
+                    return sum + (business.users?.length || 0);
+                }, 0);
+
+                console.log('Statistics:', { totalBusinesses, activeBusinesses, totalUsers });
+
+                setBusinessStats({
+                    total: totalBusinesses,
+                    active: activeBusinesses,
+                    totalUsers: totalUsers,
+                });
+            }
         } catch (error) {
-            console.error('Error fetching dashboard statistics:', error);
+            console.error('Error fetching business statistics:', error);
         } finally {
             setIsLoading(false);
         }
