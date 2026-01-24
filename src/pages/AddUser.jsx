@@ -4,7 +4,7 @@ import { FaEye, FaEyeSlash, FaEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import UserSuccessModal from "../components/UserSuccessModal";
 import { apiFetch } from "../libs/apiFetch";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 export default function AddUser() {
   const navigate = useNavigate();
@@ -24,7 +24,12 @@ export default function AddUser() {
   const [createdUserId, setCreatedUserId] = useState(null);
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let finalValue = value;
+    if (field === "phone") {
+      // Allow only digits
+      finalValue = value.replace(/[^0-9]/g, "");
+    }
+    setFormData((prev) => ({ ...prev, [field]: finalValue }));
   };
 
   const handleSubmit = async () => {
@@ -37,12 +42,18 @@ export default function AddUser() {
       !formData.password ||
       !formData.confirmPassword
     ) {
-      toast.error("Please fill in all required fields");
+      toast.error("Please fill in all required fields", {
+        position: "top-right",
+        theme: "colored"
+      });
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error("Password and Confirm Password do not match");
+      toast.error("Password and Confirm Password do not match", {
+        position: "top-right",
+        theme: "colored"
+      });
       return;
     }
 
@@ -76,15 +87,17 @@ export default function AddUser() {
       if (!response.ok || !result.success) {
         // Handle validation error messages if present
         if (result && result.errors) {
-          const firstError = Object.values(result.errors)[0];
-          const message = Array.isArray(firstError)
-            ? firstError[0]
-            : firstError;
-          throw new Error(message || "Failed to create user");
+          Object.values(result.errors).flat().forEach((msg) => {
+            toast.error(msg, {
+              position: "top-right",
+              theme: "colored"
+            });
+          });
+          return;
         }
 
-        const message = result && (result.message || result.error);
-        throw new Error(message || "Failed to create user");
+        const message = result?.message || result?.error || "Failed to create user";
+        throw new Error(message);
       }
 
       toast.success("User created successfully");
@@ -110,7 +123,10 @@ export default function AddUser() {
       });
     } catch (error) {
       console.error("Error creating user:", error);
-      toast.error(error.message || "Failed to create user");
+      toast.error(error.message || "Failed to create user", {
+        position: "top-right",
+        theme: "colored"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -130,6 +146,7 @@ export default function AddUser() {
 
   return (
     <div className="w-full pb-10">
+      <ToastContainer />
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-black mb-6">Add User</h2>
 
@@ -169,15 +186,11 @@ export default function AddUser() {
                 Phone<span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <FaEdit
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
                 <input
-                  type="text"
+                  type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="w-full px-4 py-2.5 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                   placeholder="Enter phone"
                 />
               </div>
@@ -230,7 +243,7 @@ export default function AddUser() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                Password<span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input

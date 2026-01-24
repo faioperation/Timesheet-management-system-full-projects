@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
     const [formData, setFormData] = useState({
         parameterInsertOn: 'Subject',
-        templateType: 'Timesheet Submit',
+        templateType: 'timesheet_submit',
         templateName: '',
         used_by: [], // IDs
         subject: '',
@@ -31,7 +31,7 @@ const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
 
             setFormData({
                 parameterInsertOn: 'Subject',
-                templateType: template.type || template.template_type || 'Timesheet Submit',
+                templateType: template.type || template.template_type || 'timesheet_submit',
                 templateName: template.name || template.template_name || '',
                 used_by: usedByIDs,
                 subject: template.subject || '',
@@ -232,9 +232,9 @@ const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
                                         onChange={(e) => handleInputChange('templateType', e.target.value)}
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
                                     >
-                                        <option value="Timesheet Approve">TimeSheet Approved</option>
-                                        <option value="Timesheet Submit">TimeSheet Submitted</option>
-                                        <option value="Timesheet Reject">TimeSheet Rejected</option>
+                                        <option value="timesheet_approve">TimeSheet Approved</option>
+                                        <option value="timesheet_submit">TimeSheet Submitted</option>
+                                        <option value="timesheet_reject">TimeSheet Rejected</option>
                                     </select>
                                     <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                                 </div>
@@ -267,7 +267,9 @@ const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
                                                     onChange={() => handleCheckboxChange(role.id)}
                                                     className="w-4 h-4 text-[#5069E5] border-gray-300 rounded focus:ring-[#5069E5] focus:ring-2"
                                                 />
-                                                <span className="ml-2 text-sm text-gray-700 capitalize">{role.name}</span>
+                                                <span className="ml-2 text-sm text-gray-700 capitalize">
+                                                    {role.name === 'Staff' ? 'Supervisor' : role.name}
+                                                </span>
                                             </label>
                                         ))
                                     ) : (

@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 const CreateTemplateModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     parameterInsertOn: 'Subject', // 'Subject' or 'template'
-    templateType: 'Timesheet Submit',
+    templateType: 'timesheet_submit',
     templateName: '',
     used_by: [], // Array of role IDs
     subject: '',
@@ -17,22 +17,50 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
   });
 
   const [roles, setRoles] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedCloneId, setSelectedCloneId] = useState('');
 
   useEffect(() => {
-    const fetchRoles = async () => {
+    const fetchInitialData = async () => {
       try {
-        const response = await apiFetch('/roles');
-        const result = await response.json();
-        if (response.ok && result.success) {
-          setRoles(result.data || []);
+        const [rolesRes, templatesRes] = await Promise.all([
+          apiFetch('/roles'),
+          apiFetch('/email-template')
+        ]);
+        
+        const rolesResult = await rolesRes.json();
+        const templatesResult = await templatesRes.json();
+
+        if (rolesRes.ok && rolesResult.success) {
+          setRoles(rolesResult.data || []);
+        }
+        if (templatesRes.ok && templatesResult.success) {
+          setTemplates(templatesResult.data || []);
         }
       } catch (err) {
-        console.error('Error fetching roles:', err);
+        console.error('Error fetching initial data:', err);
       }
     };
-    if (isOpen) fetchRoles();
+    if (isOpen) fetchInitialData();
   }, [isOpen]);
+
+  const handleCloneSelect = (templateId) => {
+    setSelectedCloneId(templateId);
+    if (!templateId) return;
+
+    const template = templates.find(t => String(t.id) === String(templateId));
+    if (template) {
+      setFormData(prev => ({
+        ...prev,
+        subject: template.subject || '',
+        templateBody: template.body || '',
+        // We could also clone type, but user might want to change it
+        templateType: template.template_type || prev.templateType,
+      }));
+      toast.info('Template content cloned');
+    }
+  };
 
   const parameters = [
     { label: 'User first name', placeholder: 'User first name' },
@@ -109,7 +137,7 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
         // Reset form
         setFormData({
           parameterInsertOn: 'Subject',
-          templateType: 'Timesheet Submit',
+          templateType: 'timesheet_submit',
           templateName: '',
           used_by: [],
           subject: '',
@@ -208,6 +236,28 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
 
             {/* Right Section - Template Editor */}
             <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6 space-y-6">
+              {/* Clone from Template */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Clone from Template
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedCloneId}
+                    onChange={(e) => handleCloneSelect(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-[#5069E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-blue-50/30 text-gray-800 pr-10 appearance-none cursor-pointer"
+                  >
+                    <option value="">-- Select Template to Clone --</option>
+                    {templates.map((t) => (
+                      <option key={t.id} value={String(t.id)}>
+                        {t.template_name || t.subject} ({t.template_type})
+                      </option>
+                    ))}
+                  </select>
+                  <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5069E5] pointer-events-none" size={20} />
+                </div>
+              </div>
+
               {/* Template Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -219,9 +269,9 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                     onChange={(e) => handleInputChange('templateType', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
                   >
-                    <option value="Timesheet Approve">TimeSheet Approved</option>
-                    <option value="Timesheet Submit">TimeSheet Submitted</option>
-                    <option value="Timesheet Reject">TimeSheet Rejected</option>
+                    <option value="timesheet_approve">TimeSheet Approved</option>
+                    <option value="timesheet_submit">TimeSheet Submitted</option>
+                    <option value="timesheet_reject">TimeSheet Rejected</option>
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
@@ -256,7 +306,9 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                           onChange={() => handleCheckboxChange(role.id)}
                           className="w-4 h-4 text-[#5069E5] border-gray-300 rounded focus:ring-[#5069E5] focus:ring-2"
                         />
-                        <span className="ml-2 text-sm text-gray-700 capitalize">{role.name}</span>
+                        <span className="ml-2 text-sm text-gray-700 capitalize">
+                          {role.name === 'Staff' ? 'Supervisor' : role.name}
+                        </span>
                       </label>
                     ))
                   ) : (

@@ -71,10 +71,22 @@ export default function AddCompany() {
                 setTimeout(() => navigate("/dashboard/company"), 1500);
             } else {
                 console.error('API Error:', result);
-                toast.error(result.message || "Failed to add company", {
-                    position: "top-right",
-                    theme: "colored"
-                });
+                
+                // Handle validation error messages if present (Laravel format)
+                if (result && result.errors) {
+                    Object.values(result.errors).flat().forEach((msg) => {
+                        toast.error(msg, {
+                            position: "top-right",
+                            theme: "colored"
+                        });
+                    });
+                } else {
+                    const message = result?.message || result?.error || "Failed to add company";
+                    toast.error(message, {
+                        position: "top-right",
+                        theme: "colored"
+                    });
+                }
             }
         } catch (error) {
             console.error('Catch Error:', error);
@@ -118,7 +130,10 @@ export default function AddCompany() {
                                 type="text"
                                 className={`w-full px-4 py-3.5 rounded-xl border ${errors.adminName ? 'border-red-400 focus:ring-red-100' : 'border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4`}
                                 placeholder="Naresh Vyas"
-                                {...register("adminName", { required: "Name is required" })}
+                                {...register("adminName", { 
+                                    required: "Name is required",
+                                    maxLength: { value: 100, message: "Name cannot exceed 100 characters" }
+                                })}
                             />
                             {errors.adminName && (
                                 <span className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.adminName.message}</span>
@@ -134,7 +149,10 @@ export default function AddCompany() {
                                 type="text"
                                 className={`w-full px-4 py-3.5 rounded-xl border ${errors.companyName ? 'border-red-400 focus:ring-red-100' : 'border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4`}
                                 placeholder="Tech Innovators Inc."
-                                {...register("companyName", { required: "Company name is required" })}
+                                {...register("companyName", { 
+                                    required: "Company name is required",
+                                    maxLength: { value: 100, message: "Company name cannot exceed 100 characters" }
+                                })}
                             />
                             {errors.companyName && (
                                 <span className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.companyName.message}</span>
@@ -152,6 +170,7 @@ export default function AddCompany() {
                                 placeholder="example@gmail.com"
                                 {...register("email", {
                                     required: "Email is required",
+                                    maxLength: { value: 100, message: "Email cannot exceed 100 characters" },
                                     pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: "Invalid email" }
                                 })}
                             />
@@ -168,8 +187,14 @@ export default function AddCompany() {
                             <input
                                 type="tel"
                                 className={`w-full px-4 py-3.5 rounded-xl border ${errors.phone ? 'border-red-400 focus:ring-red-100' : 'border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10'} bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4`}
-                                placeholder="+1 (555) 000-0000"
-                                {...register("phone", { required: "Phone is required" })}
+                                placeholder="1234567890"
+                                {...register("phone", { 
+                                    required: "Phone is required",
+                                    maxLength: { value: 20, message: "Phone cannot exceed 20 characters" }
+                                })}
+                                onInput={(e) => {
+                                    e.target.value = e.target.value.replace(/[^0-9]/g, "");
+                                }}
                             />
                             {errors.phone && (
                                 <span className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.phone.message}</span>
@@ -226,7 +251,9 @@ export default function AddCompany() {
                                 rows={3}
                                 className="w-full px-4 py-3.5 rounded-xl border border-[#E2E8F0] focus:border-[#5069E5] focus:ring-[#5069E5]/10 bg-[#F8FAFC]/50 text-gray-900 transition-all outline-none focus:ring-4 resize-none"
                                 placeholder="123 Business Avenue, Suite 100..."
-                                {...register("address")}
+                                {...register("address", { 
+                                    maxLength: { value: 255, message: "Address cannot exceed 255 characters" }
+                                })}
                             />
                         </div>
 

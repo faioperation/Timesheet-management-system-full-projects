@@ -27,7 +27,11 @@ const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSucc
   }, [isOpen, type]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    let finalValue = value;
+    if (field === "phone" || field === "zipCode") {
+      finalValue = value.replace(/[^0-9]/g, "");
+    }
+    setFormData(prev => ({ ...prev, [field]: finalValue }));
   };
 
   const handleSave = async () => {
@@ -131,7 +135,7 @@ const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSucc
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Client Name"
+                  placeholder="Name"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                 />
               </div>
@@ -140,10 +144,10 @@ const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSucc
                   Phone<span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="Client Phone"
+                  placeholder="Phone"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                 />
               </div>
@@ -152,7 +156,7 @@ const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSucc
                   Zip Code<span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   value={formData.zipCode}
                   onChange={(e) => handleInputChange('zipCode', e.target.value)}
                   placeholder="Enter zip code"
@@ -179,18 +183,13 @@ const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSucc
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Remark
                 </label>
-                <select
+                <input
+                  type="text"
                   value={formData.remark}
                   onChange={(e) => handleInputChange('remark', e.target.value)}
+                  placeholder="Enter remark"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
-                >
-                  <option value="">Select Remark</option>
-                  <option value="No Remark">No Remark</option>
-                  <option value="Process">Process</option>
-                  <option value="Hold">Hold</option>
-                  <option value="Discard">Discard</option>
-                  <option value="Partial Invoice">Partial Invoice</option>
-                </select>
+                />
               </div>
             </div>
           </div>

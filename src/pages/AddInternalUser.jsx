@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { FaEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import { apiFetch } from "../libs/apiFetch";
 
 const ROLE_OPTIONS = [
@@ -53,7 +53,11 @@ export default function AddInternalUser() {
   });
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let finalValue = value;
+    if (field === "phone") {
+      finalValue = value.replace(/[^0-9]/g, "");
+    }
+    setFormData((prev) => ({ ...prev, [field]: finalValue }));
     setFieldErrors((prev) => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -70,7 +74,11 @@ export default function AddInternalUser() {
       (typeof value === "string" && !value.trim());
 
     if (isBlank(formData.name)) errors.name = "Name is required";
-    if (isBlank(formData.email)) errors.email = "Email is required";
+    if (isBlank(formData.email)) {
+      errors.email = "Email is required";
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(formData.email)) {
+      errors.email = "Invalid email format";
+    }
     if (isBlank(formData.phone)) errors.phone = "Phone is required";
     if (isBlank(formData.role)) errors.role = "Role is required";
     if (isBlank(formData.commissionOn))
@@ -135,9 +143,18 @@ export default function AddInternalUser() {
       console.log('Response Status:', response.status);
 
       if (!response.ok || !result.success) {
+        if (result && result.errors) {
+          Object.values(result.errors).flat().forEach((msg) => {
+            toast.error(msg, {
+              position: "top-right",
+              theme: "colored"
+            });
+          });
+          return;
+        }
+
         const errorMessage =
           (result && (result.message || result.error)) ||
-          (result && result.errors && Object.values(result.errors)[0]) ||
           `Failed to create internal user (status ${response.status})`;
 
         console.error('API Error Details:', result.errors || result);
@@ -151,7 +168,10 @@ export default function AddInternalUser() {
       navigate("/user/userlist");
     } catch (error) {
       console.error("Error creating internal user:", error);
-      toast.error(error.message || "Failed to create internal user");
+      toast.error(error.message || "Failed to create internal user", {
+        position: "top-right",
+        theme: "colored"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -163,6 +183,7 @@ export default function AddInternalUser() {
 
   return (
     <div className="w-full pb-10">
+      <ToastContainer />
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-black mb-6">Add Internal User</h2>
 
@@ -214,15 +235,11 @@ export default function AddInternalUser() {
                 Phone<span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <FaEdit
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
                 <input
-                  type="text"
+                  type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className={`w-full px-4 py-2.5 pl-10 border rounded-lg focus:outline-none focus:ring-2 bg-white text-gray-800 ${fieldErrors.phone
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 bg-white text-gray-800 ${fieldErrors.phone
                     ? "border-red-400 focus:ring-red-400"
                     : "border-gray-300 focus:ring-[#5069E5]"
                     }`}
@@ -355,7 +372,7 @@ export default function AddInternalUser() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Rate
+                Rate<span className="text-red-500">*</span>
               </label>
               <input
                 type="number"

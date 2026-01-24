@@ -10,8 +10,10 @@ import 'quill/dist/quill.snow.css';
 export default function CreateTimesheet() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    client: '2',
+    client: '',
+    consultant: '',
     file: null,
+    previewUrl: null,
     startDate: '',
     endDate: '',
     emailTemplate: '',
@@ -19,6 +21,7 @@ export default function CreateTimesheet() {
     emailSubject: 'Naresh Vyas timesheet',
     emailBody: '<p>Hello,</p><p>Timesheet is submit for client : R12</p><p>for time period: 09/15/2025 To 09/21/2025</p><p>Please check and approve.</p><p>Thank you.</p>',
     remark: '',
+    defaultTimesheetId: '',
   });
   const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false);
   const [remarkText, setRemarkText] = useState('');
@@ -30,10 +33,17 @@ export default function CreateTimesheet() {
   const [isClientsLoading, setIsClientsLoading] = useState(false);
   const [emailTemplates, setEmailTemplates] = useState([]);
   const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
+  const [userRole, setUserRole] = useState('');
+  const [consultants, setConsultants] = useState([]);
+  const [isConsultantsLoading, setIsConsultantsLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [userDefaults, setUserDefaults] = useState([]);
+  const [isDefaultsLoading, setIsDefaultsLoading] = useState(false);
 
   const [timesheetEntries, setTimesheetEntries] = useState([]);
 
   const formatDisplayDate = (dateObj) => {
+    if (!dateObj || Number.isNaN(dateObj.getTime())) return '-';
     const day = dateObj.getDate();
     const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
     const year = dateObj.getFullYear();
@@ -63,6 +73,14 @@ export default function CreateTimesheet() {
       current.setDate(current.getDate() + 1);
     }
     return entries;
+  };
+
+  const formatDecimalToTime = (decimal) => {
+    if (decimal === undefined || decimal === null || isNaN(decimal)) return '00:00';
+    const totalMinutes = Math.round(Number(decimal) * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   };
 
   const timeToNumber = (value) => {
@@ -125,10 +143,13 @@ export default function CreateTimesheet() {
     const end = new Date();
     end.setDate(start.getDate() + 6);
 
+    const sDate = toISODate(start);
+    const eDate = toISODate(end);
+
     setFormData(prev => ({
       ...prev,
-      startDate: toISODate(start),
-      endDate: toISODate(end),
+      startDate: sDate,
+      endDate: eDate,
     }));
 
     const updated = buildEntriesForRange(start, end).map(entry => ({
@@ -139,6 +160,78 @@ export default function CreateTimesheet() {
     toast.success('Weekdays set to 8 hours');
   };
 
+  const handleFileChange = (file) => {
+    if (!file) return;
+
+    // Create preview URL
+    const url = URL.createObjectURL(file);
+    setFormData(prev => {
+      // Clean up old preview URL if exists
+      if (prev.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+      return { ...prev, file, previewUrl: url };
+    });
+  };
+
+  const fetchUserDefaults = async (userId) => {
+    if (!userId) return;
+    setIsDefaultsLoading(true);
+    try {
+      const response = await apiFetch(`/user/${userId}/timesheet-defaults`, { method: 'GET' });
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        setUserDefaults(result.data);
+      } else {
+        setUserDefaults([]);
+      }
+    } catch (error) {
+      console.error('Failed to load user defaults:', error);
+      setUserDefaults([]);
+    } finally {
+      setIsDefaultsLoading(false);
+    }
+  };
+
+  const handleDefaultTimesheetChange = (id) => {
+    const selected = userDefaults.find(d => String(d.id) === String(id));
+    if (!selected) return;
+
+    setFormData(prev => ({
+      ...prev,
+      defaultTimesheetId: id,
+      startDate: selected.start_date || '',
+      endDate: selected.end_date || '',
+      client: selected.user_detail?.party_id ? String(selected.user_detail.party_id) : prev.client,
+    }));
+
+    if (selected.start_date && selected.end_date) {
+      const start = new Date(selected.start_date);
+      const end = new Date(selected.end_date);
+
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        const entries = [];
+        const current = new Date(start);
+        const last = new Date(end);
+
+        while (current <= last) {
+          const dayOfWeek = current.getDay(); // 0 (Sun) - 6 (Sat)
+          const defaultEntry = selected.entries?.find(e => Number(e.day_of_week) === dayOfWeek);
+
+          entries.push({
+            date: formatDisplayDate(current),
+            entryDate: toISODate(current),
+            dailyHours: defaultEntry ? formatDecimalToTime(defaultEntry.default_daily_hours) : '00:00',
+            extraHours: defaultEntry ? formatDecimalToTime(defaultEntry.default_extra_hours) : '00:00',
+            vacations: defaultEntry ? formatDecimalToTime(defaultEntry.default_vacation_hours) : '00:00',
+            notes: defaultEntry?.note || '',
+          });
+          current.setDate(current.getDate() + 1);
+        }
+        setTimesheetEntries(entries);
+      }
+    }
+    toast.success('Loaded from default timesheet');
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -147,6 +240,21 @@ export default function CreateTimesheet() {
         const result = await response.json();
         if (result.success && result.data && result.data.id) {
           setCurrentUserId(result.data.id);
+          setUserProfile(result.data);
+          // Set role from cookie or response
+          const getCookie = (name) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(";").shift();
+            return null;
+          };
+          const role = getCookie('user_role');
+          setUserRole(role || '');
+
+          // Populate email if user is a Consultant
+          if (role === 'User' && result.data.email) {
+            setFormData(prev => ({ ...prev, emailTo: result.data.email }));
+          }
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -167,7 +275,15 @@ export default function CreateTimesheet() {
         const result = await response.json();
         if (result.success && Array.isArray(result.data)) {
           setClients(result.data);
-          if (result.data.length && !formData.client) {
+          // Only auto-select client if user role is 'User'
+          const getCookie = (name) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(";").shift();
+            return null;
+          };
+          const role = getCookie('user_role');
+          if (result.data.length && !formData.client && role === 'User') {
             setFormData(prev => ({ ...prev, client: String(result.data[0].id) }));
           }
         } else {
@@ -175,7 +291,6 @@ export default function CreateTimesheet() {
         }
       } catch (error) {
         console.error('Failed to load clients:', error);
-        toast.error(error.message || 'Failed to load clients');
         setClients([]);
       } finally {
         setIsClientsLoading(false);
@@ -183,6 +298,46 @@ export default function CreateTimesheet() {
     };
 
     fetchClients();
+  }, [formData.client]); // Added dependency to re-run if client cleared
+
+  useEffect(() => {
+    const fetchConsultants = async () => {
+      if (userRole === 'User') return;
+      setIsConsultantsLoading(true);
+      try {
+        const response = await apiFetch('/users', { method: 'GET' });
+        if (!response.ok) throw new Error('Failed to load users');
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+          // Filter to only include 'User' role (consultants)
+          const filtered = result.data.filter(u =>
+            u.roles && u.roles.some(r => r.name === 'User')
+          );
+          setConsultants(filtered);
+        }
+      } catch (error) {
+        console.error('Consultant load error:', error);
+      } finally {
+        setIsConsultantsLoading(false);
+      }
+    };
+
+    if (userRole && userRole !== 'User') {
+      fetchConsultants();
+    }
+  }, [userRole]);
+
+  useEffect(() => {
+    if (userRole === 'User' && currentUserId) {
+      fetchUserDefaults(currentUserId);
+    }
+  }, [userRole, currentUserId]);
+
+  // Clean up preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (formData.previewUrl) URL.revokeObjectURL(formData.previewUrl);
+    };
   }, []);
 
   useEffect(() => {
@@ -213,6 +368,61 @@ export default function CreateTimesheet() {
 
     fetchTemplates();
   }, []);
+
+  const replacePlaceholders = (text, data) => {
+    if (!text) return '';
+    let result = text;
+    
+    // Find client name
+    const client = clients.find(c => String(c.id) === String(data.client));
+    const clientName = client ? client.name : 'Client';
+    
+    // Find consultant name
+    let consultantName = '';
+    if (userRole === 'Business Admin' || userRole === 'Staff') {
+      const cons = consultants.find(u => String(u.id) === String(data.consultant));
+      consultantName = cons ? cons.name : 'Consultant';
+    } else {
+      consultantName = userProfile ? userProfile.name : 'Consultant';
+    }
+
+    const placeholders = {
+      '{{ User first name }}': consultantName.split(' ')[0],
+      '{{ User last name }}': consultantName.split(' ').slice(1).join(' ') || '',
+      '{{ Client name }}': clientName,
+      '{{ Start date }}': data.startDate || '',
+      '{{ End date }}': data.endDate || '',
+      '{{ Signature }}': consultantName,
+      '{{ Private signature }}': consultantName,
+    };
+
+    Object.entries(placeholders).forEach(([key, value]) => {
+      result = result.split(key).join(value || '');
+    });
+
+    return result;
+  };
+
+  const handleEmailTemplateChange = (templateId) => {
+    handleInputChange('emailTemplate', templateId);
+    const template = emailTemplates.find(t => String(t.id) === String(templateId));
+    if (template) {
+      const subject = replacePlaceholders(template.subject || '', formData);
+      const bodyText = replacePlaceholders(template.body || '', formData);
+      // Wrap plain text in HTML for ReactQuill
+      const bodyHtml = bodyText.includes('<p>') 
+        ? bodyText 
+        : `<p>${bodyText.replace(/\n/g, '<br/>')}</p>`;
+      
+      setFormData(prev => ({
+        ...prev,
+        emailTemplate: templateId,
+        emailSubject: subject,
+        emailBody: bodyHtml,
+      }));
+      toast.info('Template applied');
+    }
+  };
 
   const handleOpenRemarkModal = () => {
     setIsRemarkModalOpen(true);
@@ -273,7 +483,18 @@ export default function CreateTimesheet() {
       payload.append('end_date', formData.endDate);
       payload.append('status', 'submitted');
       payload.append('remarks', formData.remark || '');
-      payload.append('user_id', String(currentUserId));
+
+      // If Admin/Staff, use selected consultant ID, else use current user ID
+      const targetUserId = (userRole === 'Business Admin' || userRole === 'Staff')
+        ? formData.consultant
+        : currentUserId;
+
+      if (!targetUserId) {
+        toast.error('Please select a consultant');
+        return;
+      }
+
+      payload.append('user_id', String(targetUserId));
       payload.append('client_id', String(formData.client));
 
       if (formData.file) {
@@ -341,18 +562,41 @@ export default function CreateTimesheet() {
                 backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #000 10px, #000 20px)',
               }}></div>
 
-              {/* Folder Icon */}
-              <div className="relative z-10">
-                <svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  {/* Folder body */}
-                  <path d="M30 40 L70 40 L85 55 L170 55 L170 140 L30 140 Z" fill="#E0E7FF" stroke="#C7D2FE" strokeWidth="2" />
-                  {/* Folder tab */}
-                  <path d="M30 40 L70 40 L85 25 L120 25 L120 40 L70 40" fill="#10B981" stroke="#059669" strokeWidth="2" />
-                  {/* Documents inside */}
-                  <rect x="40" y="65" width="120" height="65" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
-                  <rect x="45" y="75" width="110" height="50" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
-                </svg>
-              </div>
+              {/* Folder Icon Placeholder if no file */}
+              {!formData.file && (
+                <div className="relative z-10">
+                  <svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M30 40 L70 40 L85 55 L170 55 L170 140 L30 140 Z" fill="#E0E7FF" stroke="#C7D2FE" strokeWidth="2" />
+                    <path d="M30 40 L70 40 L85 25 L120 25 L120 40 L70 40" fill="#10B981" stroke="#059669" strokeWidth="2" />
+                    <rect x="40" y="65" width="120" height="65" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
+                    <rect x="45" y="75" width="110" height="50" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
+                  </svg>
+                </div>
+              )}
+
+              {/* File Preview */}
+              {formData.file && formData.previewUrl && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4">
+                  {formData.file.type === 'application/pdf' ? (
+                    <iframe
+                      src={formData.previewUrl}
+                      title="PDF Preview"
+                      className="w-full h-full border-none"
+                    />
+                  ) : formData.file.type.startsWith('image/') ? (
+                    <img
+                      src={formData.previewUrl}
+                      alt="Preview"
+                      className="max-w-full max-h-full object-contain shadow-md rounded"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-gray-600 font-medium">{formData.file.name}</p>
+                      <p className="text-sm text-gray-400">Preview not available for this file type</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -361,23 +605,51 @@ export default function CreateTimesheet() {
         <div className="flex-1 bg-white rounded-lg shadow-sm p-6">
           {/* Client and Date Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Role-based selection: User (Consultant) for Admins */}
+            {(userRole === 'Business Admin' || userRole === 'Staff') && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">User (Consultant)</label>
+                <div className="relative">
+                  <select
+                    value={formData.consultant}
+                    onChange={(e) => {
+                      const userId = e.target.value;
+                      handleInputChange('consultant', userId);
+                      fetchUserDefaults(userId);
+
+                      // Find selected user's email to auto-populate "To" field
+                      const selectedUser = consultants.find(u => String(u.id) === String(userId));
+                      if (selectedUser && selectedUser.email) {
+                        handleInputChange('emailTo', selectedUser.email);
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                  >
+                    <option value="">Select consultant</option>
+                    {isConsultantsLoading && <option disabled>Loading consultants...</option>}
+                    {consultants.map((u) => (
+                      <option key={u.id} value={String(u.id)}>{u.name}</option>
+                    ))}
+                  </select>
+                  <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                </div>
+              </div>
+            )}
+
+            {/* Default Timesheet Selection - Required to populate dates and client */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Default Timesheet</label>
               <div className="relative">
                 <select
-                  value={formData.client}
-                  onChange={(e) => handleInputChange('client', e.target.value)}
+                  value={formData.defaultTimesheetId}
+                  onChange={(e) => handleDefaultTimesheetChange(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                 >
-                  {isClientsLoading && (
-                    <option value="">Loading...</option>
-                  )}
-                  {!isClientsLoading && clients.length === 0 && (
-                    <option value="">No clients found</option>
-                  )}
-                  {!isClientsLoading && clients.map((client) => (
-                    <option key={client.id} value={String(client.id)}>
-                      {client.name || `Client ${client.id}`}
+                  <option value="">Select default timesheet</option>
+                  {isDefaultsLoading && <option disabled>Loading defaults...</option>}
+                  {userDefaults.map((d) => (
+                    <option key={d.id} value={String(d.id)}>
+                      Default ({d.start_date} to {d.end_date})
                     </option>
                   ))}
                 </select>
@@ -391,7 +663,7 @@ export default function CreateTimesheet() {
                 <label className="block">
                   <input
                     type="file"
-                    onChange={(e) => handleInputChange('file', e.target.files[0])}
+                    onChange={(e) => handleFileChange(e.target.files[0])}
                     className="hidden"
                   />
                   <div className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer hover:border-[#5069E5] transition-colors flex items-center justify-between">
@@ -399,32 +671,6 @@ export default function CreateTimesheet() {
                     <IoMdArrowDropdown className="text-gray-500" size={20} />
                   </div>
                 </label>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => handleDateChange('startDate', e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10"
-                />
-                <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => handleDateChange('endDate', e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10"
-                />
-                <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
               </div>
             </div>
           </div>
@@ -573,7 +819,7 @@ export default function CreateTimesheet() {
                 <div className="relative">
                   <select
                     value={formData.emailTemplate}
-                    onChange={(e) => handleInputChange('emailTemplate', e.target.value)}
+                    onChange={(e) => handleEmailTemplateChange(e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
                     {isTemplatesLoading && (

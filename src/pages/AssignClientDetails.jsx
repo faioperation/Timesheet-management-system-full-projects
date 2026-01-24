@@ -49,6 +49,16 @@ export default function AssignClientDetails() {
   });
 
   const handleInputChange = (field, value) => {
+    // List of fields that should not be negative
+    const numericFields = [
+      'clientRate', 'other', 'w2', 'payTax', 'employeeRate',
+      'accountManagerCommission', 'bdManagerCommission', 'recruiterCommission'
+    ];
+
+    if (numericFields.includes(field) && value < 0) {
+      return; // Do nothing if value is negative
+    }
+
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -345,10 +355,12 @@ export default function AssignClientDetails() {
                   Rate<span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   value={formData.clientRate}
                   onChange={(e) => handleInputChange('clientRate', e.target.value)}
                   placeholder="Enter rate"
+                  min="0"
+                  step="any"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                 />
               </div>
@@ -371,8 +383,8 @@ export default function AssignClientDetails() {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
                     <option value="Weekly">Weekly</option>
+                    <option value="Bi-weekly">Bi-weekly</option>
                     <option value="Monthly">Monthly</option>
-                    <option value="Yearly">Yearly</option>
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
@@ -414,10 +426,12 @@ export default function AssignClientDetails() {
                   Other
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   value={formData.other}
                   onChange={(e) => handleInputChange('other', e.target.value)}
-                  placeholder="Enter c2c/other"
+                  placeholder="Enter other rate"
+                  min="0"
+                  step="any"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                 />
               </div>
@@ -535,10 +549,12 @@ export default function AssignClientDetails() {
                         W2<span className="text-red-500">*</span>
                       </label>
                       <input
-                        type="text"
+                        type="number"
                         value={formData.w2}
                         onChange={(e) => handleInputChange('w2', e.target.value)}
                         placeholder="Enter W2"
+                        min="0"
+                        step="any"
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                       />
                     </div>
@@ -648,10 +664,12 @@ export default function AssignClientDetails() {
                   Commission<span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   value={formData.accountManagerCommission}
                   onChange={(e) => handleInputChange('accountManagerCommission', e.target.value)}
                   placeholder="Enter commission"
+                  min="0"
+                  step="any"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                 />
               </div>
@@ -718,10 +736,12 @@ export default function AssignClientDetails() {
                   Commission<span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   value={formData.bdManagerCommission}
                   onChange={(e) => handleInputChange('bdManagerCommission', e.target.value)}
                   placeholder="Enter commission"
+                  min="0"
+                  step="any"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                 />
               </div>
@@ -788,10 +808,12 @@ export default function AssignClientDetails() {
                   Commission<span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   value={formData.recruiterCommission}
                   onChange={(e) => handleInputChange('recruiterCommission', e.target.value)}
                   placeholder="Enter commission"
+                  min="0"
+                  step="any"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                 />
               </div>
