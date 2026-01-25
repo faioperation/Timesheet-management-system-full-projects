@@ -194,7 +194,7 @@ const router = createBrowserRouter([
       {
         path: 'user/add',
         element: (
-          <RoleBasedRoute allowedRoles={['Business Admin']}>
+          <RoleBasedRoute allowedRoles={['Business Admin', 'Staff']}>
             <AddUser />
           </RoleBasedRoute>
         ),
@@ -202,7 +202,7 @@ const router = createBrowserRouter([
       {
         path: 'user/add-internal',
         element: (
-          <RoleBasedRoute allowedRoles={['Business Admin']}>
+          <RoleBasedRoute allowedRoles={['Business Admin', 'Staff']}>
             <AddInternalUser />
           </RoleBasedRoute>
         ),
@@ -272,7 +272,7 @@ const router = createBrowserRouter([
           {
             path: 'template',
             element: (
-              <RoleBasedRoute allowedRoles={['Staff', 'Business Admin']}>
+              <RoleBasedRoute allowedRoles={['Staff', 'Business Admin', 'User']}>
                 <Template />
               </RoleBasedRoute>
             ),

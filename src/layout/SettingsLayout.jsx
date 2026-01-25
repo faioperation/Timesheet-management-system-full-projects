@@ -44,9 +44,10 @@ const SettingsLayout = () => {
         { name: 'Security', path: '/settings/change-password' },
       ];
     } else {
-      // Default/User: Only Profile
+      // Default/User: Profile, Security, and Template
       return [
         { name: 'Profile', path: '/settings/profile' },
+        { name: 'Template', path: '/settings/template' },
         { name: 'Security', path: '/settings/change-password' },
       ];
     }

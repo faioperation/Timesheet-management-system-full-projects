@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { IoMdArrowDropdown } from 'react-icons/io';
+import { FaPlus } from 'react-icons/fa';
 import ReusableTable from '../components/ReusableTable';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { apiFetch } from '../libs/apiFetch';
 import { toast } from 'react-toastify';
 
@@ -215,36 +216,47 @@ export default function UserTimesheet() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h3 className="text-lg font-bold text-gray-700">My submitted timesheet</h3>
 
-        {/* Weekly/Monthly/Yearly Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-[#5069E5] transition-colors cursor-pointer justify-between min-w-[120px]"
+        <div className="flex items-center gap-4">
+          {/* Create Timesheet Button */}
+          <Link
+            to="/timesheet/create"
+            className="flex items-center gap-2 px-6 py-2.5 bg-[#5069E5] text-white rounded-lg text-sm font-medium hover:bg-[#3d52c7] transition-colors shadow-sm"
           >
-            <span>{filterPeriod}</span>
-            <IoMdArrowDropdown className="text-gray-500" size={20} />
-          </button>
+            <FaPlus size={14} />
+            <span>Create Timesheet</span>
+          </Link>
 
-          {showDropdown && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowDropdown(false)}
-              ></div>
-              <div className="absolute right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20 min-w-[120px]">
-                {filterOptions.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => handlePeriodChange(option)}
-                    className={`w-full text-left px-4 py-2 hover:bg-[#E0E7FF] transition-colors ${filterPeriod === option ? 'bg-[#E0E7FF] text-[#5069E5]' : 'text-gray-800'
-                      }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          {/* Weekly/Monthly/Yearly Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-[#5069E5] transition-colors cursor-pointer justify-between min-w-[120px]"
+            >
+              <span>{filterPeriod}</span>
+              <IoMdArrowDropdown className="text-gray-500" size={20} />
+            </button>
+
+            {showDropdown && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowDropdown(false)}
+                ></div>
+                <div className="absolute right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20 min-w-[120px]">
+                  {filterOptions.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => handlePeriodChange(option)}
+                      className={`w-full text-left px-4 py-2 hover:bg-[#E0E7FF] transition-colors ${filterPeriod === option ? 'bg-[#E0E7FF] text-[#5069E5]' : 'text-gray-800'
+                        }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

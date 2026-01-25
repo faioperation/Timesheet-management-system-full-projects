@@ -17,6 +17,19 @@ export default function Template() {
   const [roles, setRoles] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
 
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+  };
+
+  const userRole = getCookie("user_role");
+  const canModify =
+    userRole === "Business Admin" ||
+    userRole === "Staff" ||
+    userRole === "supervisor";
+
   const fetchTemplates = async () => {
     setIsFetching(true);
     try {
@@ -177,12 +190,14 @@ export default function Template() {
           >
             View
           </button>
-          <button
-            onClick={() => handleUpdateTemplate(row)}
-            className="text-green-600 hover:text-green-800 font-medium transition-colors"
-          >
-            Update
-          </button>
+          {canModify && (
+            <button
+              onClick={() => handleUpdateTemplate(row)}
+              className="text-green-600 hover:text-green-800 font-medium transition-colors"
+            >
+              Update
+            </button>
+          )}
         </div>
       ),
     },
@@ -192,13 +207,15 @@ export default function Template() {
     <div className="p-6">
       {/* Header with Create Template Button */}
       <div className="flex justify-end mb-6">
-        <button
-          onClick={handleCreateTemplate}
-          className="flex items-center gap-2 px-4 py-2 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium"
-        >
-          <FaPlus size={14} />
-          Create template
-        </button>
+        {canModify && (
+          <button
+            onClick={handleCreateTemplate}
+            className="flex items-center gap-2 px-4 py-2 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium"
+          >
+            <FaPlus size={14} />
+            Create template
+          </button>
+        )}
       </div>
 
       {/* Reusable Table */}

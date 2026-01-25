@@ -16,9 +16,10 @@ export default function UserList() {
   };
   const userRole = getCookie("user_role");
   const normalizedRole = decodeURIComponent(userRole || "").trim().toLowerCase();
-  const isBusinessAdmin = normalizedRole === "business admin";
-  const canAssignClient =
-    isBusinessAdmin || normalizedRole === "supervisor" || normalizedRole === "staff";
+  const isBusinessAdmin = normalizedRole.includes("business admin") || normalizedRole.includes("admin");
+  const isSupervisor = normalizedRole.includes("supervisor") || normalizedRole.includes("staff");
+  const canAddAnyUser = isBusinessAdmin || isSupervisor;
+  const canAssignClient = isBusinessAdmin || isSupervisor;
   const [activeFilter, setActiveFilter] = useState('User');
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -281,9 +282,9 @@ export default function UserList() {
   const handleAddUser = () => {
     if (
       (activeFilter === "User") &&
-      !isBusinessAdmin
+      !canAddAnyUser
     ) {
-      toast.error("Only Business Admin can add users");
+      toast.error("You do not have permission to add users");
       return;
     }
     if (activeFilter === 'Client' || activeFilter === 'Vendor' || activeFilter === 'Employee') {
@@ -426,11 +427,14 @@ export default function UserList() {
       key: 'role',
       label: 'Role',
       className: 'text-left',
-      render: (row) => (
-        <span className={`text-sm font-medium ${getRoleClass(row.role)}`}>
-          {row.role}
-        </span>
-      ),
+      render: (row) => {
+        const displayRole = row.role === 'Staff' ? 'Supervisor' : row.role;
+        return (
+          <span className={`text-sm font-medium ${getRoleClass(row.role)}`}>
+            {displayRole}
+          </span>
+        );
+      },
     },
     {
       key: 'status',
@@ -528,11 +532,11 @@ export default function UserList() {
           ))}
         </div>
 
-        {(activeFilter === "User"
-          ? isBusinessAdmin
+        {(activeFilter === "User" || activeFilter === "Internal User"
+          ? canAddAnyUser
           : true) && (
             <div className="flex gap-2">
-              {activeFilter === 'Internal User' && isBusinessAdmin && (
+              {activeFilter === 'Internal User' && canAddAnyUser && (
                 <button
                   onClick={() => navigate('/user/add-internal')}
                   className="flex items-center gap-2 px-4 py-2.5 bg-[#E0E7FF] text-[#5069E5] rounded-lg hover:bg-[#c7d2fe] transition-colors font-medium whitespace-nowrap"

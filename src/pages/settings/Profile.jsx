@@ -210,7 +210,7 @@ export default function Profile() {
       }
 
       const result = await updateProfile(formDataToSend);
-
+      console.log("Update profile response:", result);
       if (result.success) {
         // Reset editing states
         setIsEditing({
@@ -231,13 +231,13 @@ export default function Profile() {
         }
         
         setImageFile(null); // Clear pending file
-        toast.success("Profile updated successfully");
+        toast.success(result.message || "Profile updated successfully!");
       } else {
-        throw new Error(result.message || "Failed to update profile");
+        toast.error(result.message || "Failed to update profile");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error(error.message || "Failed to update profile");
+      toast.error(error.message || "Something went wrong while updating profile");
     } finally {
       setIsLoading(false);
     }
