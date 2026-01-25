@@ -53,18 +53,8 @@ export default function Profile() {
 
   // Helper function to send FormData to profile-edit API
   const updateProfile = async (formDataToSend) => {
-    const token = getAuthToken();
-    const headers = {
-      Accept: "application/json",
-    };
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const response = await fetch("/api/profile-edit", {
+    const response = await apiFetch("/profile-edit", {
       method: "POST",
-      headers,
       body: formDataToSend,
     });
 
@@ -187,27 +177,15 @@ export default function Profile() {
     setIsEditing((prev) => ({ ...prev, [field]: true }));
   };
 
-  const handleSave = async (field) => {
+  const handleSave = (field) => {
+    setIsEditing((prev) => ({ ...prev, [field]: false }));
+  };
+
+  const handleUpdateAll = async () => {
     setIsLoading(true);
     try {
       const formDataToSend = new FormData();
 
-      // Map field names to API format
-      const fieldMapping = {
-        name: "name",
-        email: "email",
-        mobile: "phone",
-        phone: "phone",
-      };
-
-      const apiFieldName = fieldMapping[field] || field;
-
-      // Send the field being updated
-      if (formData[field] !== undefined && formData[field] !== null) {
-        formDataToSend.append(apiFieldName, formData[field]);
-      }
-
-      // Always send all existing fields to avoid validation errors
       if (formData.name) formDataToSend.append("name", formData.name);
       if (formData.email) formDataToSend.append("email", formData.email);
       if (formData.phone) formDataToSend.append("phone", formData.phone);
@@ -221,123 +199,71 @@ export default function Profile() {
         );
       }
 
+      // If there's an image file object (not a URL string)
+      if (imageFile) {
+        formDataToSend.append("image", imageFile);
+      }
+
+      // If there's a signature file object
+      if (formData.signature && typeof formData.signature === 'object') {
+        formDataToSend.append("signature", formData.signature);
+      }
+
       const result = await updateProfile(formDataToSend);
 
       if (result.success) {
-        setIsEditing((prev) => ({ ...prev, [field]: false }));
-        toast.success(
-          `${field.charAt(0).toUpperCase() + field.slice(1)
-          } updated successfully`
-        );
+        // Reset editing states
+        setIsEditing({
+          name: false,
+          email: false,
+          phone: false,
+        });
+
+        // Update local state with returned data
+        if (result.data) {
+          const data = result.data;
+          if (data.image) {
+            setProfileImage(buildImageUrl(data.image));
+          }
+          if (data.signature) {
+            setSignaturePreview(buildImageUrl(data.signature));
+          }
+        }
+        
+        setImageFile(null); // Clear pending file
+        toast.success("Profile updated successfully");
       } else {
-        throw new Error(result.message || `Failed to update ${field}`);
+        throw new Error(result.message || "Failed to update profile");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error(error.message || `Failed to update ${field}`);
+      toast.error(error.message || "Failed to update profile");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setIsLoading(true);
-      try {
-        // Preview the image
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setProfileImage(reader.result);
-        };
-        reader.readAsDataURL(file);
-
-        // Upload to server
-        const formDataToSend = new FormData();
-        formDataToSend.append("image", file);
-
-        // Add other fields
-        if (formData.name) formDataToSend.append("name", formData.name);
-        if (formData.email) formDataToSend.append("email", formData.email);
-        if (formData.phone) formDataToSend.append("phone", formData.phone);
-        if (formData.gender)
-          formDataToSend.append("gender", formData.gender.toLowerCase());
-        if (formData.maritalStatus)
-          formDataToSend.append(
-            "marital_status",
-            formData.maritalStatus.toLowerCase()
-          );
-
-        const result = await updateProfile(formDataToSend);
-
-        if (result.success) {
-          // Update image URL if returned from API
-          if (result.data && result.data.image) {
-            const imageUrl = buildImageUrl(result.data.image);
-            setProfileImage(imageUrl || null);
-          }
-          toast.success("Profile image uploaded successfully");
-        } else {
-          throw new Error(result.message || "Failed to upload image");
-        }
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        toast.error(error.message || "Failed to upload profile image");
-      } finally {
-        setIsLoading(false);
-      }
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleSignatureUpload = async (e) => {
+  const handleSignatureUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setIsLoading(true);
-      try {
-        // Preview the signature
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setSignaturePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-
-        // Store file reference
-        setFormData((prev) => ({ ...prev, signature: file }));
-
-        // Upload to server
-        const formDataToSend = new FormData();
-        formDataToSend.append("signature", file);
-
-        // Add other fields
-        if (formData.name) formDataToSend.append("name", formData.name);
-        if (formData.email) formDataToSend.append("email", formData.email);
-        if (formData.phone) formDataToSend.append("phone", formData.phone);
-        if (formData.gender)
-          formDataToSend.append("gender", formData.gender.toLowerCase());
-        if (formData.maritalStatus)
-          formDataToSend.append(
-            "marital_status",
-            formData.maritalStatus.toLowerCase()
-          );
-
-        const result = await updateProfile(formDataToSend);
-
-        if (result.success) {
-          // Update signature URL if returned from API
-          if (result.data && result.data.signature) {
-            const signatureUrl = buildImageUrl(result.data.signature);
-            setSignaturePreview(signatureUrl);
-          }
-          toast.success("Signature uploaded successfully");
-        } else {
-          throw new Error(result.message || "Failed to upload signature");
-        }
-      } catch (error) {
-        console.error("Error uploading signature:", error);
-        toast.error(error.message || "Failed to upload signature");
-      } finally {
-        setIsLoading(false);
-      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSignaturePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      setFormData((prev) => ({ ...prev, signature: file }));
     }
   };
 
@@ -364,14 +290,14 @@ export default function Profile() {
               <div className="w-full h-[500px]  rounded-lg overflow-hidden mb-4 bg-gray-100 border border-gray-200">
                 <img
                   key={profileImage}
-                  src={profileImage || ""}
+                  src={profileImage || "https://ui-avatars.com/api/?name=" + (formData.name || "User") + "&background=random&size=500"}
                   alt="Profile"
                   className="w-full h-full object-cover"
                   onError={async (e) => {
-                    console.error("Profile image failed to load:", e.target.src);
                     if (profileImageRetry || !profileImage) {
                       return;
                     }
+                    console.error("Profile image failed to load:", e.target.src);
                     try {
                       const token = getAuthToken();
                       if (!token) return;
@@ -437,7 +363,6 @@ export default function Profile() {
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   disabled={!isEditing.name}
-                  onBlur={() => isEditing.name && handleSave("name")}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] disabled:bg-gray-50 text-gray-800 pr-10"
                   placeholder="Enter your name"
                 />
@@ -453,30 +378,19 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Email Field */}
+            {/* Email Field - Disabled as per request */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email<span className="text-red-500">*</span>
+                Email
               </label>
               <div className="relative">
                 <input
                   type="email"
                   value={formData.email || ""}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  disabled={!isEditing.email}
-                  onBlur={() => isEditing.email && handleSave("email")}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] disabled:bg-gray-50 text-gray-800 pr-10"
+                  disabled={true}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 pr-10 cursor-not-allowed"
                   placeholder="Enter your email"
                 />
-                <button
-                  type="button"
-                  onClick={() =>
-                    isEditing.email ? handleSave("email") : handleEdit("email")
-                  }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#5069E5] transition-colors"
-                >
-                  <FiEdit2 size={18} />
-                </button>
               </div>
             </div>
 
@@ -491,7 +405,6 @@ export default function Profile() {
                   value={formData.phone || ""}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   disabled={!isEditing.phone}
-                  onBlur={() => isEditing.phone && handleSave("phone")}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] disabled:bg-gray-50 text-gray-800 pr-10"
                   placeholder="Enter your mobile number"
                 />
@@ -515,39 +428,7 @@ export default function Profile() {
               <div className="relative">
                 <select
                   value={formData.gender || ""}
-                  onChange={async (e) => {
-                    handleInputChange("gender", e.target.value);
-                    // Auto-save on change
-                    setIsLoading(true);
-                    try {
-                      const formDataToSend = new FormData();
-                      formDataToSend.append(
-                        "gender",
-                        e.target.value.toLowerCase()
-                      );
-                      if (formData.name)
-                        formDataToSend.append("name", formData.name);
-                      if (formData.email)
-                        formDataToSend.append("email", formData.email);
-                      if (formData.phone)
-                        formDataToSend.append("phone", formData.phone);
-                      if (formData.maritalStatus)
-                        formDataToSend.append(
-                          "marital_status",
-                          formData.maritalStatus.toLowerCase()
-                        );
-
-                      const result = await updateProfile(formDataToSend);
-                      if (result.success) {
-                        toast.success("Gender updated successfully");
-                      }
-                    } catch (error) {
-                      console.error("Error updating gender:", error);
-                      toast.error("Failed to update gender");
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
+                  onChange={(e) => handleInputChange("gender", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                 >
                   <option value="">Select Gender</option>
@@ -570,39 +451,7 @@ export default function Profile() {
               <div className="relative">
                 <select
                   value={formData.maritalStatus || ""}
-                  onChange={async (e) => {
-                    handleInputChange("maritalStatus", e.target.value);
-                    // Auto-save on change
-                    setIsLoading(true);
-                    try {
-                      const formDataToSend = new FormData();
-                      formDataToSend.append(
-                        "marital_status",
-                        e.target.value.toLowerCase()
-                      );
-                      if (formData.name)
-                        formDataToSend.append("name", formData.name);
-                      if (formData.email)
-                        formDataToSend.append("email", formData.email);
-                      if (formData.phone)
-                        formDataToSend.append("phone", formData.phone);
-                      if (formData.gender)
-                        formDataToSend.append(
-                          "gender",
-                          formData.gender.toLowerCase()
-                        );
-
-                      const result = await updateProfile(formDataToSend);
-                      if (result.success) {
-                        toast.success("Marital status updated successfully");
-                      }
-                    } catch (error) {
-                      console.error("Error updating marital status:", error);
-                      toast.error("Failed to update marital status");
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
+                  onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                 >
                   <option value="">Select Marital Status</option>
@@ -618,27 +467,19 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Password Field */}
+            {/* Password Field - Disabled as per request */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password<span className="text-red-500">*</span>
+                Password
               </label>
               <div className="relative">
                 <input
                   type="password"
                   value="********"
-                  readOnly
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-gray-50 text-gray-800 pr-10 cursor-pointer"
-                  placeholder="Click to change password"
-                  onClick={() => setIsPasswordModalOpen(true)}
+                  disabled={true}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 pr-10 cursor-not-allowed"
+                  placeholder="Password"
                 />
-                <button
-                  type="button"
-                  onClick={() => setIsPasswordModalOpen(true)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#5069E5] transition-colors"
-                >
-                  <FiEdit2 size={18} />
-                </button>
               </div>
             </div>
 
@@ -760,6 +601,25 @@ export default function Profile() {
                 </div>
               </div>
             ) : null}
+
+            {/* Update Button */}
+            <div className="mt-10 pt-6 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={handleUpdateAll}
+                disabled={isLoading}
+                className="w-full sm:w-auto min-w-[200px] bg-[#5069E5] text-white py-3.5 px-10 rounded-xl font-bold hover:bg-[#3d52c7] transition-all shadow-lg shadow-indigo-100 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Updating...</span>
+                  </>
+                ) : (
+                  <span>Update Profile</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -241,16 +241,15 @@ export default function Timesheet() {
           {userRole === 'Business Admin' ? (
             <>
               <select
-                value={row.status}
+                value={row.status === 'Pending' ? 'submitted' : row.status.toLowerCase()}
                 onChange={(e) => handleStatusChange(row, e.target.value)}
-                disabled={updatingStatusId === row.id}
-                className="px-3 py-1 rounded-full text-xs font-medium border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#5069E5] disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={updatingStatusId === row.id || row.status === 'Approved'}
+                className="px-3 py-1 rounded-full text-xs font-medium border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#5069E5] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
+                <option value="submitted">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
               </select>
-              <IoMdArrowDropdown className="text-gray-400 pointer-events-none" size={14} />
             </>
           ) : (
             <span className={`px-3 py-1 inline-flex items-center rounded-full text-xs font-medium border ${getStatusBadgeClass(row.status)}`}>
@@ -400,19 +399,23 @@ export default function Timesheet() {
                   <div>
                     <p className="text-gray-500">Period</p>
                     <p className="text-gray-800 font-medium">
-                      {selectedTimesheetDetails?.period || selectedTimesheet.period || '-'}
+                      {selectedTimesheetDetails 
+                        ? (selectedTimesheetDetails.start_date && selectedTimesheetDetails.end_date 
+                          ? `${formatDate(selectedTimesheetDetails.start_date)} to ${formatDate(selectedTimesheetDetails.end_date)}`
+                          : '-')
+                        : selectedTimesheet.period || '-'}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500">Upload Date</p>
                     <p className="text-gray-800 font-medium">
-                      {selectedTimesheetDetails?.upload_date || selectedTimesheet.uploadDate || '-'}
+                      {formatDate(selectedTimesheetDetails?.created_at || selectedTimesheetDetails?.upload_date) || selectedTimesheet.uploadDate || '-'}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500">Status</p>
                     <p className="text-gray-800 font-medium">
-                      {selectedTimesheetDetails?.status || selectedTimesheet.status || '-'}
+                      {formatStatus(selectedTimesheetDetails?.status || selectedTimesheet.status) || '-'}
                     </p>
                   </div>
                 </div>
@@ -434,7 +437,7 @@ export default function Timesheet() {
                         <tbody>
                           {selectedTimesheetDetails.entries.map((entry, idx) => (
                             <tr key={idx} className="border-b last:border-b-0">
-                              <td className="px-3 py-2">{entry.entry_date || '-'}</td>
+                              <td className="px-3 py-2">{formatDate(entry.entry_date)}</td>
                               <td className="px-3 py-2">{entry.daily_hours ?? '-'}</td>
                               <td className="px-3 py-2">{entry.extra_hours ?? '-'}</td>
                               <td className="px-3 py-2">{entry.vacation_hours ?? '-'}</td>

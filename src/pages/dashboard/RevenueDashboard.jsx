@@ -236,13 +236,12 @@ export default function RevenueDashboard() {
     const [selectedMonth, setSelectedMonth] = useState("All month");
     const [selectedConsultantType, setSelectedConsultantType] = useState("All");
     const [selectedUser, setSelectedUser] = useState("All user");
-    const [users, setUsers] = useState(["All user"]);
+    const [users, setUsers] = useState([]);
+    const [dashboardData, setDashboardData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const [revenueFilter, setRevenueFilter] = useState("Monthly");
-    const [salesFilter, setSalesFilter] = useState("Monthly");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedConsultant, setSelectedConsultant] = useState(null);
-    const filterOptions = ["Monthly", "Weekly", "Yearly"];
 
     const years = Array.from({ length: 16 }, (_, i) => (2020 + i).toString());
     const months = [
@@ -254,12 +253,15 @@ export default function RevenueDashboard() {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await apiFetch("/internalusers", { method: "GET" });
+                const response = await apiFetch("/users", { method: "GET" });
                 if (response.ok) {
                     const result = await response.json();
                     if (result.success && Array.isArray(result.data)) {
-                        const userNames = result.data.map((u) => u.name);
-                        setUsers(["All user", ...userNames]);
+                        // Filter to only show users with the 'User' role
+                        const filteredUsers = result.data.filter(u => 
+                            u.roles && u.roles.some(role => role.name === 'User')
+                        );
+                        setUsers(filteredUsers);
                     }
                 }
             } catch (error) {
@@ -268,6 +270,48 @@ export default function RevenueDashboard() {
         };
         fetchUsers();
     }, []);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            setIsLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (selectedYear) params.append('year', selectedYear);
+                if (selectedMonth !== "All month") {
+                    const monthIdx = months.indexOf(selectedMonth); // index 0 is "All month", so Jan is 1
+                    params.append('month', `${selectedYear}-${monthIdx < 10 ? '0' : ''}${monthIdx}`);
+                }
+                if (selectedConsultantType !== "All") params.append('consultant_type', selectedConsultantType);
+                if (selectedUser !== "All user") {
+                    const user = users.find(u => u.name === selectedUser);
+                    if (user) params.append('user_id', user.id);
+                }
+
+                const response = await apiFetch(`/revenue/dashboard-data?${params.toString()}`, { method: "GET" });
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        setDashboardData(result.data);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch dashboard data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, [selectedYear, selectedMonth, selectedConsultantType, selectedUser, users]);
+
+    // Prepare pie data from summary
+    const pieData = dashboardData ? [
+        { name: "Gross revenue", value: dashboardData.summary.total_gross_revenue },
+        { name: "Revenue", value: dashboardData.summary.total_net_margin },
+        { name: "Gross margin", value: dashboardData.summary.total_gross_margin },
+        { name: "Net margin", value: dashboardData.summary.total_net_margin },
+        { name: "Commission", value: dashboardData.summary.total_commission },
+    ] : salesAnalyticsData;
 
     // Dynamic date for header
     const currentDate = new Date();
@@ -288,29 +332,8 @@ export default function RevenueDashboard() {
         }
     };
 
-    const invoiceColumns = [
-        { key: "id", label: "Invoice ID", className: "text-left font-bold" },
-        { key: "client", label: "Client", className: "text-left" },
-        { key: "amount", label: "Amount", className: "text-left font-semibold" },
-        { key: "date", label: "Date", className: "text-left" },
-        {
-            key: "status",
-            label: "Status",
-            className: "text-left",
-            render: (row) => (
-                <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(
-                        row.status
-                    )}`}
-                >
-                    {row.status}
-                </span>
-            ),
-        },
-    ];
-
     return (
-        <div className="w-full pb-10 min-h-screen">
+        <div className={`w-full pb-10 min-h-screen ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
             {/* Header Section - EXACT IMAGE MATCH */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 px-2">
                 {/* Left Side: Date Circle and Text */}
@@ -347,7 +370,7 @@ export default function RevenueDashboard() {
                     <FilterDropdown
                         label="User"
                         value={selectedUser}
-                        options={users}
+                        options={["All user", ...users.map(u => u.name)]}
                         onSelect={setSelectedUser}
                     />
                 </div>
@@ -359,17 +382,12 @@ export default function RevenueDashboard() {
                 <div className="lg:col-span-3 bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 flex flex-col">
                     <div className="flex justify-between items-center mb-10">
                         <h3 className="text-xl font-bold text-[#0F172A]">Revenue</h3>
-                        <SimpleDropdown
-                            value={revenueFilter}
-                            options={filterOptions}
-                            onSelect={setRevenueFilter}
-                        />
                     </div>
 
                     <div className="flex-1 h-[340px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart
-                                data={revenueVsExpenseData}
+                                data={dashboardData ? dashboardData.chart : revenueVsExpenseData}
                                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                             >
                                 <defs>
@@ -385,7 +403,7 @@ export default function RevenueDashboard() {
                                     vertical={false}
                                 />
                                 <XAxis
-                                    dataKey="month"
+                                    dataKey="label"
                                     tickLine={false}
                                     axisLine={false}
                                     tick={{ fill: "#64748B", fontSize: 13, fontWeight: 500 }}
@@ -395,9 +413,7 @@ export default function RevenueDashboard() {
                                     tickLine={false}
                                     axisLine={false}
                                     tick={{ fill: "#64748B", fontSize: 12, fontWeight: 500 }}
-                                    tickFormatter={(value) => value === 0 ? "0" : `$ ${value}k`}
-                                    domain={[0, 100]}
-                                    ticks={[0, 20, 40, 60, 80, 100]}
+                                    tickFormatter={(value) => value === 0 ? "0" : `$ ${value >= 1000 ? (value/1000).toFixed(1) + 'k' : value}`}
                                 />
                                 <Tooltip
                                     cursor={{ stroke: '#5069E5', strokeWidth: 1 }}
@@ -410,6 +426,14 @@ export default function RevenueDashboard() {
                                     strokeWidth={2}
                                     fillOpacity={1}
                                     fill="url(#colorRevenue)"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="expense"
+                                    stroke="#EAB308"
+                                    strokeWidth={2}
+                                    fillOpacity={0.1}
+                                    fill="#EAB308"
                                 />
                             </AreaChart>
                         </ResponsiveContainer>
@@ -431,11 +455,6 @@ export default function RevenueDashboard() {
                 <div className="lg:col-span-2 bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 flex flex-col">
                     <div className="flex justify-between items-center mb-8">
                         <h2 className="text-xl font-bold text-[#0F172A]">Sales analytics</h2>
-                        <SimpleDropdown
-                            value={salesFilter}
-                            options={filterOptions}
-                            onSelect={setSalesFilter}
-                        />
                     </div>
 
                     {/* Total Expense Card */}
@@ -447,7 +466,7 @@ export default function RevenueDashboard() {
                             <span className="font-semibold text-sm">Total expense</span>
                         </div>
                         <div className="flex items-center gap-4">
-                            <p className="text-[42px] font-black text-[#0F172A] leading-none">$ 532,36</p>
+                            <p className="text-[42px] font-black text-[#0F172A] leading-none">$ {dashboardData ? dashboardData.summary.total_expense : '0.00'}</p>
                             <div className="flex items-center gap-1 text-[#4ADE80] text-lg font-bold">
                                 <IoMdArrowDropup className="text-2xl" />
                                 <span>12%</span>
@@ -458,20 +477,32 @@ export default function RevenueDashboard() {
                     <div className="flex flex-col xl:flex-row items-center justify-between gap-6">
                         {/* Colored labels list */}
                         <div className="flex flex-col gap-6 w-full xl:w-auto">
-                            {[
+                            {(dashboardData ? [
+                                { name: "Gross revenue", color: "#F87171", value: dashboardData.summary.total_gross_revenue },
+                                { name: "Revenue", color: "#9CA3AF", value: dashboardData.summary.total_net_margin },
+                                { name: "Gross margin", color: "#A5B4FC", value: dashboardData.summary.total_gross_margin },
+                                { name: "Net margin", color: "#A3E635", value: dashboardData.summary.total_net_margin },
+                                { name: "Commission", color: "#FDE047", value: dashboardData.summary.total_commission },
+                            ] : [
                                 { name: "Gross revenue", color: "#F87171" },
                                 { name: "Revenue", color: "#9CA3AF" },
                                 { name: "Gross margin", color: "#A5B4FC" },
                                 { name: "Net margin", color: "#A3E635" },
                                 { name: "Commission", color: "#FDE047" },
-                            ].map((item, i) => (
-                                <span
-                                    key={i}
-                                    style={{ color: item.color }}
-                                    className="text-[17px] font-bold"
-                                >
-                                    {item.name}
-                                </span>
+                            ]).map((item, i) => (
+                                <div key={i} className="flex flex-col">
+                                    <span
+                                        style={{ color: item.color }}
+                                        className="text-[17px] font-bold"
+                                    >
+                                        {item.name}
+                                    </span>
+                                    {dashboardData && (
+                                        <span className="text-[14px] font-medium text-gray-400">
+                                            $ {item.value >= 1000 ? (item.value/1000).toFixed(1) + 'k' : item.value}
+                                        </span>
+                                    )}
+                                </div>
                             ))}
                         </div>
 
@@ -480,13 +511,7 @@ export default function RevenueDashboard() {
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={[
-                                            { name: "Gross revenue", value: 350, color: "#F87171" },
-                                            { name: "Revenue", value: 150, color: "#9CA3AF" },
-                                            { name: "Gross margin", value: 200, color: "#A5B4FC" },
-                                            { name: "Net margin", value: 150, color: "#A3E635" },
-                                            { name: "Commission", value: 400, color: "#FDE047" },
-                                        ]}
+                                        data={pieData}
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={95}
@@ -495,21 +520,17 @@ export default function RevenueDashboard() {
                                         dataKey="value"
                                         stroke="none"
                                     >
-                                        {[
-                                            { color: "#F87171" },
-                                            { color: "#9CA3AF" },
-                                            { color: "#A5B4FC" },
-                                            { color: "#A3E635" },
-                                            { color: "#FDE047" },
-                                        ].map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        {pieData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
                                 </PieChart>
                             </ResponsiveContainer>
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">TOTAL</span>
-                                <span className="text-2xl font-black text-[#0F172A]">1.3k</span>
+                                <span className="text-2xl font-black text-[#0F172A]">
+                                    {dashboardData ? (dashboardData.summary.total_gross_revenue >= 1000 ? (dashboardData.summary.total_gross_revenue/1000).toFixed(1) + 'k' : dashboardData.summary.total_gross_revenue) : '0'}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -540,8 +561,36 @@ export default function RevenueDashboard() {
                 {/* Table Component */}
                 <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
                     <ReusableTable
-                        columns={reportColumns}
-                        data={revenueReportData}
+                        columns={[
+                            { label: "NO", key: "no", className: "w-16" },
+                            { label: "USER/CLIENT", key: "name_customer" },
+                            { label: "TOTAL HOURS", key: "total_hours" },
+                            { label: "REVENUE", key: "revenue" },
+                            { label: "TOTAL EXPENSE", key: "total_expense" },
+                            { label: "G.MARGIN", key: "gross_margin" },
+                            { label: "TOTAL COMMISSION", key: "total_commission" },
+                            { label: "N.MARGIN", key: "net_margin" },
+                            { label: "ACM COMM", key: "acm_comm" },
+                            { label: "REC CO", key: "rec_co" },
+                        ]}
+                        data={(dashboardData ? dashboardData.table : []).map((item, index) => ({
+                            ...item,
+                            no: index + 1,
+                            name_customer: (
+                                <div className="flex flex-col">
+                                    <span className="text-[#0F172A] font-bold text-sm tracking-tight">{item.consultant_name}</span>
+                                    <span className="text-gray-400 text-[11px] font-medium">{item.client_name}</span>
+                                </div>
+                            ),
+                            total_hours: <span className="font-bold text-[#0F172A]">{item.total_hours?.toFixed(2) || '0.00'}</span>,
+                            revenue: <span className="font-bold text-[#0F172A]">{item.revenue?.toFixed(2) || '0.00'}</span>,
+                            total_expense: <span className="font-bold text-[#0F172A]">{item.total_expense?.toFixed(2) || '0.00'}</span>,
+                            gross_margin: <span className="font-bold text-[#0F172A]">{item.gross_margin?.toFixed(2) || '0.00'}</span>,
+                            total_commission: <span className="font-bold text-[#0F172A]">{item.total_commission?.toFixed(2) || '0.00'}</span>,
+                            net_margin: <span className="font-bold text-blue-600">{item.net_margin?.toFixed(2) || '0.00'}</span>,
+                            acm_comm: <span className="font-bold text-[#0F172A]">{item.am_commission?.toFixed(2) || '0.00'}</span>,
+                            rec_co: <span className="font-bold text-[#0F172A]">{item.rec_commission?.toFixed(2) || '0.00'}</span>,
+                        }))}
                         itemsPerPage={10}
                         showPagination={true}
                         headerBgColor="bg-[#F8FAFF]"

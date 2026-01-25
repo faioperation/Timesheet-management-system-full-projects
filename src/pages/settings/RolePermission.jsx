@@ -1,229 +1,251 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '../../libs/apiFetch';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect, useCallback } from "react";
+import { apiFetch } from "../../libs/apiFetch";
+import { toast } from "react-toastify";
 
-const features = [
-  { name: 'Timesheet', key: 'Timesheet' },
-  { name: 'Schedular', key: 'Schedular' },
-  { name: 'General mail', key: 'General mail' },
-  { name: 'Schedular', key: 'Schedular2' },
-  { name: 'Supervisor activity', key: 'Supervisor activity' },
-  { name: 'User activity', key: 'User activity' },
-  { name: 'User', key: 'User' },
-  { name: 'Internal user', key: 'Internal user' },
-  { name: 'Customer assign to user', key: 'Customer assign to user' },
-  { name: 'Client', key: 'Client' },
-  { name: 'Vendor', key: 'Vendor' },
-  { name: 'Employee', key: 'Employee' },
-  { name: 'Template', key: 'Template' },
+const actions = [
+  { key: "add", label: "ADD", suffix: "create" },
+  { key: "view", label: "VIEW", suffix: "view" },
+  { key: "update", label: "UPDATE", suffix: "update" },
+  { key: "delete", label: "DELETE", suffix: "delete" },
 ];
 
 export default function RolePermission() {
-  const [activeRole, setActiveRole] = useState('Supervisor');
-  const [permissions, setPermissions] = useState({
-    Supervisor: {},
-    User: {},
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeRoleName, setActiveRoleName] = useState("Supervisor"); // Display name
+  const [internalRoleName, setInternalRoleName] = useState("Staff"); // Backend role name
+  const [roles, setRoles] = useState({}); // roleName -> id
+  const [featureRows, setFeatureRows] = useState([]); // Dynamically built rows
+  const [activePermissions, setActivePermissions] = useState({}); // permissionId -> boolean
   const [isFetching, setIsFetching] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Map API permission names to feature and action
-  const mapPermissionToFeature = (permissionName) => {
-    const permissionMap = {
-      // Timesheet permissions
-      'create_timesheet': { feature: 'Timesheet', action: 'add' },
-      'view_timesheet': { feature: 'Timesheet', action: 'view' },
-      'update_timesheet': { feature: 'Timesheet', action: 'update' },
-      'submit_timesheet': { feature: 'Timesheet', action: 'view' }, // submit maps to view
-      
-      // User permissions
-      'view_user': { feature: 'User', action: 'view' },
-      'create_user_details': { feature: 'User', action: 'add' },
-      'view_user_details': { feature: 'User', action: 'view' },
-      'update_user_details': { feature: 'User', action: 'update' },
-      'delete_user_details': { feature: 'User', action: 'delete' },
-      
-      // Party/Client/Vendor/Employee permissions
-      'view_party': { feature: 'Client', action: 'view' }, // Assuming party includes client/vendor/employee
-      
-      // Project permissions
-      'view_project': { feature: 'Template', action: 'view' }, // Mapping to closest match
-      
-      // Reports permissions
-      'view_reports': { feature: 'User activity', action: 'view' }, // Mapping to closest match
+  // Grouping logic: "action_feature" -> { feature, action }
+  const parsePermission = (p) => {
+    const name = p.name;
+    
+    // Normalize action mapping
+    const mapAction = (act) => {
+      const actionMap = {
+        create: 'add',
+        view: 'view',
+        update: 'update',
+        delete: 'delete',
+        status: 'update', // status update maps to update
+        role: 'update',   // role update maps to update
+        submit: 'view',
+        approve: 'update'
+      };
+      return actionMap[act] || 'view';
     };
 
-    return permissionMap[permissionName] || null;
+    // Special handling for Internal User related permissions
+    if (name.includes('internal_user')) {
+      const parts = name.split('_');
+      return { 
+        feature: 'Internal user', 
+        action: mapAction(parts[0]), 
+        id: p.id 
+      };
+    }
+
+    const parts = name.split('_');
+    if (parts.length < 2) return { feature: name, action: 'view', id: p.id };
+    
+    const action = parts[0];
+    let feature = parts.slice(1).join(' ');
+    
+    // Normalize feature name: remove 'update ' or 'role ' prefixes that cause duplicates
+    feature = feature.replace(/^(update|role|status)\s+/i, '');
+    
+    // Rename Party
+    if (feature.toLowerCase() === 'party') {
+      feature = 'Client / Vendor / Employee';
+    }
+    
+    return { 
+      feature: feature.charAt(0).toUpperCase() + feature.slice(1), 
+      action: mapAction(action), 
+      id: p.id,
+      originalName: name
+    };
   };
 
-  // Fetch permissions from API
-  const fetchPermissions = useCallback(async (role) => {
+  const fetchData = async (roleName) => {
     setIsFetching(true);
     try {
-      const endpoint = role === 'Supervisor' ? '/supervisor-permissions' : '/user-permissions';
-      const response = await apiFetch(endpoint, {
-        method: 'GET',
-      });
+      const isSupervisor = roleName === "Staff";
+      
+      // 1. Fetch All Assignable Permissions for this role (The List)
+      const listEndpoint = isSupervisor ? "/supervisor-permissions" : "/user-permissions";
+      const listRes = await apiFetch(listEndpoint);
+      const listData = await listRes.json();
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch permissions');
+      // 2. Fetch Available/Current Permissions (The Switch state)
+      const availableEndpoint = isSupervisor ? "/supervisor-available-permissions" : "/user-available-permissions";
+      const availableRes = await apiFetch(availableEndpoint);
+      const availableData = await availableRes.json();
+
+      if (listData.success && availableData.success) {
+        // Build rows dynamically from the list
+        const groupedFeatures = {};
+        listData.data.forEach(p => {
+          if (p.name.toLowerCase().includes('report')) return; // Explicitly skip report permissions
+          
+          const { feature, action, id } = parsePermission(p);
+          if (!groupedFeatures[feature]) {
+            groupedFeatures[feature] = { name: feature, perms: {} };
+          }
+          groupedFeatures[feature].perms[action] = id;
+        });
+
+        setFeatureRows(Object.values(groupedFeatures));
+
+        // Set active switch states
+        const activeMap = {};
+        availableData.data.forEach(p => {
+          activeMap[p.id] = true;
+        });
+        setActivePermissions(activeMap);
       }
 
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        // Initialize all features with false permissions
-        const initialPermissions = {};
-        features.forEach(feature => {
-          initialPermissions[feature.key] = {
-            add: false,
-            view: false,
-            update: false,
-            delete: false,
-          };
-        });
-
-        // Map API permissions to UI format
-        result.data.forEach(permission => {
-          const mapped = mapPermissionToFeature(permission.name);
-          if (mapped) {
-            if (!initialPermissions[mapped.feature]) {
-              initialPermissions[mapped.feature] = {
-                add: false,
-                view: false,
-                update: false,
-                delete: false,
-              };
-            }
-            initialPermissions[mapped.feature][mapped.action] = true;
-          }
-        });
-
-        setPermissions(prev => ({
-          ...prev,
-          [role]: initialPermissions,
-        }));
+      // 3. Get Role IDs if not already loaded (only once)
+      if (Object.keys(roles).length === 0) {
+        const rolesRes = await apiFetch("/roles");
+        const rolesData = await rolesRes.json();
+        if (rolesData.success) {
+          const roleMapping = {};
+          rolesData.data.forEach((r) => (roleMapping[r.name] = r.id));
+          setRoles(roleMapping);
+        }
       }
     } catch (error) {
-      console.error('Error fetching permissions:', error);
-      toast.error('Failed to load permissions');
+      console.error("Error fetching permission data:", error);
+      toast.error("Failed to load permissions");
     } finally {
       setIsFetching(false);
     }
-  }, []);
+  };
 
-  // Fetch permissions when component mounts or role changes
   useEffect(() => {
-    fetchPermissions(activeRole);
-  }, [activeRole, fetchPermissions]);
+    fetchData(internalRoleName);
+  }, [internalRoleName]);
 
-  const actions = [
-    { key: 'add', label: 'Add' },
-    { key: 'view', label: 'view' },
-    { key: 'update', label: 'Update' },
-    { key: 'delete', label: 'Delete' },
-  ];
-
-  const handleToggle = (feature, action) => {
-    setPermissions(prev => ({
+  const handleToggle = (permId) => {
+    if (!permId) return;
+    setActivePermissions(prev => ({
       ...prev,
-      [activeRole]: {
-        ...prev[activeRole],
-        [feature]: {
-          ...prev[activeRole][feature] || { add: false, view: false, update: false, delete: false },
-          [action]: !(prev[activeRole][feature]?.[action] || false),
-        },
-      },
+      [permId]: !prev[permId]
     }));
   };
 
+  const handleSave = async () => {
+    const roleId = roles[internalRoleName];
+    if (!roleId) {
+      toast.error("Role ID not found");
+      return;
+    }
 
-  if (isFetching) {
+    const selectedPermissionIds = Object.keys(activePermissions)
+      .filter(id => activePermissions[id])
+      .map(id => parseInt(id));
+
+    setIsSaving(true);
+    try {
+      const response = await apiFetch("/role-has-permission", {
+        method: "POST",
+        body: JSON.stringify({
+          role_id: roleId,
+          permissions: selectedPermissionIds
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`Permissions updated for ${activeRoleName}`);
+      } else {
+        throw new Error(result.message || "Failed to update permissions");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error(error.message || "Failed to save changes");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isFetching && featureRows.length === 0) {
     return (
-      <div className="p-6">
-        <h2 className="text-2xl font-bold text-black mb-6">Role Permission</h2>
-        <div className="flex items-center justify-center py-12">
-          <div className="text-gray-500">Loading permissions...</div>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5069E5]"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold text-black mb-6">Role Permission</h2>
+    <div className="p-2 sm:p-6 bg-[#F8F9FD] min-h-screen font-sans">
+      <div className="max-w-[1400px] mx-auto">
+        <h2 className="text-2xl font-bold text-gray-800 mb-8">Role Permission</h2>
 
-      {/* Role Selection Tabs */}
-      <div className="flex gap-2 mb-6">
-        {['Supervisor', 'User'].map((role) => (
-          <button
-            key={role}
-            onClick={() => setActiveRole(role)}
-            className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              activeRole === role
-                ? 'bg-[#5069E5] text-white'
-                : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-300'
-            }`}
-          >
-            {role}
-          </button>
-        ))}
-      </div>
+        {/* Role Selector Tabs */}
+        <div className="flex gap-2 mb-8">
+          {[
+            { label: "Supervisor", name: "Staff" },
+            { label: "User", name: "User" }
+          ].map((role) => (
+            <button
+              key={role.name}
+              onClick={() => {
+                setActiveRoleName(role.label);
+                setInternalRoleName(role.name);
+              }}
+              className={`px-8 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                internalRoleName === role.name
+                  ? "bg-[#5069E5] text-white shadow-lg shadow-indigo-100"
+                  : "bg-white text-gray-500 hover:text-gray-800 border border-gray-100"
+              }`}
+            >
+              {role.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Permission Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-100">
-              <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
-                >
-                  Feature
-                </th>
-                {actions.map((action) => (
-                  <th
-                    key={action.key}
-                    scope="col"
-                    className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider"
-                  >
-                    {action.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {features.map((feature, index) => {
-                const featurePermissions = permissions[activeRole]?.[feature.key] || {
-                  add: false,
-                  view: false,
-                  update: false,
-                  delete: false,
-                };
-                
-                return (
-                  <tr key={`${feature.key}-${index}`} className={index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {feature.name}
+        {/* Table Container */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50">
+                  <th className="px-8 py-5 text-[11px] font-black text-gray-500 uppercase tracking-wider">Feature</th>
+                  {actions.map((action) => (
+                    <th key={action.key} className="px-8 py-5 text-[11px] font-black text-center text-gray-500 uppercase tracking-wider">
+                      {action.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {featureRows.map((feature) => (
+                  <tr key={feature.name} className="hover:bg-gray-50/30 transition-colors">
+                    <td className="px-8 py-5">
+                      <span className="text-sm font-bold text-gray-700">{feature.name}</span>
                     </td>
                     {actions.map((action) => {
-                      const isEnabled = featurePermissions[action.key] || false;
+                      const pId = feature.perms[action.key];
+                      const isEnabled = pId && activePermissions[pId];
+                      const exists = !!pId;
+
                       return (
-                        <td key={action.key} className="px-6 py-4 whitespace-nowrap text-center">
+                        <td key={action.key} className="px-8 py-5 text-center">
                           <button
                             type="button"
-                            onClick={() => handleToggle(feature.key, action.key)}
-                            disabled={isLoading}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#5069E5] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                              isEnabled ? 'bg-[#5069E5]' : 'bg-gray-300'
-                            }`}
-                            role="switch"
-                            aria-checked={isEnabled}
+                            disabled={!exists || isSaving}
+                            onClick={() => handleToggle(pId)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#5069E5] focus:ring-offset-2 ${
+                              isEnabled ? "bg-[#5069E5]" : "bg-gray-200"
+                            } ${!exists ? "opacity-20 cursor-not-allowed" : "cursor-pointer"}`}
                           >
                             <span
-                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                isEnabled ? 'translate-x-5' : 'translate-x-0'
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                isEnabled ? "translate-x-6" : "translate-x-1"
                               }`}
                             />
                           </button>
@@ -231,13 +253,31 @@ export default function RolePermission() {
                       );
                     })}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+
+        {/* Action Button */}
+        <div className="flex justify-start">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-12 py-4 bg-[#5069E5] text-white rounded-2xl font-bold hover:bg-[#3d52c7] transition-all shadow-xl shadow-indigo-100 disabled:opacity-70 flex items-center gap-3"
+          >
+            {isSaving ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Saving...</span>
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </button>
         </div>
       </div>
     </div>
   );
 }
-

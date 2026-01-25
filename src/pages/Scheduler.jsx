@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { apiFetch } from '../libs/apiFetch';
+import { toast } from 'react-toastify';
 
 export default function Scheduler() {
   const today = new Date();
@@ -11,6 +13,34 @@ export default function Scheduler() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedDay, setSelectedDay] = useState(currentDay);
+  const [schedulerData, setSchedulerData] = useState([]);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const fetchSchedulerData = async (month, year) => {
+    setIsFetching(true);
+    try {
+      // Format YYYY-MM
+      const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+      const response = await apiFetch(`/scheduler?month=${monthStr}`, { method: 'GET' });
+      if (!response.ok) throw new Error('Failed to fetch scheduler data');
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        setSchedulerData(result.data);
+      } else {
+        setSchedulerData([]);
+      }
+    } catch (error) {
+      console.error('Scheduler fetch error:', error);
+      toast.error('Failed to load scheduler data');
+      setSchedulerData([]);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchedulerData(selectedMonth, selectedYear);
+  }, [selectedMonth, selectedYear]);
 
   const handlePreviousMonth = () => {
     setSelectedMonth((prev) => {
@@ -63,13 +93,28 @@ export default function Scheduler() {
     return days;
   }, [selectedMonth, selectedYear]);
 
+  const selectedEntry = useMemo(() => {
+    if (!selectedDay) return null;
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+    return schedulerData.find(item => item.entry_date === dateStr);
+  }, [selectedDay, selectedMonth, selectedYear, schedulerData]);
+
+  const hasEntryOnDay = (day) => {
+    if (!day) return false;
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return schedulerData.some(item => item.entry_date === dateStr);
+  };
+
   return (
     <div className="w-full pb-10">
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Column - Calendar */}
         <div className="flex-1 bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-700">Scheduler</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-bold text-gray-700">Scheduler</h3>
+              {isFetching && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#5069E5]"></div>}
+            </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center bg-gray-50 rounded-lg p-1 mr-2">
                 <button
@@ -108,7 +153,7 @@ export default function Scheduler() {
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
                   className="appearance-none border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#5069E5] cursor-pointer"
                 >
-                  {Array.from({ length: 201 }, (_, i) => 1900 + i).map((year) => (
+                  {Array.from({ length: 11 }, (_, i) => currentYear - 5 + i).map((year) => (
                     <option key={year} value={year}>
                       {year}
                     </option>
@@ -130,16 +175,17 @@ export default function Scheduler() {
               if (!day) {
                 return <div key={`empty-${index}`} className="h-20" />;
               }
-              const isToday = day === currentDay && selectedMonth === currentMonth && selectedYear === currentYear;
-              const isPast = new Date(selectedYear, selectedMonth, day) < new Date(currentYear, currentMonth, currentDay);
+              const isToday = day === today.getDate() && selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
+              const isPast = new Date(selectedYear, selectedMonth, day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
               const isSelected = day === selectedDay;
+              const hasData = hasEntryOnDay(day);
 
               return (
                 <button
                   key={day}
                   type="button"
                   onClick={() => setSelectedDay(day)}
-                  className={`h-20 p-3 rounded-lg border-2 text-lg font-semibold transition-all duration-200 flex flex-col items-start justify-start ${isSelected
+                  className={`h-20 p-3 rounded-lg border-2 text-lg font-semibold transition-all duration-200 flex flex-col items-start justify-start relative ${isSelected
                     ? 'bg-[#5069E5] text-white border-[#5069E5] shadow-lg shadow-indigo-100 scale-[1.02]'
                     : isToday
                       ? 'bg-white text-[#5069E5] border-[#5069E5] bg-indigo-50/10'
@@ -151,11 +197,17 @@ export default function Scheduler() {
                   <div className="flex justify-between w-full items-start">
                     <span>{day}</span>
                     {isToday && (
-                      <span className="text-[10px] bg-[#5069E5] text-white px-2 py-0.5 rounded-full uppercase font-bold">
+                      <span className={`text-[8px] px-1.5 py-0.5 rounded-full uppercase font-bold ${isSelected ? 'bg-white text-[#5069E5]' : 'bg-[#5069E5] text-white'}`}>
                         Today
                       </span>
                     )}
                   </div>
+                  {hasData && !isSelected && (
+                    <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-green-500 shadow-sm animate-pulse"></div>
+                  )}
+                  {hasData && isSelected && (
+                    <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-white shadow-sm"></div>
+                  )}
                 </button>
               );
             })}
@@ -184,7 +236,7 @@ export default function Scheduler() {
                 <div>
                   <p className="text-[10px] text-indigo-500 uppercase font-bold tracking-widest mb-1">Client Name</p>
                   <p className="text-sm font-bold text-gray-800 truncate">
-                    {selectedDay ? "Global Tech Solutions" : "-"}
+                    {selectedEntry?.timesheet?.client?.name || '-'}
                   </p>
                 </div>
               </div>
@@ -200,12 +252,22 @@ export default function Scheduler() {
                     </div>
                     <div>
                       <p className="text-[11px] text-gray-500 font-bold">Daily Hours</p>
-                      <p className="text-lg font-black text-gray-800">{selectedDay ? "08:00" : "00:00"}</p>
+                      <p className="text-lg font-black text-gray-800">{selectedEntry?.daily_hours || "00:00"}</p>
                     </div>
                   </div>
                   <div className="h-8 w-[1px] bg-gray-100 mx-2"></div>
                   <div className="text-right">
-                    <span className="text-[10px] text-green-500 bg-green-50 px-2 py-0.5 rounded-full font-bold">Active</span>
+                    {selectedEntry ? (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        selectedEntry.timesheet?.status === 'approved' ? 'text-green-500 bg-green-50' : 
+                        selectedEntry.timesheet?.status === 'rejected' ? 'text-red-500 bg-red-50' :
+                        'text-yellow-500 bg-yellow-50'
+                      }`}>
+                        {selectedEntry.timesheet?.status.toUpperCase()}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full font-bold">No Entry</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -217,7 +279,7 @@ export default function Scheduler() {
                   </div>
                   <div>
                     <p className="text-[11px] text-gray-500 font-bold">Extra Hours</p>
-                    <p className="text-lg font-black text-gray-800">{selectedDay ? "02:00" : "00:00"}</p>
+                    <p className="text-lg font-black text-gray-800">{selectedEntry?.extra_hours || "00:00"}</p>
                   </div>
                 </div>
               </div>
@@ -229,11 +291,19 @@ export default function Scheduler() {
                   </div>
                   <div>
                     <p className="text-[11px] text-gray-500 font-bold">Vacation</p>
-                    <p className="text-lg font-black text-gray-800">{selectedDay ? "00:00" : "00:00"}</p>
+                    <p className="text-lg font-black text-gray-800">{selectedEntry?.vacation_hours || "00:00"}</p>
                   </div>
                 </div>
               </div>
             </div>
+            {selectedEntry?.note && (
+              <div className="mt-4">
+                <p className="text-[10px] text-indigo-500 uppercase font-bold tracking-widest mb-1">Note</p>
+                <div className="p-3 bg-gray-50 rounded-lg text-xs leading-relaxed text-gray-600 border border-gray-100">
+                  {selectedEntry.note}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

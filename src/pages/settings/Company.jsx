@@ -6,6 +6,8 @@ import { toast } from 'react-toastify';
 export default function Company() {
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
+    phone: '',
     address: '',
     id: null,
   });
@@ -30,45 +32,19 @@ export default function Company() {
   const fetchCompanyData = async () => {
     setIsLoading(true);
     try {
-      // 1. Get logged-in user email from cookies
-      const getCookie = (name) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(";").shift();
-        return null;
-      };
-      const userEmail = decodeURIComponent(getCookie("user_email") || "");
-      console.log('Logged-in user email:', userEmail);
-
-      // 2. Fetch all businesses
-      console.log('Fetching all businesses from /business');
-      const response = await apiFetch('/business', { method: 'GET' });
-
-      let result;
-      try {
-        result = await response.json();
-      } catch (e) {
-        result = {};
-      }
-      console.log(`Business list result (Status: ${response.status}):`, result);
+      const response = await apiFetch('/company', { method: 'GET' });
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || `Failed to fetch business list (Status: ${response.status})`);
+        throw new Error(result.message || 'Failed to fetch company details');
       }
 
-      const businesses = result.data || (Array.isArray(result) ? result : []);
-
-      // 3. Filter to find the business belonging to this user
-      const myBusiness = businesses.find(b =>
-        (b.owner?.email === userEmail) ||
-        (b.email === userEmail) ||
-        (b.users && b.users.some(u => u.email === userEmail))
-      ) || businesses[0]; // Fallback to first if no exact match
-
-      if (myBusiness) {
-        const business = myBusiness;
+      if (result.success && result.data) {
+        const business = result.data;
         setFormData({
           name: business.name || '',
+          email: business.email || '',
+          phone: business.phone || '',
           address: business.address || '',
           id: business.id
         });
@@ -90,7 +66,7 @@ export default function Company() {
           setLogoPreview(normalizedBase ? `${normalizedBase}/${normalizedPath}` : business.logo);
         }
       } else {
-        throw new Error(result.message || 'No data found for this company');
+        throw new Error('No company data found');
       }
     } catch (error) {
       console.error('Error fetching company details:', error);
@@ -122,13 +98,15 @@ export default function Company() {
     try {
       const formDataPayload = new FormData();
       formDataPayload.append('name', formData.name);
+      formDataPayload.append('email', formData.email);
+      formDataPayload.append('phone', formData.phone);
       formDataPayload.append('address', formData.address);
       if (logoFile) {
         formDataPayload.append('logo', logoFile);
       }
 
-      const response = await apiFetch(`/business/${formData.id}`, {
-        method: 'POST', // Backend typically uses POST with _method=PUT or just POST for multipart
+      const response = await apiFetch('/company-update', {
+        method: 'POST',
         body: formDataPayload,
       });
 
@@ -234,6 +212,36 @@ export default function Company() {
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10"
                   placeholder="Enter Company Name"
+                />
+                <FaEdit className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Company Email</label>
+              <div className="relative">
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10"
+                  placeholder="Enter Company Email"
+                />
+                <FaEdit className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+              </div>
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Company Phone</label>
+              <div className="relative">
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10"
+                  placeholder="Enter Company Phone"
                 />
                 <FaEdit className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>

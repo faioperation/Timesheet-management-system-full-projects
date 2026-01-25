@@ -13,6 +13,7 @@ import Template from "../pages/settings/Template";
 import Company from "../pages/settings/Company";
 import RolePermission from "../pages/settings/RolePermission";
 import Subscription from "../pages/settings/Subscription";
+import ChangePasswordPage from "../pages/settings/ChangePassword";
 import TimesheetRoute from "../pages/TimesheetRoute";
 import Scheduler from "../pages/Scheduler";
 import TimesheetReport from "../pages/TimesheetReport";
@@ -262,10 +263,12 @@ const router = createBrowserRouter([
             path: 'role-permission',
             element: <RolePermission />,
           },
+/*
           {
             path: 'subscription',
             element: <Subscription />,
           },
+*/
           {
             path: 'template',
             element: (
@@ -273,6 +276,10 @@ const router = createBrowserRouter([
                 <Template />
               </RoleBasedRoute>
             ),
+          },
+          {
+            path: 'change-password',
+            element: <ChangePasswordPage />,
           },
           {
             path: '*',

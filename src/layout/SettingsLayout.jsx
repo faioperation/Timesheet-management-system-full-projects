@@ -21,6 +21,7 @@ const SettingsLayout = () => {
       return [
         { name: 'Profile', path: '/settings/profile' },
         { name: 'Template', path: '/settings/template' },
+        { name: 'Security', path: '/settings/change-password' },
       ];
     } else if (userRole === 'Business Admin') {
       // Business Admin: All tabs
@@ -29,7 +30,8 @@ const SettingsLayout = () => {
         { name: 'Company', path: '/settings/company' },
         { name: 'Role permission', path: '/settings/role-permission' },
         { name: 'Template', path: '/settings/template' },
-        { name: 'Subscription', path: '/settings/subscription' },
+        // { name: 'Subscription', path: '/settings/subscription' },
+        { name: 'Security', path: '/settings/change-password' },
       ];
     } else if (userRole === 'System Admin') {
       // System Admin: All tabs
@@ -38,12 +40,14 @@ const SettingsLayout = () => {
         { name: 'Company', path: '/settings/company' },
         { name: 'Role permission', path: '/settings/role-permission' },
         { name: 'Template', path: '/settings/template' },
-        { name: 'Subscription', path: '/settings/subscription' },
+        // { name: 'Subscription', path: '/settings/subscription' },
+        { name: 'Security', path: '/settings/change-password' },
       ];
     } else {
       // Default/User: Only Profile
       return [
         { name: 'Profile', path: '/settings/profile' },
+        { name: 'Security', path: '/settings/change-password' },
       ];
     }
   };

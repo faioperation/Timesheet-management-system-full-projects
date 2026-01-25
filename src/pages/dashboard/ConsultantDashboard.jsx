@@ -172,9 +172,6 @@ const ConsultantDetailModal = ({ isOpen, onClose, data }) => {
                 <div className="flex justify-between items-center px-10 py-6">
                     <h2 className="text-2xl font-bold text-gray-900">Consultant Information</h2>
                     <div className="flex items-center gap-4">
-                        <button className="px-8 py-2 bg-[#5069E5] text-white rounded-lg font-bold hover:bg-[#4054B2] transition-colors shadow-lg shadow-indigo-100">
-                            Edit
-                        </button>
                         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors bg-gray-50 p-2 rounded-full">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -188,36 +185,36 @@ const ConsultantDetailModal = ({ isOpen, onClose, data }) => {
                     {/* Column 1 */}
                     <div className="space-y-1">
                         <h3 className="text-xl font-bold text-gray-800 mb-6">Consultant Information</h3>
-                        <InfoRow label="Consultant Name" value={data.name} />
-                        <InfoRow label="Consultant Email" value="vyasnaresh+u11@gmail.com" />
-                        <InfoRow label="Client Name" value="Bangladesh" />
-                        <InfoRow label="Vendor Name" value="Bangladesh" />
-                        <InfoRow label="Employer Name" value="" />
+                        <InfoRow label="Consultant Name" value={data.consultant_name} />
+                        <InfoRow label="Consultant Email" value={data.consultant_email} />
+                        <InfoRow label="Client Name" value={data.client_name} />
+                        <InfoRow label="Vendor Name" value={data.vendor_name} />
+                        <InfoRow label="Employer Name" value={data.employer_name} />
                     </div>
 
                     {/* Column 2 */}
                     <div className="space-y-1">
                         <h3 className="text-xl font-bold text-gray-800 mb-6">Consultant Information</h3>
-                        <InfoRow label="Start Date" value="Sep-11-2024" />
-                        <InfoRow label="End Date" value="Dec-07-2025" />
-                        <InfoRow label="Employer Phone" value="" />
-                        <InfoRow label="Address" value="" />
-                        <InfoRow label="Account Manager Name" value="ACM1 NV" />
-                        <InfoRow label="BD Manager Name" value="not available" />
-                        <InfoRow label="Recruiter Name" value="recruiter 1 NV" />
+                        <InfoRow label="Start Date" value={data.start_date} />
+                        <InfoRow label="End Date" value={data.end_date} />
+                        <InfoRow label="Employer Phone" value={data.employer_phone} />
+                        <InfoRow label="Address" value={data.address} />
+                        <InfoRow label="Account Manager Name" value={data.am_name} />
+                        <InfoRow label="BD Manager Name" value={data.bdm_name} />
+                        <InfoRow label="Recruiter Name" value={data.rec_name} />
                     </div>
 
                     {/* Column 3 */}
                     <div className="space-y-1">
                         <h3 className="text-xl font-bold text-gray-800 mb-6">Consultant Information</h3>
-                        <InfoRow label="Client Rate" value="50.0" />
-                        <InfoRow label="Consultant Rate" value="0.0" />
-                        <InfoRow label="W2" value="30.0" />
-                        <InfoRow label="ptax" value="15.0%" />
-                        <InfoRow label="Account Manager Commision" value="1.0 Fix" />
-                        <InfoRow label="BD Commission" value="1.0 Fix" />
-                        <InfoRow label="Recruiter Commision" value="1.0 Fix" />
-                        <InfoRow label="C2C Other" value="1.0 Fix" />
+                        <InfoRow label="Client Rate" value={data.client_rate} />
+                        <InfoRow label="Consultant Rate" value={data.consultant_rate} />
+                        <InfoRow label="W2" value={data.w2} />
+                        <InfoRow label="ptax" value={data.ptax} />
+                        <InfoRow label="Account Manager Commision" value={data.am_commission} />
+                        <InfoRow label="BD Commission" value={data.bdm_commission} />
+                        <InfoRow label="Recruiter Commision" value={data.rec_commission} />
+                        <InfoRow label="C2C Other" value={data.c2c_other} />
                     </div>
                 </div>
             </div>
@@ -226,9 +223,14 @@ const ConsultantDetailModal = ({ isOpen, onClose, data }) => {
 };
 
 export default function ConsultantDashboard() {
-    const [selectedYear, setSelectedYear] = useState("2025");
-    const [selectedUser, setSelectedUser] = useState("User 11 NV");
-    const [selectedClient, setSelectedClient] = useState("Bangladesh");
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+    const [selectedUser, setSelectedUser] = useState("All user");
+    const [selectedClient, setSelectedClient] = useState("All client");
+    const [users, setUsers] = useState([]);
+    const [clients, setClients] = useState([]);
+
+    const [dashboardData, setDashboardData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     const [revenueFilter, setRevenueFilter] = useState("Monthly");
     const [salesFilter, setSalesFilter] = useState("Monthly");
@@ -237,8 +239,69 @@ export default function ConsultantDashboard() {
     const filterOptions = ["Monthly", "Weekly", "Yearly"];
 
     const years = Array.from({ length: 16 }, (_, i) => (2020 + i).toString());
-    const users = ["User 11 NV", "User 12 NV", "User 13 NV", "John Doe", "Jane Smith"];
-    const clients = ["Bangladesh", "USA", "UK", "Canada", "Germany"];
+
+    // 1. Fetch Users and Clients for Filters
+    useEffect(() => {
+        const fetchFilterData = async () => {
+            try {
+                // Fetch Users
+                const userRes = await apiFetch("/users", { method: "GET" });
+                if (userRes.ok) {
+                    const result = await userRes.json();
+                    if (result.success) {
+                        setUsers(result.data.filter(u => u.roles?.some(r => r.name === 'User')));
+                    }
+                }
+
+                // Fetch Clients
+                const clientRes = await apiFetch("/clients", { method: "GET" });
+                if (clientRes.ok) {
+                    const result = await clientRes.json();
+                    if (result.success) {
+                        setClients(result.data);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch filter options:", error);
+            }
+        };
+        fetchFilterData();
+    }, []);
+
+    // 2. Fetch Consolidated Dashboard Data
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            setIsLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (selectedYear) params.append('year', selectedYear);
+                
+                if (selectedUser !== "All user") {
+                    const user = users.find(u => u.name === selectedUser);
+                    if (user) params.append('user_id', user.id);
+                }
+
+                if (selectedClient !== "All client") {
+                    const client = clients.find(c => c.name === selectedClient);
+                    if (client) params.append('client_id', client.id);
+                }
+
+                const response = await apiFetch(`/consultant/dashboard-data?${params.toString()}`, { method: "GET" });
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        setDashboardData(result.data);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch dashboard data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, [selectedYear, selectedUser, selectedClient, users, clients]);
 
     // Dynamic date data for the header circle
     const today = new Date();
@@ -271,176 +334,180 @@ export default function ConsultantDashboard() {
                     <ConsultantFilterDropdown
                         label="Select User"
                         value={selectedUser}
-                        options={users}
+                        options={["All user", ...users.map(u => u.name)]}
                         onSelect={setSelectedUser}
                     />
                     <ConsultantFilterDropdown
                         label="Select Client"
                         value={selectedClient}
-                        options={clients}
+                        options={["All client", ...clients.map(c => c.name)]}
                         onSelect={setSelectedClient}
                     />
                 </div>
             </div>
 
-            {/* Main Content Grid - Adjusted Padding */}
-            <div className="px-2 grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
-                {/* Consultant Analysis Bar Chart - 60% Width */}
-                <div className="lg:col-span-3 bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 flex flex-col">
-                    <div className="flex justify-between items-center mb-10">
-                        <h3 className="text-xl font-bold text-[#374151]">Consultant</h3>
-                        <SimpleDropdown
-                            value={revenueFilter}
-                            options={filterOptions}
-                            onSelect={setRevenueFilter}
-                        />
-                    </div>
-
-                    <div className="flex-1 h-[340px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={consultantChartData}
-                                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                                barSize={40}
-                            >
-                                <CartesianGrid
-                                    strokeDasharray="0"
-                                    stroke="#F3F4F6"
-                                    horizontal={true}
-                                    vertical={false}
-                                />
-                                <XAxis
-                                    dataKey="month"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tick={{ fill: "#6B7280", fontSize: 13, fontWeight: 500 }}
-                                    dy={15}
-                                />
-                                <YAxis
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tick={{ fill: "#6B7280", fontSize: 13, fontWeight: 500 }}
-                                    domain={[0, 100]}
-                                    ticks={[0, 20, 40, 60, 80, 100]}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: 'transparent' }}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                                />
-                                <Bar
-                                    dataKey="w2"
-                                    stackId="a"
-                                    fill="#DDE2FF"
-                                    radius={[0, 0, 0, 0]}
-                                />
-                                <Bar
-                                    dataKey="c2c"
-                                    stackId="a"
-                                    fill="#F87171"
-                                    radius={[6, 6, 0, 0]}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    <div className="flex justify-center gap-10 mt-10">
-                        <div className="flex items-center gap-3">
-                            <span className="text-[15px] font-bold text-[#374151]">W2</span>
-                            <div className="w-4 h-4 bg-[#DDE2FF] rounded-md"></div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-[15px] font-bold text-[#374151]">C2C</span>
-                            <div className="w-4 h-4 bg-[#F87171] rounded-md"></div>
-                        </div>
-                    </div>
+            {isLoading ? (
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5069E5]"></div>
                 </div>
+            ) : (
+                <>
+                    {/* Main Content Grid */}
+                    <div className="px-2 grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+                        {/* Consultant Analysis Bar Chart - 60% Width */}
+                        <div className="lg:col-span-3 bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 flex flex-col">
+                            <div className="flex justify-between items-center mb-10">
+                                <h3 className="text-xl font-bold text-[#374151]">Consultant</h3>
+                            </div>
 
-                {/* Time Sheet Analytics Pie Chart - 40% Width */}
-                <div className="lg:col-span-2 bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 flex flex-col">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-xl font-bold text-[#0F172A]">Time sheet Analytics</h2>
-                        <SimpleDropdown
-                            value={salesFilter}
-                            options={filterOptions}
-                            onSelect={setSalesFilter}
-                        />
-                    </div>
-
-                    <div className="flex-1 flex flex-col items-center justify-center">
-                        <div className="w-[320px] h-[320px] relative">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={timeSheetAnalyticsData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={0}
-                                        outerRadius={150}
-                                        paddingAngle={2}
-                                        dataKey="value"
-                                        stroke="none"
+                            <div className="flex-1 h-[340px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                        data={dashboardData?.barChart || []}
+                                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                                        barSize={40}
                                     >
-                                        {timeSheetAnalyticsData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
+                                        <CartesianGrid
+                                            strokeDasharray="0"
+                                            stroke="#F3F4F6"
+                                            horizontal={true}
+                                            vertical={false}
+                                        />
+                                        <XAxis
+                                            dataKey="month"
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tick={{ fill: "#6B7280", fontSize: 13, fontWeight: 500 }}
+                                            dy={15}
+                                        />
+                                        <YAxis
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tick={{ fill: "#6B7280", fontSize: 13, fontWeight: 500 }}
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: 'transparent' }}
+                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                        />
+                                        <Bar
+                                            dataKey="w2"
+                                            stackId="a"
+                                            fill="#DDE2FF"
+                                        />
+                                        <Bar
+                                            dataKey="c2c"
+                                            stackId="a"
+                                            fill="#F87171"
+                                            radius={[6, 6, 0, 0]}
+                                        />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
 
-                        {/* Custom Legend to match image exactly */}
-                        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 mt-8">
-                            {timeSheetAnalyticsData.map((item, i) => (
-                                <div key={i} className="flex items-center gap-3">
-                                    <div
-                                        className="w-5 h-5 rounded-md"
-                                        style={{ backgroundColor: item.color }}
-                                    ></div>
-                                    <span className="text-[17px] font-medium text-[#4B5563]">{item.name}</span>
-                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M3 1.5L6.5 5L3 8.5" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
+                            <div className="flex justify-center gap-10 mt-10">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[15px] font-bold text-[#374151]">W2</span>
+                                    <div className="w-4 h-4 bg-[#DDE2FF] rounded-md"></div>
                                 </div>
-                            ))}
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[15px] font-bold text-[#374151]">C2C</span>
+                                    <div className="w-4 h-4 bg-[#F87171] rounded-md"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Time Sheet Analytics Pie Chart - 40% Width */}
+                        <div className="lg:col-span-2 bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 flex flex-col">
+                            <div className="flex justify-between items-center mb-8">
+                                <h2 className="text-xl font-bold text-[#0F172A]">Time sheet Analytics</h2>
+                            </div>
+
+                            <div className="flex-1 flex flex-col items-center justify-center">
+                                <div className="w-[320px] h-[320px] relative">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={dashboardData?.pieChart || []}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={0}
+                                                outerRadius={150}
+                                                paddingAngle={2}
+                                                dataKey="value"
+                                                stroke="none"
+                                            >
+                                                {(dashboardData?.pieChart || []).map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 mt-8">
+                                    {(dashboardData?.pieChart || []).map((item, i) => (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <div
+                                                className="w-5 h-5 rounded-md"
+                                                style={{ backgroundColor: item.color }}
+                                            ></div>
+                                            <span className="text-[17px] font-medium text-[#4B5563]">{item.name}</span>
+                                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M3 1.5L6.5 5L3 8.5" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Recent Timesheet Table */}
-            <div className="px-2 mt-12">
-                {/* Export Buttons and Title */}
-                <div className="flex flex-col gap-6 mb-8 px-2">
-                    <div className="flex items-center gap-3">
-                        <button className="px-5 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors shadow-sm">
-                            Excel
-                        </button>
-                        <button className="px-5 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors shadow-sm">
-                            PDF
-                        </button>
+                    {/* Recent Timesheet Table */}
+                    <div className="px-2 mt-12">
+                        <div className="flex flex-col gap-6 mb-8 px-2">
+                            <div className="flex items-center gap-3">
+                                <button className="px-5 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors shadow-sm">
+                                    Excel
+                                </button>
+                                <button className="px-5 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors shadow-sm">
+                                    PDF
+                                </button>
+                            </div>
+                            <h2 className="text-[20px] font-black text-[#0F172A]">Recent timesheet</h2>
+                        </div>
+
+                        <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
+                            <ReusableTable
+                                columns={timesheetColumns}
+                                data={(dashboardData?.table || []).map(row => ({
+                                    ...row,
+                                    name: row.name_client,
+                                    action: (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedConsultant(row.modalData);
+                                                setIsModalOpen(true);
+                                            }}
+                                            className="text-[#374151] font-bold underline hover:text-[#5069E5] transition-colors"
+                                        >
+                                            View
+                                        </button>
+                                    )
+                                }))}
+                                itemsPerPage={10}
+                                showPagination={true}
+                                headerBgColor="bg-[#F1F5FF]"
+                                stripedRows={false}
+                                tableClassName="text-[15px]"
+                            />
+                        </div>
                     </div>
-                    <h2 className="text-[20px] font-black text-[#0F172A]">Recent timesheet</h2>
-                </div>
-
-                <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
-                    <ReusableTable
-                        columns={timesheetColumns}
-                        data={timesheetData}
-                        itemsPerPage={10}
-                        showPagination={true}
-                        headerBgColor="bg-[#F1F5FF]"
-                        stripedRows={false}
-                        tableClassName="text-[15px]"
-                        onRowClick={(row) => {
-                            setSelectedConsultant(row);
-                            setIsModalOpen(true);
-                        }}
-                    />
-                </div>
-            </div>
+                </>
+            )}
 
             <ConsultantDetailModal
                 isOpen={isModalOpen}
