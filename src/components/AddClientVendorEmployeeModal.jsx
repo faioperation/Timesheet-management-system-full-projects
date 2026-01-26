@@ -3,7 +3,7 @@ import { FaTimes } from 'react-icons/fa';
 import { apiFetch } from '../libs/apiFetch';
 import { toast } from 'react-toastify';
 
-const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSuccess }) => {
+const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSuccess, editData = null }) => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -16,13 +16,23 @@ const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSucc
   // Reset form when modal opens/closes or type changes
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        name: '',
-        phone: '',
-        zipCode: '',
-        address: '',
-        remark: '',
-      });
+      if (editData) {
+        setFormData({
+          name: editData.name || '',
+          phone: editData.phone || '',
+          zipCode: editData.zip_code || editData.zipCode || '',
+          address: editData.address || '',
+          remark: editData.remarks || editData.remark || '',
+        });
+      } else {
+        setFormData({
+          name: '',
+          phone: '',
+          zipCode: '',
+          address: '',
+          remark: '',
+        });
+      }
     }
   }, [isOpen, type]);
 
@@ -51,9 +61,12 @@ const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSucc
       };
 
       const partyType = partyTypeMap[type] || 'client';
+      const isEdit = !!editData;
+      const endpoint = isEdit ? `/party/${editData.id}` : '/party';
+      const method = isEdit ? 'PUT' : 'POST';
 
-      const response = await apiFetch('/party', {
-        method: 'POST',
+      const response = await apiFetch(endpoint, {
+        method: method,
         body: JSON.stringify({
           name: formData.name,
           phone: formData.phone,
@@ -94,15 +107,16 @@ const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSucc
 
   // Get title based on type
   const getTitle = () => {
+    const action = editData ? 'Edit' : 'Add New';
     switch (type) {
       case 'Client':
-        return 'Add New Client';
+        return `${action} Client`;
       case 'Vendor':
-        return 'Add New Vendor';
+        return `${action} Vendor`;
       case 'Employee':
-        return 'Add New Employee';
+        return `${action} Employee`;
       default:
-        return 'Add New Client';
+        return `${action} Client`;
     }
   };
 
@@ -202,7 +216,7 @@ const AddClientVendorEmployeeModal = ({ isOpen, onClose, type = 'Client', onSucc
             disabled={isLoading}
             className="px-6 py-2.5 bg-[#5069E5] text-white rounded-lg hover:bg-[#3d52c7] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Saving...' : 'Save'}
+            {isLoading ? 'Saving...' : (editData ? 'Update' : 'Save')}
           </button>
           <button
             onClick={handleClose}

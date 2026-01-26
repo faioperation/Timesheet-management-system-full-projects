@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { FaPlus, FaEye } from 'react-icons/fa';
+import { FaPlus, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import ReusableTable from '../components/ReusableTable';
 import AddClientVendorEmployeeModal from '../components/AddClientVendorEmployeeModal';
 import { apiFetch } from '../libs/apiFetch';
 import { toast } from 'react-toastify';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
 export default function UserList() {
   const navigate = useNavigate();
@@ -23,11 +24,13 @@ export default function UserList() {
   const [activeFilter, setActiveFilter] = useState('User');
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingParty, setEditingParty] = useState(null);
   const [clientData, setClientData] = useState([]);
   const [vendorData, setVendorData] = useState([]);
   const [employeeData, setEmployeeData] = useState([]);
   const [allUsersData, setAllUsersData] = useState([]);
   const [isFetching, setIsFetching] = useState(true);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, row: null });
 
   const handlePartyCreated = async () => {
     // refresh current active tab data after create
@@ -298,6 +301,56 @@ export default function UserList() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setEditingParty(null);
+  };
+
+  const handleDelete = (row) => {
+    setDeleteModal({ isOpen: true, row: row });
+  };
+
+  const confirmDelete = async () => {
+    const row = deleteModal.row;
+    if (!row) return;
+
+    const isParty = activeFilter === 'Client' || activeFilter === 'Vendor' || activeFilter === 'Employee';
+    const typeLabel = isParty ? activeFilter : 'User';
+    
+    try {
+      let endpoint = '';
+      if (isParty) {
+        endpoint = `/party/${row.id}`;
+      } else if (activeFilter === 'Internal User') {
+        endpoint = `/internaluser/${row.id}`;
+      } else {
+        endpoint = `/user/${row.id}`;
+      }
+
+      const response = await apiFetch(endpoint, { method: 'DELETE' });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success(`${typeLabel} deleted successfully`);
+        setDeleteModal({ isOpen: false, row: null });
+        // Force refresh
+        window.location.reload(); 
+      } else {
+        throw new Error(result.message || 'Failed to delete');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error.message || 'Delete failed');
+    }
+  };
+
+  const handleEdit = (row) => {
+    const isParty = activeFilter === 'Client' || activeFilter === 'Vendor' || activeFilter === 'Employee';
+    if (isParty) {
+      setEditingParty(row);
+      setIsModalOpen(true);
+    } else {
+      const editPath = activeFilter === 'Internal User' ? `/user/edit-internal/${row.id}` : `/user/edit/${row.id}`;
+      navigate(editPath);
+    }
   };
 
   const handleView = (row) => {
@@ -404,6 +457,31 @@ export default function UserList() {
         );
       },
     },
+    {
+      key: 'action',
+      label: 'Action',
+      className: 'text-left',
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleEdit(row)}
+            className="text-blue-500 hover:text-blue-700 transition-colors"
+            title="Edit"
+          >
+            <FaEdit size={16} />
+          </button>
+          {isBusinessAdmin && (
+            <button
+              onClick={() => handleDelete(row)}
+              className="text-red-500 hover:text-red-700 transition-colors"
+              title="Delete"
+            >
+              <FaTrash size={16} />
+            </button>
+          )}
+        </div>
+      ),
+    },
   ];
 
 
@@ -455,21 +533,40 @@ export default function UserList() {
           <button
             onClick={() => handleView(row)}
             className="flex items-center gap-1 text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
+            title="View Details"
           >
-            <FaEye size={14} />
-            <span>View</span>
+            <FaEye size={16} />
           </button>
+          
+          <button
+            onClick={() => handleEdit(row)}
+            className="text-blue-500 hover:text-blue-700 transition-colors"
+            title="Edit"
+          >
+            <FaEdit size={16} />
+          </button>
+
+          {isBusinessAdmin && (
+            <button
+              onClick={() => handleDelete(row)}
+              className="text-red-500 hover:text-red-700 transition-colors"
+              title="Delete"
+            >
+              <FaTrash size={16} />
+            </button>
+          )}
+
           {canAssignClient && activeFilter === 'User' && (
             row.hasClientAssigned ? (
-              <span className="ml-auto px-3 py-1.5 text-gray-500 font-medium italic">
-                Assigned Client
+              <span className="ml-auto px-1.5 py-0.5 text-xs text-gray-400 font-medium italic border border-gray-100 rounded bg-gray-50">
+                Assigned
               </span>
             ) : (
               <button
                 onClick={() => handleAssignClient(row)}
-                className="ml-auto px-3 py-1.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+                className="ml-auto px-3 py-1.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors text-xs"
               >
-                Assign client
+                Assign
               </button>
             )
           )}
@@ -581,6 +678,14 @@ export default function UserList() {
         onClose={handleCloseModal}
         type={activeFilter}
         onSuccess={handlePartyCreated}
+        editData={editingParty}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, row: null })}
+        onConfirm={confirmDelete}
+        itemName={(activeFilter === 'Client' || activeFilter === 'Vendor' || activeFilter === 'Employee') ? activeFilter.toLowerCase() : 'user'}
       />
     </div>
   );

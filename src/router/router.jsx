@@ -25,7 +25,9 @@ import CreateTimesheet from "../pages/timesheet/CreateTimesheet";
 import Activity from "../pages/Activity";
 import UserList from "../pages/UserList";
 import AddUser from "../pages/AddUser";
+import EditUser from "../pages/EditUser";
 import AddInternalUser from "../pages/AddInternalUser";
+import EditInternalUser from "../pages/EditInternalUser";
 import AssignClientDetails from "../pages/AssignClientDetails";
 import UserProfileView from "../pages/UserProfileView";
 import SystemAdminDashboard from "../pages/dashboard/SystemAdminDashboard";
@@ -201,10 +203,26 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'user/edit/:id',
+        element: (
+          <RoleBasedRoute allowedRoles={['Business Admin', 'Staff']}>
+            <EditUser />
+          </RoleBasedRoute>
+        ),
+      },
+      {
         path: 'user/add-internal',
         element: (
           <RoleBasedRoute allowedRoles={['Business Admin', 'Staff']}>
             <AddInternalUser />
+          </RoleBasedRoute>
+        ),
+      },
+      {
+        path: 'user/edit-internal/:id',
+        element: (
+          <RoleBasedRoute allowedRoles={['Business Admin', 'Staff']}>
+            <EditInternalUser />
           </RoleBasedRoute>
         ),
       },
