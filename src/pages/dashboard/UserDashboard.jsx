@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -15,82 +15,63 @@ import { IoMdArrowDropdown } from "react-icons/io";
 import { FaChevronLeft, FaChevronRight, FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import ReusableTable from "../../components/ReusableTable";
+import { apiFetch } from "../../libs/apiFetch";
+import { toast } from "react-toastify";
 
 export default function UserDashboard() {
   const navigate = useNavigate();
-  const [filterPeriod, setFilterPeriod] = useState("Weekly");
-  const [currentDate] = useState(new Date()); // Current date
-  const [calendarMonth, setCalendarMonth] = useState(new Date()); // Current month
+  const [filterPeriod] = useState("Weekly");
+  const [currentDate] = useState(new Date()); 
+  const [calendarMonth, setCalendarMonth] = useState(new Date()); 
+  
+  // Dynamic State
+  const [hoursData, setHoursData] = useState([]);
+  const [pieData, setPieData] = useState([]);
+  const [recentTimesheets, setRecentTimesheets] = useState([]);
+  const [weekendDays, setWeekendDays] = useState(['Saturday', 'Sunday']);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Get current date info
   const dayNumber = currentDate.getDate();
   const dayName = currentDate.toLocaleDateString("en-US", { weekday: "short" });
   const monthName = currentDate.toLocaleDateString("en-US", { month: "long" });
 
-  // Hours bar chart data - matching image exactly
-  const hoursData = [
-    { day: "Sat", daily: 3.5, extra: 0, vacation: 0 },
-    { day: "Sun", daily: 0.5, extra: 2.5, vacation: 0 }, // Small daily + extra on top
-    { day: "Mon", daily: 8.5, extra: 0, vacation: 0 },
-    { day: "Thurs", daily: 4, extra: 0, vacation: 0 },
-    { day: "Wed", daily: 0, extra: 0, vacation: 4 }, // Vacation only
-    { day: "Tues", daily: 6, extra: 2, vacation: 0 }, // Daily + extra on top
-    { day: "Fri", daily: 7.5, extra: 0, vacation: 0 },
-  ];
+  const fetchDashboardData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiFetch('/user-dashboard-data', { method: 'GET' });
+      const result = await response.json();
 
-  // Pie chart data - matching image exactly (50%, 25%, 25%)
-  const pieData = [
-    { name: "Approved", value: 50, color: "#1B654A" }, // Dark green - largest slice (~50%)
-    { name: "Pending", value: 25, color: "#F46B6A" }, // Light pink (~25%)
-    { name: "Rejected", value: 25, color: "#E5D416" }, // Light yellow (~25%)
-  ];
+      if (response.ok && result.success) {
+        setHoursData(result.data.barChart);
+        setPieData(result.data.pieChart);
+        setRecentTimesheets(result.data.recentTimesheets);
+        setWeekendDays(result.data.weekend || ['Saturday', 'Sunday']);
+      } else {
+        throw new Error(result.message || 'Failed to fetch dashboard data');
+      }
+    } catch (error) {
+      console.error('Dashboard Fetch Error:', error);
+      toast.error(error.message || 'Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Recent timesheet data
-  const recentTimesheets = [
-    {
-      id: 1,
-      client: "Jane Cooper",
-      startDate: "16 Sep 2025",
-      endDate: "21 Sep 2025",
-      status: "Pending",
-    },
-    {
-      id: 2,
-      client: "Jane Cooper",
-      startDate: "16 Sep 2025",
-      endDate: "21 Sep 2025",
-      status: "Reject",
-    },
-    {
-      id: 3,
-      client: "Jane Cooper",
-      startDate: "16 Sep 2025",
-      endDate: "21 Sep 2025",
-      status: "Approved",
-    },
-    {
-      id: 4,
-      client: "Jane Cooper",
-      startDate: "16 Sep 2025",
-      endDate: "21 Sep 2025",
-      status: "Approved",
-    },
-    {
-      id: 5,
-      client: "Jane Cooper",
-      startDate: "16 Sep 2025",
-      endDate: "21 Sep 2025",
-      status: "Approved",
-    },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case "Approved":
+    const s = status.toLowerCase();
+    switch (s) {
+      case "approved":
         return "bg-green-100 text-green-800 border-green-200";
-      case "Pending":
+      case "pending":
+      case "submitted":
         return "bg-yellow-100 text-yellow-800 border-yellow-200 border-dashed";
-      case "Reject":
+      case "reject":
+      case "rejected":
         return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -115,8 +96,8 @@ export default function UserDashboard() {
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
       const day = prevMonthDays - i;
       const dateObj = new Date(year, month - 1, day);
-      const dayOfWeek = dateObj.getDay();
-      const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Friday or Saturday
+      const dayNameLong = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+      const isWeekend = weekendDays.includes(dayNameLong);
       days.push({ day, isCurrentMonth: false, isToday: false, isWeekend });
     }
 
@@ -125,8 +106,8 @@ export default function UserDashboard() {
       today.getFullYear() === year && today.getMonth() === month;
     for (let i = 1; i <= daysInMonth; i++) {
       const dateObj = new Date(year, month, i);
-      const dayOfWeek = dateObj.getDay();
-      const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Friday or Saturday
+      const dayNameLong = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+      const isWeekend = weekendDays.includes(dayNameLong);
       const isToday = isCurrentMonth && i === today.getDate();
       days.push({ day: i, isCurrentMonth: true, isToday, isWeekend });
     }
@@ -135,8 +116,8 @@ export default function UserDashboard() {
     const remainingDays = 42 - days.length; // 6 rows * 7 days
     for (let i = 1; i <= remainingDays; i++) {
       const dateObj = new Date(year, month + 1, i);
-      const dayOfWeek = dateObj.getDay();
-      const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Friday or Saturday
+      const dayNameLong = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+      const isWeekend = weekendDays.includes(dayNameLong);
       days.push({ day: i, isCurrentMonth: false, isToday: false, isWeekend });
     }
 
@@ -193,6 +174,14 @@ export default function UserDashboard() {
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5069E5]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full pb-10">
@@ -371,7 +360,13 @@ export default function UserDashboard() {
             </div>
             <div className="grid grid-cols-7 gap-0.5 mb-1.5">
               {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => {
-                const isWeekend = index === 5 || index === 6; // Friday and Saturday
+                // Determine if this column is a weekend based on dynamic settings
+                // This is slightly tricky because the header is static. 
+                // We'll simplify: just color red if it matches a weekend day.
+                const dayFullNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                const dayFullName = dayFullNames[index];
+                const isWeekend = weekendDays.includes(dayFullName);
+                
                 return (
                   <div
                     key={index}

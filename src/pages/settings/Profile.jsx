@@ -287,46 +287,50 @@ export default function Profile() {
         <div className="w-full lg:w-[500px] flex-shrink-0">
           <div className="rounded-lg shadow-sm">
             <div className="flex flex-col items-center">
-              <div className="w-full h-[500px]  rounded-lg overflow-hidden mb-4 bg-gray-100 border border-gray-200">
-                <img
-                  key={profileImage}
-                  src={profileImage || "https://ui-avatars.com/api/?name=" + (formData.name || "User") + "&background=random&size=500"}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                  onError={async (e) => {
-                    if (profileImageRetry || !profileImage) {
-                      return;
-                    }
-                    console.error("Profile image failed to load:", e.target.src);
-                    try {
-                      const token = getAuthToken();
-                      if (!token) return;
-                      setProfileImageRetry(true);
-
-                      const imageResponse = await fetch(profileImage, {
-                        headers: {
-                          Authorization: `Bearer ${token}`,
-                        },
-                      });
-                      if (!imageResponse.ok) {
-                        console.error(
-                          "Profile image fetch failed:",
-                          imageResponse.status,
-                          imageResponse.statusText
-                        );
+              <div className="w-full h-[500px] rounded-lg overflow-hidden mb-4 bg-gray-100 border border-gray-200">
+                {profileImage ? (
+                  <img
+                    key={profileImage}
+                    src={profileImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    onError={async (e) => {
+                      if (profileImageRetry || !profileImage) {
+                        setProfileImage(null);
                         return;
                       }
-                      const blob = await imageResponse.blob();
-                      const objectUrl = URL.createObjectURL(blob);
-                      setProfileImage(objectUrl);
-                    } catch (error) {
-                      console.error("Profile image fetch error:", error);
-                    }
-                  }}
-                  onLoad={() => {
-                    console.log("Image loaded successfully:", profileImage);
-                  }}
-                />
+                      console.error("Profile image failed to load:", e.target.src);
+                      try {
+                        const token = getAuthToken();
+                        if (!token) {
+                          setProfileImage(null);
+                          return;
+                        }
+                        setProfileImageRetry(true);
+
+                        const imageResponse = await fetch(profileImage, {
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                          },
+                        });
+                        if (!imageResponse.ok) {
+                          setProfileImage(null);
+                          return;
+                        }
+                        const blob = await imageResponse.blob();
+                        const objectUrl = URL.createObjectURL(blob);
+                        setProfileImage(objectUrl);
+                      } catch (error) {
+                        console.error("Profile image fetch error:", error);
+                        setProfileImage(null);
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-[#E55050] text-[#000] flex items-center justify-center font-bold text-[120px]">
+                    {formData.name ? formData.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
+                  </div>
+                )}
               </div>
               <label className="w-full">
                 <input

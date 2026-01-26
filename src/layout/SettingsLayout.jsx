@@ -24,7 +24,7 @@ const SettingsLayout = () => {
         { name: 'Security', path: '/settings/change-password' },
       ];
     } else if (userRole === 'Business Admin') {
-      // Business Admin: All tabs
+      // Business Admin: All tabs except holiday
       return [
         { name: 'Profile', path: '/settings/profile' },
         { name: 'Company', path: '/settings/company' },
@@ -34,7 +34,7 @@ const SettingsLayout = () => {
         { name: 'Security', path: '/settings/change-password' },
       ];
     } else if (userRole === 'System Admin') {
-      // System Admin: All tabs
+      // System Admin: All tabs except holiday
       return [
         { name: 'Profile', path: '/settings/profile' },
         { name: 'Company', path: '/settings/company' },
@@ -44,10 +44,10 @@ const SettingsLayout = () => {
         { name: 'Security', path: '/settings/change-password' },
       ];
     } else {
-      // Default/User: Profile, Security, and Template
+      // Default/User: Profile, Weekend, and Security
       return [
         { name: 'Profile', path: '/settings/profile' },
-        { name: 'Template', path: '/settings/template' },
+        { name: 'Weekend', path: '/settings/weekend' },
         { name: 'Security', path: '/settings/change-password' },
       ];
     }

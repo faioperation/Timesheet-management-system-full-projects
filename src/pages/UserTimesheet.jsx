@@ -9,8 +9,6 @@ import { toast } from 'react-toastify';
 export default function UserTimesheet() {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('All');
-  const [filterPeriod, setFilterPeriod] = useState('Weekly');
-  const [showDropdown, setShowDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [timesheets, setTimesheets] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
@@ -131,10 +129,6 @@ export default function UserTimesheet() {
     setCurrentPage(1);
   }, [activeFilter]);
 
-  const handlePeriodChange = (period) => {
-    setFilterPeriod(period);
-    setShowDropdown(false);
-  };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -209,7 +203,6 @@ export default function UserTimesheet() {
     },
   ];
 
-  const filterOptions = ['Weekly', 'Monthly', 'Yearly'];
 
   return (
     <div className="w-full pb-10">
@@ -225,38 +218,6 @@ export default function UserTimesheet() {
             <FaPlus size={14} />
             <span>Create Timesheet</span>
           </Link>
-
-          {/* Weekly/Monthly/Yearly Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-[#5069E5] transition-colors cursor-pointer justify-between min-w-[120px]"
-            >
-              <span>{filterPeriod}</span>
-              <IoMdArrowDropdown className="text-gray-500" size={20} />
-            </button>
-
-            {showDropdown && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowDropdown(false)}
-                ></div>
-                <div className="absolute right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20 min-w-[120px]">
-                  {filterOptions.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => handlePeriodChange(option)}
-                      className={`w-full text-left px-4 py-2 hover:bg-[#E0E7FF] transition-colors ${filterPeriod === option ? 'bg-[#E0E7FF] text-[#5069E5]' : 'text-gray-800'
-                        }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
         </div>
       </div>
 

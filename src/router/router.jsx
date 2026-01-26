@@ -14,6 +14,7 @@ import Company from "../pages/settings/Company";
 import RolePermission from "../pages/settings/RolePermission";
 import Subscription from "../pages/settings/Subscription";
 import ChangePasswordPage from "../pages/settings/ChangePassword";
+import Weekend from "../pages/settings/Weekend";
 import TimesheetRoute from "../pages/TimesheetRoute";
 import Scheduler from "../pages/Scheduler";
 import TimesheetReport from "../pages/TimesheetReport";
@@ -263,6 +264,14 @@ const router = createBrowserRouter([
             path: 'role-permission',
             element: <RolePermission />,
           },
+          {
+            path: 'weekend',
+            element: (
+              <RoleBasedRoute allowedRoles={['User']}>
+                <Weekend />
+              </RoleBasedRoute>
+            ),
+          },
 /*
           {
             path: 'subscription',
@@ -272,7 +281,7 @@ const router = createBrowserRouter([
           {
             path: 'template',
             element: (
-              <RoleBasedRoute allowedRoles={['Staff', 'Business Admin', 'User']}>
+              <RoleBasedRoute allowedRoles={['Staff', 'Business Admin']}>
                 <Template />
               </RoleBasedRoute>
             ),

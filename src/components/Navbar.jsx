@@ -69,17 +69,21 @@ function Navbar({ onMenuClick }) {
               <h3 className='text-base sm:text-lg lg:text-[20px] font-bold truncate max-w-[150px] lg:max-w-none'>{userName}</h3>
               <p className='text-xs sm:text-sm lg:text-base text-[#736E6E] truncate max-w-[150px] lg:max-w-none'>{userEmail}</p>
             </div>
-            <div className='w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] lg:w-[48px] lg:h-[48px]'>
-              <img 
-                className='w-full h-full rounded-full object-cover' 
-                src={profileImage} 
-                alt={'Profile Image'}
-                onError={(e) => {
-                  if (e.target.src !== '/assets/profilePlaceholder.png') {
-                    e.target.src = '/assets/profilePlaceholder.png';
-                  }
-                }}
-              />
+            <div className='w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] lg:w-[48px] lg:h-[48px] overflow-hidden rounded-full'>
+              {profileImage && profileImage !== '/assets/profilePlaceholder.png' ? (
+                <img 
+                  className='w-full h-full object-cover' 
+                  src={profileImage} 
+                  alt={userName || 'Profile'}
+                  onError={(e) => {
+                    setProfileImage(null);
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-[#E55050] text-[#000] flex items-center justify-center font-bold text-lg sm:text-xl lg:text-2xl">
+                  {userName ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
+                </div>
+              )}
             </div>
           </div>
         </div>

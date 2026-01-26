@@ -169,7 +169,7 @@ export default function Template() {
 
               return (
                 <span key={idx} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTagStyles(roleId)}`}>
-                  {role.name}
+                  {role.name === 'Staff' ? 'Supervisor' : role.name}
                 </span>
               );
             })}

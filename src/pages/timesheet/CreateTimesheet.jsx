@@ -61,11 +61,19 @@ export default function CreateTimesheet() {
     const entries = [];
     const current = new Date(startDate);
     const last = new Date(endDate);
+    
+    // Get user's weekend settings
+    const weekendSettings = userProfile?.user_details?.weekend || ['Saturday', 'Sunday'];
+    
     while (current <= last) {
+      const dayName = current.toLocaleDateString('en-US', { weekday: 'long' });
+      const isWeekend = weekendSettings.includes(dayName);
+      const defaultDailyHours = isWeekend ? '00:00' : '08:00';
+
       entries.push({
         date: formatDisplayDate(current),
         entryDate: toISODate(current),
-        dailyHours: '00:00',
+        dailyHours: defaultDailyHours,
         extraHours: '00:00',
         vacations: '00:00',
         notes: '',
@@ -152,12 +160,10 @@ export default function CreateTimesheet() {
       endDate: eDate,
     }));
 
-    const updated = buildEntriesForRange(start, end).map(entry => ({
-      ...entry,
-      dailyHours: '08:00',
-    }));
+    // This now internally handles weekend 0h and workday 8h
+    const updated = buildEntriesForRange(start, end);
     setTimesheetEntries(updated);
-    toast.success('Weekdays set to 8 hours');
+    toast.success('Hours set based on your weekend settings');
   };
 
   const handleFileChange = (file) => {
