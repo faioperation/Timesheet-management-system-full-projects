@@ -121,7 +121,7 @@ const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
             console.log('Final Update Payload:', payload);
 
             const response = await apiFetch(`/email-template/${template.id}`, {
-                method: 'PUT',
+                method: 'POST',
                 body: JSON.stringify(payload)
             });
 

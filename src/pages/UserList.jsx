@@ -179,6 +179,7 @@ export default function UserList() {
                     item.roles && item.roles[0] ? item.roles[0].name : item.role;
                   let isActive = true;
                   let hasClientAssigned = false;
+                  let userDetailsId = null;
                   try {
                     // Hit /user/{id} to get detailed user information including party_id and precise status
                     const detailResponse = await apiFetch(`/user/${item.id}`, {
@@ -191,25 +192,16 @@ export default function UserList() {
                       // Logic for Assignment
                       if (userData?.user_details?.party_id) {
                         hasClientAssigned = true;
+                        userDetailsId = userData.user_details.id || null;
                       }
 
-                      // Logic for Status: use status string or active flag
+                      // Logic for Status: Strictly follow "approved" requirement
                       const statusStr = (userData?.status || item.status || '').toLowerCase();
-                      const activeFlag = userData?.user_details?.active ?? item.active;
-
-                      if (statusStr === 'active' || statusStr === 'approved') {
-                        isActive = true;
-                      } else if (activeFlag === 1 || activeFlag === true || activeFlag === '1') {
-                        isActive = true;
-                      } else if (statusStr === 'inactive' || statusStr === 'on vacation') {
-                        isActive = false;
-                      } else if (activeFlag === 0 || activeFlag === false || activeFlag === '0') {
-                        isActive = false;
-                      }
+                      isActive = statusStr === 'approved';
                     } else {
-                      // Fallback to item level data if detail fetch fails
+                      // Fallback: Strictly follow "approved" requirement
                       const s = (item.status || '').toLowerCase();
-                      isActive = s === 'active' || s === 'approved' || item.active === 1 || item.active === true;
+                      isActive = s === 'approved';
                     }
                   } catch (err) {
                     console.error(`Error fetching individual details for user ${item.id}:`, err);
@@ -224,8 +216,9 @@ export default function UserList() {
                     email: item.email || '',
                     phone: item.phone || '',
                     role: primaryRole || 'User',
-                    status: isActive ? 'Active' : 'Inactive',
+                    status: isActive ? 'Active' : 'Deactive',
                     hasClientAssigned: hasClientAssigned,
+                    userDetailsId: userDetailsId,
                   };
                 })
               );
@@ -314,7 +307,7 @@ export default function UserList() {
 
     const isParty = activeFilter === 'Client' || activeFilter === 'Vendor' || activeFilter === 'Employee';
     const typeLabel = isParty ? activeFilter : 'User';
-    
+
     try {
       let endpoint = '';
       if (isParty) {
@@ -332,7 +325,7 @@ export default function UserList() {
         toast.success(`${typeLabel} deleted successfully`);
         setDeleteModal({ isOpen: false, row: null });
         // Force refresh
-        window.location.reload(); 
+        window.location.reload();
       } else {
         throw new Error(result.message || 'Failed to delete');
       }
@@ -371,6 +364,62 @@ export default function UserList() {
       navigate('/user/assign-client-details', { state: { userId: row.userId } });
     } else {
       toast.error('User id not found');
+    }
+  };
+
+  const handleToggleStatus = async (user) => {
+    const isCurrentlyActive = user.status === 'Active';
+    const newStatusLabel = isCurrentlyActive ? 'Deactive' : 'Active';
+    const newStatusParam = isCurrentlyActive ? 'rejected' : 'approved';
+    const activeFlag = isCurrentlyActive ? 0 : 1;
+
+    // Optimistic update
+    setAllUsersData((prev) =>
+      prev.map((u) =>
+        u.id === user.id ? { ...u, status: newStatusLabel } : u
+      )
+    );
+
+    try {
+      // Update user status
+      const userResponse = await apiFetch(`/user/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatusParam }),
+      });
+
+      if (!userResponse.ok) {
+        const result = await userResponse.json().catch(() => ({}));
+        const errorDetail = result.errors
+          ? Object.values(result.errors).flat().join(', ')
+          : result.message || 'Failed to update user status';
+        throw new Error(errorDetail);
+      }
+
+      // Update user_details active flag if userDetailsId exists
+      if (user.userDetailsId) {
+        const detailsResponse = await apiFetch(`/user-details/${user.userDetailsId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active: activeFlag }),
+        });
+
+        if (!detailsResponse.ok) {
+          const errorData = await detailsResponse.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to update user details');
+        }
+      }
+
+      toast.success(`User status updated to ${newStatusParam}`);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error(error.message || 'Failed to update status');
+      // Revert on error
+      setAllUsersData((prev) =>
+        prev.map((u) =>
+          u.id === user.id ? { ...u, status: user.status } : u
+        )
+      );
     }
   };
 
@@ -518,11 +567,23 @@ export default function UserList() {
       key: 'status',
       label: 'Status',
       className: 'text-left',
-      render: (row) => (
-        <span className={`px-3 py-1 inline-flex items-center rounded text-xs font-medium ${getStatusBadgeClass(row.status)}`}>
-          {row.status}
-        </span>
-      ),
+      render: (row) => {
+        const isActive = row.status === 'Active';
+        return (
+          <div className="flex items-center gap-2">
+            <div
+              onClick={() => handleToggleStatus(row)}
+              className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${isActive ? 'bg-[#1B654A]' : 'bg-gray-300'}`}
+              title={isActive ? 'Active' : 'Inactive'}
+            >
+              <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${isActive ? 'left-6' : 'left-1'}`}></div>
+            </div>
+            <span className={`text-xs font-medium ${isActive ? 'text-[#1B654A]' : 'text-gray-500'}`}>
+              {row.status}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'action',
@@ -537,7 +598,7 @@ export default function UserList() {
           >
             <FaEye size={16} />
           </button>
-          
+
           <button
             onClick={() => handleEdit(row)}
             className="text-blue-500 hover:text-blue-700 transition-colors"

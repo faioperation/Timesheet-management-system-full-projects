@@ -59,7 +59,57 @@ export default function AssignClientDetails() {
       return; // Do nothing if value is negative
     }
 
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const newFormData = { ...prev, [field]: value };
+
+      // Handle Manager selection for auto-population and disabling
+      if (field === 'accountManager') {
+        if (value === 'NA') {
+          newFormData.accountManagerCommission = '';
+          newFormData.accountManagerCommissionOn = 'Gross margin';
+          newFormData.accountManagerRateType = 'Percentage';
+        } else if (value) {
+          const manager = internalUsers.find(u => String(u.id) === String(value));
+          if (manager) {
+            newFormData.accountManagerCommission = manager.rate || '';
+            newFormData.accountManagerCommissionOn = manager.commission_on || 'Gross margin';
+            newFormData.accountManagerRateType = manager.rate_type || 'Percentage';
+          }
+        }
+      }
+
+      if (field === 'bdManager') {
+        if (value === 'NA') {
+          newFormData.bdManagerCommission = '';
+          newFormData.bdManagerCommissionOn = 'Gross margin';
+          newFormData.bdManagerRateType = 'Fixed';
+        } else if (value) {
+          const manager = internalUsers.find(u => String(u.id) === String(value));
+          if (manager) {
+            newFormData.bdManagerCommission = manager.rate || '';
+            newFormData.bdManagerCommissionOn = manager.commission_on || 'Gross margin';
+            newFormData.bdManagerRateType = manager.rate_type || 'Fixed';
+          }
+        }
+      }
+
+      if (field === 'recruiter') {
+        if (value === 'NA') {
+          newFormData.recruiterCommission = '';
+          newFormData.recruiterCommissionOn = 'Gross margin';
+          newFormData.recruiterRateType = 'Percentage';
+        } else if (value) {
+          const manager = internalUsers.find(u => String(u.id) === String(value));
+          if (manager) {
+            newFormData.recruiterCommission = manager.rate || '';
+            newFormData.recruiterCommissionOn = manager.commission_on || 'Gross margin';
+            newFormData.recruiterRateType = manager.rate_type || 'Percentage';
+          }
+        }
+      }
+
+      return newFormData;
+    });
   };
 
   const handleCheckboxChange = (field) => {
@@ -116,6 +166,9 @@ export default function AssignClientDetails() {
       id: item.id,
       name: item.name || '',
       role: (item.role || '').toLowerCase(),
+      commission_on: item.commission_on || 'Gross margin',
+      rate_type: item.rate_type || 'Percentage',
+      rate: item.rate || '',
     }));
   };
 
@@ -647,6 +700,7 @@ export default function AssignClientDetails() {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
                     <option value="">Select</option>
+                    <option value="NA">N/A</option>
                     {internalUsers
                       .filter(user => user.role === 'ac_manager')  // Fixed: was 'account_manager'
                       .map(user => (
@@ -667,9 +721,10 @@ export default function AssignClientDetails() {
                   value={formData.accountManagerCommission}
                   onChange={(e) => handleInputChange('accountManagerCommission', e.target.value)}
                   placeholder="Enter commission"
+                  disabled={formData.accountManager === 'NA'}
                   min="0"
                   step="any"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
@@ -680,7 +735,8 @@ export default function AssignClientDetails() {
                   <select
                     value={formData.accountManagerCommissionOn}
                     onChange={(e) => handleInputChange('accountManagerCommissionOn', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                    disabled={formData.accountManager === 'NA'}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="Gross margin">Gross margin</option>
                     <option value="Revenue">Revenue</option>
@@ -696,7 +752,8 @@ export default function AssignClientDetails() {
                   <select
                     value={formData.accountManagerRateType}
                     onChange={(e) => handleInputChange('accountManagerRateType', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                    disabled={formData.accountManager === 'NA'}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="Percentage">Percentage</option>
                     <option value="Fixed">Fixed</option>
@@ -719,6 +776,7 @@ export default function AssignClientDetails() {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
                     <option value="">Select</option>
+                    <option value="NA">N/A</option>
                     {internalUsers
                       .filter(user => user.role === 'bd_manager')
                       .map(user => (
@@ -739,9 +797,10 @@ export default function AssignClientDetails() {
                   value={formData.bdManagerCommission}
                   onChange={(e) => handleInputChange('bdManagerCommission', e.target.value)}
                   placeholder="Enter commission"
+                  disabled={formData.bdManager === 'NA'}
                   min="0"
                   step="any"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
@@ -752,7 +811,8 @@ export default function AssignClientDetails() {
                   <select
                     value={formData.bdManagerCommissionOn}
                     onChange={(e) => handleInputChange('bdManagerCommissionOn', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                    disabled={formData.bdManager === 'NA'}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="Gross margin">Gross margin</option>
                     <option value="Revenue">Revenue</option>
@@ -768,7 +828,8 @@ export default function AssignClientDetails() {
                   <select
                     value={formData.bdManagerRateType}
                     onChange={(e) => handleInputChange('bdManagerRateType', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                    disabled={formData.bdManager === 'NA'}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="Percentage">Percentage</option>
                     <option value="Fixed">Fixed</option>
@@ -791,6 +852,7 @@ export default function AssignClientDetails() {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
                     <option value="">Select</option>
+                    <option value="NA">N/A</option>
                     {internalUsers
                       .filter(user => user.role === 'recruiter')
                       .map(user => (
@@ -811,9 +873,10 @@ export default function AssignClientDetails() {
                   value={formData.recruiterCommission}
                   onChange={(e) => handleInputChange('recruiterCommission', e.target.value)}
                   placeholder="Enter commission"
+                  disabled={formData.recruiter === 'NA'}
                   min="0"
                   step="any"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
@@ -824,7 +887,8 @@ export default function AssignClientDetails() {
                   <select
                     value={formData.recruiterCommissionOn}
                     onChange={(e) => handleInputChange('recruiterCommissionOn', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                    disabled={formData.recruiter === 'NA'}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="Gross margin">Gross margin</option>
                     <option value="Revenue">Revenue</option>
@@ -840,7 +904,8 @@ export default function AssignClientDetails() {
                   <select
                     value={formData.recruiterRateType}
                     onChange={(e) => handleInputChange('recruiterRateType', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                    disabled={formData.recruiter === 'NA'}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="Percentage">Percentage</option>
                     <option value="Fixed">Fixed</option>
