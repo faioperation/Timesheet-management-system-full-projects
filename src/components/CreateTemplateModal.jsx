@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 const CreateTemplateModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     parameterInsertOn: 'Subject', // 'Subject' or 'template'
-    templateType: 'timesheet_submit',
+    templateType: 'submit',
     templateName: '',
     used_by: [], // Array of role IDs
     subject: '',
@@ -28,7 +28,7 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
           apiFetch('/roles'),
           apiFetch('/email-template')
         ]);
-        
+
         const rolesResult = await rolesRes.json();
         const templatesResult = await templatesRes.json();
 
@@ -236,6 +236,29 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
 
             {/* Right Section - Template Editor */}
             <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6 space-y-6">
+              {/* Template type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Template type<span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={formData.templateType}
+                    onChange={(e) => handleInputChange('templateType', e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
+                  >
+                    <option value="submit">Submit</option>
+                    <option value="resubmit">Resubmit</option>
+                    <option value="approved">Approved</option>
+                    <option value="reject">Reject</option>
+                    <option value="pending">Pending</option>
+                    <option value="access">Access</option>
+                    <option value="regular">Regular</option>
+                  </select>
+                  <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                </div>
+              </div>
+
               {/* Clone from Template */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -255,25 +278,6 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                     ))}
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5069E5] pointer-events-none" size={20} />
-                </div>
-              </div>
-
-              {/* Template Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Template type<span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={formData.templateType}
-                    onChange={(e) => handleInputChange('templateType', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
-                  >
-                    <option value="timesheet_approve">TimeSheet Approved</option>
-                    <option value="timesheet_submit">TimeSheet Submitted</option>
-                    <option value="timesheet_reject">TimeSheet Rejected</option>
-                  </select>
-                  <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
               </div>
 

@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
     const [formData, setFormData] = useState({
         parameterInsertOn: 'Subject',
-        templateType: 'timesheet_submit',
+        templateType: 'submit',
         templateName: '',
         used_by: [], // IDs
         subject: '',
@@ -31,7 +31,7 @@ const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
 
             setFormData({
                 parameterInsertOn: 'Subject',
-                templateType: template.type || template.template_type || 'timesheet_submit',
+                templateType: template.type || template.template_type || 'submit',
                 templateName: template.name || template.template_name || '',
                 used_by: usedByIDs,
                 subject: template.subject || '',
@@ -232,9 +232,13 @@ const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
                                         onChange={(e) => handleInputChange('templateType', e.target.value)}
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
                                     >
-                                        <option value="timesheet_approve">TimeSheet Approved</option>
-                                        <option value="timesheet_submit">TimeSheet Submitted</option>
-                                        <option value="timesheet_reject">TimeSheet Rejected</option>
+                                        <option value="submit">Submit</option>
+                                        <option value="resubmit">Resubmit</option>
+                                        <option value="approved">Approved</option>
+                                        <option value="reject">Reject</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="access">Access</option>
+                                        <option value="regular">Regular</option>
                                     </select>
                                     <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                                 </div>
