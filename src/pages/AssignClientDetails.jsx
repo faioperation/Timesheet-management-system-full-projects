@@ -259,9 +259,9 @@ export default function AssignClientDetails() {
           {/* Top Section - Row 1 */}
           <div className="rounded-lg ">
             <h3 className="text-base font-semibold text-gray-800 mb-4">Assignment</h3>
-            <div className="flex items-center gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               {/* Invoice to */}
-              <div className="w-full">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Invoice to<span className="text-red-500">*</span>
                 </label>
@@ -277,80 +277,79 @@ export default function AssignClientDetails() {
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
               </div>
+
               {/* Client name */}
-              {formData.invoiceTo === 'Client' && (
-                <div className="w-full">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Client name<span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <select
-                        value={formData.clientId}
-                        onChange={(e) => handleInputChange('clientId', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                      >
-                        <option value="">Select client</option>
-                        {clients.map((client) => (
-                          <option key={client.id} value={client.id}>
-                            {client.name}
-                          </option>
-                        ))}
-                      </select>
-                      <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setModalType('Client');
-                        setPendingSelectType('Client');
-                        setIsModalOpen(true);
-                      }}
-                      className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Client name<span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <select
+                      value={formData.clientId}
+                      onChange={(e) => handleInputChange('clientId', e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                     >
-                      <FaPlus size={14} />
-                    </button>
+                      <option value="">Select client</option>
+                      {clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name}
+                        </option>
+                      ))}
+                    </select>
+                    <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalType('Client');
+                      setPendingSelectType('Client');
+                      setIsModalOpen(true);
+                    }}
+                    className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+                  >
+                    <FaPlus size={14} />
+                  </button>
                 </div>
-              )}
+              </div>
+
               {/* Vendor name */}
-              {formData.invoiceTo === 'Vendor' && (
-                <div className="w-full">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Vendor name<span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <select
-                        value={formData.vendorId}
-                        onChange={(e) => handleInputChange('vendorId', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                      >
-                        <option value="">Select vendor</option>
-                        {vendors.map((vendor) => (
-                          <option key={vendor.id} value={vendor.id}>
-                            {vendor.name}
-                          </option>
-                        ))}
-                      </select>
-                      <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setModalType('Vendor');
-                        setPendingSelectType('Vendor');
-                        setIsModalOpen(true);
-                      }}
-                      className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Vendor name<span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <select
+                      value={formData.vendorId}
+                      onChange={(e) => handleInputChange('vendorId', e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                     >
-                      <FaPlus size={14} />
-                    </button>
+                      <option value="">Select vendor</option>
+                      {vendors.map((vendor) => (
+                        <option key={vendor.id} value={vendor.id}>
+                          {vendor.name}
+                        </option>
+                      ))}
+                    </select>
+                    <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalType('Vendor');
+                      setPendingSelectType('Vendor');
+                      setIsModalOpen(true);
+                    }}
+                    className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
+                  >
+                    <FaPlus size={14} />
+                  </button>
                 </div>
-              )}
+              </div>
+
               {/* Client rate */}
-              <div className="w-full">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Rate<span className="text-red-500">*</span>
                 </label>
