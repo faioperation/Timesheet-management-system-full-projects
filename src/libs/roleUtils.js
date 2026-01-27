@@ -24,7 +24,7 @@ export const getRoleBasedMenuItems = (role) => {
           { Title: 'Company List', pathname: '/dashboard/company' },
         ]
       },
-      { Title: 'settings', pathname: '/settings/user-settings', iconKey: 'settings' },
+      { Title: 'settings', pathname: '/settings/profile', iconKey: 'settings' },
     ];
   }
 
@@ -45,7 +45,7 @@ export const getRoleBasedMenuItems = (role) => {
       { Title: 'timesheet', pathname: '/timesheet', iconKey: 'timesheet' },
       { Title: 'scheduler', pathname: '/scheduler', iconKey: 'scheduler' },
       { Title: 'activity', pathname: '/activity', iconKey: 'activity' },
-      { Title: 'settings', pathname: '/settings/user-settings', iconKey: 'settings' },
+      { Title: 'settings', pathname: '/settings/profile', iconKey: 'settings' },
     ];
   }
 
@@ -56,7 +56,7 @@ export const getRoleBasedMenuItems = (role) => {
       { Title: 'users', pathname: '/user/userlist', iconKey: 'users' },
       { Title: 'timesheet', pathname: '/timesheet', iconKey: 'timesheet' },
       { Title: 'scheduler', pathname: '/scheduler', iconKey: 'scheduler' },
-      { Title: 'settings', pathname: '/settings/user-settings', iconKey: 'settings' },
+      { Title: 'settings', pathname: '/settings/profile', iconKey: 'settings' },
     ];
   }
 
@@ -64,6 +64,6 @@ export const getRoleBasedMenuItems = (role) => {
   return [
     { Title: 'dashboard', pathname: '/dashboard/user', iconKey: 'dashboard' },
     { Title: 'timesheet', pathname: '/timesheet', iconKey: 'timesheet' },
-    { Title: 'settings', pathname: '/settings/user-settings', iconKey: 'settings' },
+    { Title: 'settings', pathname: '/settings/profile', iconKey: 'settings' },
   ];
 };
