@@ -15,6 +15,7 @@ import RolePermission from "../pages/settings/RolePermission";
 import Subscription from "../pages/settings/Subscription";
 import ChangePasswordPage from "../pages/settings/ChangePassword";
 import Weekend from "../pages/settings/Weekend";
+import UserSettings from "../pages/settings/UserSettings";
 import TimesheetRoute from "../pages/TimesheetRoute";
 import Scheduler from "../pages/Scheduler";
 import TimesheetReport from "../pages/TimesheetReport";
@@ -307,6 +308,10 @@ const router = createBrowserRouter([
           {
             path: 'change-password',
             element: <ChangePasswordPage />,
+          },
+          {
+            path: 'user-settings',
+            element: <UserSettings />,
           },
           {
             path: '*',

@@ -280,22 +280,22 @@ export default function CompanyView() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700">Email<span className="text-red-500">*</span></label>
+                            <label className="text-sm font-semibold text-gray-700">Email</label>
                             <input
                                 type="email"
                                 value={formData.email}
-                                onChange={(e) => handleInputChange("email", e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-800 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
+                                readOnly
+                                className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-not-allowed"
                                 placeholder="Company Email"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700">Phone<span className="text-red-500">*</span></label>
+                            <label className="text-sm font-semibold text-gray-700">Phone</label>
                             <input
                                 type="text"
                                 value={formData.phone}
-                                onChange={(e) => handleInputChange("phone", e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-800 text-sm focus:outline-none focus:ring-1 focus:ring-[#5069E5]"
+                                readOnly
+                                className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-not-allowed"
                                 placeholder="Phone Number"
                             />
                         </div>
