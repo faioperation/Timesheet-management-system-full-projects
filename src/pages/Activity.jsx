@@ -1,46 +1,46 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { IoMdArrowDropdown } from 'react-icons/io';
-import ReusableTable from '../components/ReusableTable';
-import { apiFetch } from '../libs/apiFetch';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect, useMemo } from "react";
+import { IoMdArrowDropdown } from "react-icons/io";
+import ReusableTable from "../components/ReusableTable";
+import { apiFetch } from "../libs/apiFetch";
+import { toast } from "react-toastify";
 
 // Helper function to format action to display text
 const formatAction = (action) => {
   const actionMap = {
-    'login': 'Login',
-    'create_vendor': 'Create Vendor',
-    'create_employee': 'Create Employee',
-    'create_user': 'Create User',
-    'create_timesheet': 'Create Timesheet',
-    'update_profile': 'Update Profile',
-    'change_password': 'Change Password',
-    'assign_permission_to_role': 'Assign Permission to Role',
-    'timesheet_approved': 'Timesheet Approved',
-    'timesheet_submit': 'Timesheet Submit',
-    'timesheet_resubmit': 'Timesheet Resubmit',
+    login: "Login",
+    create_vendor: "Create Vendor",
+    create_employee: "Create Employee",
+    create_user: "Create User",
+    create_timesheet: "Create Timesheet",
+    update_profile: "Update Profile",
+    change_password: "Change Password",
+    assign_permission_to_role: "Assign Permission to Role",
+    timesheet_approved: "Timesheet Approved",
+    timesheet_submit: "Timesheet Submit",
+    timesheet_resubmit: "Timesheet Resubmit",
   };
-  
+
   // Convert snake_case to Title Case if not in map
   if (actionMap[action]) {
     return actionMap[action];
   }
-  
+
   return action
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 // Helper function to map API role to filter role
 const mapRoleToFilter = (apiRole) => {
   const roleMap = {
-    'Business Admin': 'Admin',
-    'Admin': 'Admin',
-    'User': 'User',
-    'Staff': 'Supervisor',
-    'Supervisor': 'Supervisor',
+    "Business Admin": "Admin",
+    Admin: "Admin",
+    User: "User",
+    Staff: "Supervisor",
+    Supervisor: "Supervisor",
   };
-  
+
   return roleMap[apiRole] || apiRole;
 };
 
@@ -48,13 +48,13 @@ const mapRoleToFilter = (apiRole) => {
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   const day = date.getDate();
-  const month = date.toLocaleDateString('en-US', { month: 'short' });
+  const month = date.toLocaleDateString("en-US", { month: "short" });
   const year = date.getFullYear();
   return `${day} ${month} ${year}`;
 };
 
 export default function Activity() {
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const [activitiesData, setActivitiesData] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
@@ -68,17 +68,20 @@ export default function Activity() {
       try {
         // Build query params
         const params = new URLSearchParams();
-        params.append('page', currentPage.toString());
-        params.append('per_page', '10');
+        params.append("page", currentPage.toString());
+        params.append("per_page", "10");
 
-        const response = await apiFetch(`/manage-activity?${params.toString()}`, {
-          method: 'GET',
-        });
+        const response = await apiFetch(
+          `/manage-activity?${params.toString()}`,
+          {
+            method: "GET",
+          },
+        );
 
         if (!response.ok) {
           // Handle common permission errors with a clear message
           if (response.status === 403 || response.status === 401) {
-            toast.error('You do not have permission to view activities');
+            toast.error("You do not have permission to view activities");
             setActivitiesData([]);
             setTotalPages(1);
             setTotalItems(0);
@@ -86,14 +89,14 @@ export default function Activity() {
           }
 
           if (response.status === 404) {
-            toast.error('Activities endpoint not found');
+            toast.error("Activities endpoint not found");
             setActivitiesData([]);
             setTotalPages(1);
             setTotalItems(0);
             return;
           }
 
-          throw new Error('Failed to fetch activities');
+          throw new Error("Failed to fetch activitiess");
         }
 
         const result = await response.json();
@@ -101,13 +104,13 @@ export default function Activity() {
         if (result.success && result.data) {
           // Map API data to table structure
           let mappedData = result.data.data.map((item, index) => {
-            const role = item.user?.roles?.[0]?.name || 'Unknown';
+            const role = item.user?.roles?.[0]?.name || "Unknown";
             const mappedRole = mapRoleToFilter(role);
-            
+
             return {
               id: item.id,
-              no: String((currentPage - 1) * 10 + index + 1).padStart(2, '0'),
-              createdBy: item.user?.name || 'Unknown',
+              no: String((currentPage - 1) * 10 + index + 1).padStart(2, "0"),
+              createdBy: item.user?.name || "Unknown",
               date: formatDate(item.created_at),
               role: mappedRole,
               activities: formatAction(item.action),
@@ -115,8 +118,10 @@ export default function Activity() {
           });
 
           // Filter by role if not 'All' (client-side filtering)
-          if (activeFilter !== 'All') {
-            mappedData = mappedData.filter(item => item.role === activeFilter);
+          if (activeFilter !== "All") {
+            mappedData = mappedData.filter(
+              (item) => item.role === activeFilter,
+            );
           }
 
           setActivitiesData(mappedData);
@@ -129,8 +134,8 @@ export default function Activity() {
           setTotalItems(0);
         }
       } catch (error) {
-        console.error('Error fetching activities:', error);
-        toast.error(error.message || 'Failed to load activities');
+        console.error("Error fetching activities:", error);
+        toast.error(error.message || "Failed to load activities");
         setActivitiesData([]);
       } finally {
         setIsFetching(false);
@@ -155,29 +160,29 @@ export default function Activity() {
 
   const columns = [
     {
-      key: 'no',
-      label: 'No',
-      className: 'text-left w-[5%]',
+      key: "no",
+      label: "No",
+      className: "text-left w-[5%]",
     },
     {
-      key: 'createdBy',
-      label: 'Created by',
-      className: 'text-left w-[25%]',
+      key: "createdBy",
+      label: "Created by",
+      className: "text-left w-[25%]",
     },
     {
-      key: 'date',
-      label: 'Date',
-      className: 'text-left w-[20%]',
+      key: "date",
+      label: "Date",
+      className: "text-left w-[20%]",
     },
     {
-      key: 'role',
-      label: 'Role',
-      className: 'text-left w-[15%]',
+      key: "role",
+      label: "Role",
+      className: "text-left w-[15%]",
     },
     {
-      key: 'activities',
-      label: 'Activities',
-      className: 'text-left w-[35%]',
+      key: "activities",
+      label: "Activities",
+      className: "text-left w-[35%]",
     },
   ];
 
@@ -187,7 +192,7 @@ export default function Activity() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         {/* Filter Tabs */}
         <div className="flex gap-2">
-          {['All', 'Admin', 'User', 'Supervisor'].map((filter) => (
+          {["All", "Admin", "User", "Supervisor"].map((filter) => (
             <button
               key={filter}
               onClick={() => handleFilterChange(filter)}
@@ -195,8 +200,8 @@ export default function Activity() {
                 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors border-b-2
                 ${
                   activeFilter === filter
-                    ? 'bg-[#F3F4FF] text-[#5069E5] border-[#5069E5]'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border-transparent'
+                    ? "bg-[#F3F4FF] text-[#5069E5] border-[#5069E5]"
+                    : "bg-white text-gray-600 hover:text-gray-900 border-transparent"
                 }
               `}
             >
@@ -236,4 +241,3 @@ export default function Activity() {
     </div>
   );
 }
-
