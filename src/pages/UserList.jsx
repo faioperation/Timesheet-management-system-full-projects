@@ -371,7 +371,6 @@ export default function UserList() {
     const isCurrentlyActive = user.status === 'Active';
     const newStatusLabel = isCurrentlyActive ? 'Deactive' : 'Active';
     const newStatusParam = isCurrentlyActive ? 'rejected' : 'approved';
-    const activeFlag = isCurrentlyActive ? 0 : 1;
 
     // Optimistic update
     setAllUsersData((prev) =>
@@ -381,7 +380,7 @@ export default function UserList() {
     );
 
     try {
-      // Update user status
+      // Update user status using statusUpdate endpoint
       const userResponse = await apiFetch(`/user/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -394,20 +393,6 @@ export default function UserList() {
           ? Object.values(result.errors).flat().join(', ')
           : result.message || 'Failed to update user status';
         throw new Error(errorDetail);
-      }
-
-      // Update user_details active flag if userDetailsId exists
-      if (user.userDetailsId) {
-        const detailsResponse = await apiFetch(`/user-details/${user.userDetailsId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ active: activeFlag }),
-        });
-
-        if (!detailsResponse.ok) {
-          const errorData = await detailsResponse.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Failed to update user details');
-        }
       }
 
       toast.success(`User status updated to ${newStatusParam}`);

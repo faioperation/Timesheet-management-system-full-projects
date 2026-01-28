@@ -80,6 +80,9 @@ export default function EditUser() {
           id: item.id,
           name: item.name || '',
           role: (item.role || '').toLowerCase(),
+          commission_on: item.commission_on || 'Gross margin',
+          rate_type: item.rate_type || 'Percentage',
+          rate: item.rate || '',
         })) || []);
       }
     } catch (error) {
@@ -115,8 +118,8 @@ export default function EditUser() {
           const isW2 = ud.w2 > 0 || ud.ptax > 0 || !ud.employee_id;
           setAssignedData({
             invoiceTo: ud.invoice_to || 'Client',
-            clientId: ud.invoice_to === 'Client' ? ud.party_id || '' : '',
-            vendorId: ud.invoice_to === 'Vendor' ? ud.party_id || '' : '',
+            clientId: ud.client_id || (ud.invoice_to === 'Client' ? ud.party_id : '') || '',
+            vendorId: ud.vendor_id || (ud.invoice_to === 'Vendor' ? ud.party_id : '') || '',
             clientRate: ud.client_rate || '',
             timesheetPeriod: ud.time_sheet_period ? ud.time_sheet_period.charAt(0).toUpperCase() + ud.time_sheet_period.slice(1) : 'Weekly',
             startDate: ud.start_date || '',
@@ -167,7 +170,57 @@ export default function EditUser() {
   };
 
   const handleAssignedInputChange = (field, value) => {
-    setAssignedData(prev => ({ ...prev, [field]: value }));
+    setAssignedData(prev => {
+      const newData = { ...prev, [field]: value };
+
+      // Handle N/A selection for managers
+      if (field === 'accountManager') {
+        if (value === 'NA') {
+          newData.accountManagerCommission = '';
+          newData.accountManagerCommissionOn = 'Gross margin';
+          newData.accountManagerRateType = 'Percentage';
+        } else if (value) {
+           const manager = internalUsers.find(u => String(u.id) === String(value));
+           if (manager) {
+             newData.accountManagerCommission = manager.rate || '';
+             newData.accountManagerCommissionOn = manager.commission_on || 'Gross margin';
+             newData.accountManagerRateType = manager.rate_type || 'Percentage';
+           }
+        }
+      }
+
+      if (field === 'bdManager') {
+        if (value === 'NA') {
+          newData.bdManagerCommission = '';
+          newData.bdManagerCommissionOn = 'Gross margin';
+          newData.bdManagerRateType = 'Fixed';
+        } else if (value) {
+           const manager = internalUsers.find(u => String(u.id) === String(value));
+           if (manager) {
+             newData.bdManagerCommission = manager.rate || '';
+             newData.bdManagerCommissionOn = manager.commission_on || 'Gross margin';
+             newData.bdManagerRateType = manager.rate_type || 'Fixed';
+           }
+        }
+      }
+
+      if (field === 'recruiter') {
+        if (value === 'NA') {
+          newData.recruiterCommission = '';
+          newData.recruiterCommissionOn = 'Gross margin';
+          newData.recruiterRateType = 'Percentage';
+        } else if (value) {
+           const manager = internalUsers.find(u => String(u.id) === String(value));
+           if (manager) {
+             newData.recruiterCommission = manager.rate || '';
+             newData.recruiterCommissionOn = manager.commission_on || 'Gross margin';
+             newData.recruiterRateType = manager.rate_type || 'Percentage';
+           }
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleCheckboxChange = (field) => {
@@ -213,6 +266,8 @@ export default function EditUser() {
         const isW2 = assignedData.employeeType === 'W2';
         const assignedPayload = {
           party_id: assignedData.invoiceTo === 'Vendor' ? assignedData.vendorId || null : assignedData.clientId || null,
+          client_id: assignedData.clientId || null,
+          vendor_id: assignedData.vendorId || null,
           client_rate: Number(assignedData.clientRate) || 0,
           other_rate: Number(assignedData.other) || 0,
           w2: isW2 ? Number(assignedData.w2) || 0 : 0,
@@ -222,11 +277,11 @@ export default function EditUser() {
           time_sheet_period: (assignedData.timesheetPeriod || '').toLowerCase(),
           start_date: assignedData.startDate || null,
           end_date: assignedData.endDate || null,
-          account_manager_id: assignedData.accountManager || null,
+          account_manager_id: assignedData.accountManager === 'NA' ? null : (assignedData.accountManager || null),
           account_manager_commission: Number(assignedData.accountManagerCommission) || 0,
-          business_development_manager_id: assignedData.bdManager || null,
+          business_development_manager_id: assignedData.bdManager === 'NA' ? null : (assignedData.bdManager || null),
           business_development_manager_commission: Number(assignedData.bdManagerCommission) || 0,
-          recruiter_id: assignedData.recruiter || null,
+          recruiter_id: assignedData.recruiter === 'NA' ? null : (assignedData.recruiter || null),
           recruiter_commission: Number(assignedData.recruiterCommission) || 0,
           invoice_to: assignedData.invoiceTo || 'Client',
         };
@@ -348,37 +403,35 @@ export default function EditUser() {
                   </div>
                 </div>
 
-                {assignedData.invoiceTo === 'Client' ? (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Client name</label>
-                    <div className="relative">
-                      <select
-                        value={assignedData.clientId}
-                        onChange={(e) => handleAssignedInputChange('clientId', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
-                      >
-                        <option value="">Select client</option>
-                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                      <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Client name</label>
+                  <div className="relative">
+                    <select
+                      value={assignedData.clientId}
+                      onChange={(e) => handleAssignedInputChange('clientId', e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                    >
+                      <option value="">Select client</option>
+                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                   </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Vendor name</label>
-                    <div className="relative">
-                      <select
-                        value={assignedData.vendorId}
-                        onChange={(e) => handleAssignedInputChange('vendorId', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
-                      >
-                        <option value="">Select vendor</option>
-                        {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                      </select>
-                      <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-                    </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vendor name</label>
+                  <div className="relative">
+                    <select
+                      value={assignedData.vendorId}
+                      onChange={(e) => handleAssignedInputChange('vendorId', e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                    >
+                      <option value="">Select vendor</option>
+                      {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                    </select>
+                    <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                   </div>
-                )}
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Client Rate</label>
@@ -523,6 +576,7 @@ export default function EditUser() {
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
                       >
                         <option value="">Select manager</option>
+                        <option value="NA">N/A</option>
                         {internalUsers.filter(u => u.role === 'ac_manager').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                       </select>
                       <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
@@ -534,7 +588,8 @@ export default function EditUser() {
                       type="number"
                       value={assignedData.accountManagerCommission}
                       onChange={(e) => handleAssignedInputChange('accountManagerCommission', e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                      disabled={assignedData.accountManager === 'NA'}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
@@ -543,7 +598,8 @@ export default function EditUser() {
                       <select
                         value={assignedData.accountManagerCommissionOn}
                         onChange={(e) => handleAssignedInputChange('accountManagerCommissionOn', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                        disabled={assignedData.accountManager === 'NA'}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="Gross margin">Gross margin</option>
                         <option value="Revenue">Revenue</option>
@@ -557,7 +613,8 @@ export default function EditUser() {
                       <select
                         value={assignedData.accountManagerRateType}
                         onChange={(e) => handleAssignedInputChange('accountManagerRateType', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                        disabled={assignedData.accountManager === 'NA'}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="Percentage">Percentage</option>
                         <option value="Fixed">Fixed</option>
@@ -578,6 +635,7 @@ export default function EditUser() {
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
                       >
                         <option value="">Select manager</option>
+                        <option value="NA">N/A</option>
                         {internalUsers.filter(u => u.role === 'bd_manager').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                       </select>
                       <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
@@ -589,7 +647,8 @@ export default function EditUser() {
                       type="number"
                       value={assignedData.bdManagerCommission}
                       onChange={(e) => handleAssignedInputChange('bdManagerCommission', e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                      disabled={assignedData.bdManager === 'NA'}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
@@ -598,7 +657,8 @@ export default function EditUser() {
                       <select
                         value={assignedData.bdManagerCommissionOn}
                         onChange={(e) => handleAssignedInputChange('bdManagerCommissionOn', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                        disabled={assignedData.bdManager === 'NA'}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="Gross margin">Gross margin</option>
                         <option value="Revenue">Revenue</option>
@@ -612,7 +672,8 @@ export default function EditUser() {
                       <select
                         value={assignedData.bdManagerRateType}
                         onChange={(e) => handleAssignedInputChange('bdManagerRateType', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                        disabled={assignedData.bdManager === 'NA'}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="Percentage">Percentage</option>
                         <option value="Fixed">Fixed</option>
@@ -633,6 +694,7 @@ export default function EditUser() {
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
                       >
                         <option value="">Select recruiter</option>
+                        <option value="NA">N/A</option>
                         {internalUsers.filter(u => u.role === 'recruiter').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                       </select>
                       <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
@@ -644,7 +706,8 @@ export default function EditUser() {
                       type="number"
                       value={assignedData.recruiterCommission}
                       onChange={(e) => handleAssignedInputChange('recruiterCommission', e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                      disabled={assignedData.recruiter === 'NA'}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
@@ -653,7 +716,8 @@ export default function EditUser() {
                       <select
                         value={assignedData.recruiterCommissionOn}
                         onChange={(e) => handleAssignedInputChange('recruiterCommissionOn', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                        disabled={assignedData.recruiter === 'NA'}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="Gross margin">Gross margin</option>
                         <option value="Revenue">Revenue</option>
@@ -667,7 +731,8 @@ export default function EditUser() {
                       <select
                         value={assignedData.recruiterRateType}
                         onChange={(e) => handleAssignedInputChange('recruiterRateType', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                        disabled={assignedData.recruiter === 'NA'}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="Percentage">Percentage</option>
                         <option value="Fixed">Fixed</option>
