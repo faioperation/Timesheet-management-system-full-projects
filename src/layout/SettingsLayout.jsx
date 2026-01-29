@@ -34,13 +34,9 @@ const SettingsLayout = () => {
         { name: 'Security', path: '/settings/change-password' },
       ];
     } else if (userRole === 'System Admin') {
-      // System Admin: All tabs except holiday
+      // System Admin: Only Profile and Security
       return [
         { name: 'Profile', path: '/settings/profile' },
-        { name: 'Company', path: '/settings/company' },
-        { name: 'Role permission', path: '/settings/role-permission' },
-        { name: 'Template', path: '/settings/template' },
-        // { name: 'Subscription', path: '/settings/subscription' },
         { name: 'Security', path: '/settings/change-password' },
       ];
     } else {

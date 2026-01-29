@@ -78,6 +78,11 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Reset selected clone when template type changes
+  useEffect(() => {
+    setSelectedCloneId('');
+  }, [formData.templateType]);
+
   const handleCheckboxChange = (roleId) => {
     setFormData(prev => {
       const isSelected = prev.used_by.includes(Number(roleId));
@@ -137,7 +142,7 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
         // Reset form
         setFormData({
           parameterInsertOn: 'Subject',
-          templateType: 'timesheet_submit',
+          templateType: 'submit',
           templateName: '',
           used_by: [],
           subject: '',
@@ -247,11 +252,11 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                     onChange={(e) => handleInputChange('templateType', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
                   >
-                    <option value="submit">Submit</option>
-                    <option value="resubmit">Resubmit</option>
-                    <option value="approved">Approved</option>
-                    <option value="reject">Reject</option>
-                    <option value="pending">Pending</option>
+                    <option value="submit">Timesheet Submit</option>
+                    <option value="resubmit">Timesheet Resubmit</option>
+                    <option value="approved">Timesheet Approved</option>
+                    <option value="reject">Timesheet Reject</option>
+                    <option value="pending">Timesheet Pending</option>
                     <option value="access">Access</option>
                     <option value="regular">Regular</option>
                   </select>
@@ -271,11 +276,13 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                     className="w-full px-4 py-2.5 border border-[#5069E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-blue-50/30 text-gray-800 pr-10 appearance-none cursor-pointer"
                   >
                     <option value="">-- Select Template to Clone --</option>
-                    {templates.map((t) => (
-                      <option key={t.id} value={String(t.id)}>
-                        {t.template_name || t.subject} ({t.template_type})
-                      </option>
-                    ))}
+                    {templates
+                      .filter(t => t.template_type === formData.templateType)
+                      .map((t) => (
+                        <option key={t.id} value={String(t.id)}>
+                          {t.template_name || t.subject}
+                        </option>
+                      ))}
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5069E5] pointer-events-none" size={20} />
                 </div>

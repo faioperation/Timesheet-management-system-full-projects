@@ -17,44 +17,7 @@ import { FiSearch } from "react-icons/fi";
 import { apiFetch } from "../../libs/apiFetch";
 import ReusableTable from "../../components/ReusableTable";
 
-const salesAnalyticsData = [
-    { name: "Gross revenue", value: 350 },
-    { name: "Revenue", value: 100 },
-    { name: "Gross margin", value: 100 },
-    { name: "Net margin", value: 200 },
-    { name: "Commission", value: 200 },
-    { name: "Others", value: 350 },
-];
-
 const COLORS = ["#E5D416", "#D9DFFF", "#58CC02", "#5069E5", "#555659", "#F46B6A"];
-
-const revenueVsExpenseData = [
-    { month: "Jan", revenue: 40, expense: 20 },
-    { month: "Feb", revenue: 20, expense: 15 },
-    { month: "Mar", revenue: 52, expense: 30 },
-    { month: "Apr", revenue: 38, expense: 25 },
-    { month: "May", revenue: 42, expense: 28 },
-    { month: "Jun", revenue: 75, expense: 45 },
-    { month: "July", revenue: 98, expense: 55 },
-    { month: "Aug", revenue: 52, expense: 35 },
-    { month: "Sep", revenue: 68, expense: 40 },
-    { month: "Oct", revenue: 35, expense: 25 },
-    { month: "Nov", revenue: 92, expense: 50 },
-    { month: "Dec", revenue: 60, expense: 35 },
-];
-
-const revenueReportData = Array.from({ length: 9 }, (_, i) => ({
-    no: i + 1,
-    name: "User4 071/vendoe4",
-    totalHours: "0.00",
-    revenue: "0.00",
-    totalExpense: "0.00",
-    gMargin: "0.00",
-    totalCommission: "0.00",
-    nMargin: "0.00",
-    acmComm: "0.00",
-    recCo: "0.00",
-}));
 
 const reportColumns = [
     { key: "no", label: <div className="flex items-center gap-1">No <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-left w-16" },
@@ -261,6 +224,8 @@ export default function RevenueDashboard() {
                         const filteredUsers = result.data.filter(u => 
                             u.roles && u.roles.some(role => role.name === 'User')
                         );
+                        console.log('=== FETCHED USERS FROM API ===');
+                        console.table(filteredUsers.map(u => ({id: u.id, name: u.name, email: u.email, business_id: u.business_id})));
                         setUsers(filteredUsers);
                     }
                 }
@@ -284,7 +249,12 @@ export default function RevenueDashboard() {
                 if (selectedConsultantType !== "All") params.append('consultant_type', selectedConsultantType);
                 if (selectedUser !== "All user") {
                     const user = users.find(u => u.name === selectedUser);
-                    if (user) params.append('user_id', user.id);
+                    console.log('Selected User:', selectedUser);
+                    console.log('Found User Object:', user);
+                    if (user) {
+                        console.log('Appending user_id:', user.id);
+                        params.append('user_id', user.id);
+                    }
                 }
 
                 const response = await apiFetch(`/revenue/dashboard-data?${params.toString()}`, { method: "GET" });
@@ -304,14 +274,20 @@ export default function RevenueDashboard() {
         fetchDashboardData();
     }, [selectedYear, selectedMonth, selectedConsultantType, selectedUser, users]);
 
-    // Prepare pie data from summary
+    // Prepare pie data from summary (show zeros if no data)
     const pieData = dashboardData ? [
-        { name: "Gross revenue", value: dashboardData.summary.total_gross_revenue },
-        { name: "Revenue", value: dashboardData.summary.total_net_margin },
-        { name: "Gross margin", value: dashboardData.summary.total_gross_margin },
-        { name: "Net margin", value: dashboardData.summary.total_net_margin },
-        { name: "Commission", value: dashboardData.summary.total_commission },
-    ] : salesAnalyticsData;
+        { name: "Gross revenue", value: dashboardData.summary.total_gross_revenue || 0 },
+        { name: "Revenue", value: dashboardData.summary.total_net_margin || 0 },
+        { name: "Gross margin", value: dashboardData.summary.total_gross_margin || 0 },
+        { name: "Net margin", value: dashboardData.summary.total_net_margin || 0 },
+        { name: "Commission", value: dashboardData.summary.total_commission || 0 },
+    ] : [
+        { name: "Gross revenue", value: 0 },
+        { name: "Revenue", value: 0 },
+        { name: "Gross margin", value: 0 },
+        { name: "Net margin", value: 0 },
+        { name: "Commission", value: 0 },
+    ];
 
     // Dynamic date for header
     const currentDate = new Date();
@@ -387,7 +363,7 @@ export default function RevenueDashboard() {
                     <div className="flex-1 h-[340px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart
-                                data={dashboardData ? dashboardData.chart : revenueVsExpenseData}
+                                data={dashboardData?.chart || []}
                                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                             >
                                 <defs>
@@ -466,7 +442,7 @@ export default function RevenueDashboard() {
                             <span className="font-semibold text-sm">Total expense</span>
                         </div>
                         <div className="flex items-center gap-4">
-                            <p className="text-[42px] font-black text-[#0F172A] leading-none">$ {dashboardData ? dashboardData.summary.total_expense : '0.00'}</p>
+                            <p className="text-[42px] font-black text-[#0F172A] leading-none">$ {dashboardData?.summary?.total_expense?.toFixed(2) || '0.00'}</p>
                             <div className="flex items-center gap-1 text-[#4ADE80] text-lg font-bold">
                                 <IoMdArrowDropup className="text-2xl" />
                                 <span>12%</span>
@@ -477,19 +453,13 @@ export default function RevenueDashboard() {
                     <div className="flex flex-col xl:flex-row items-center justify-between gap-6">
                         {/* Colored labels list */}
                         <div className="flex flex-col gap-6 w-full xl:w-auto">
-                            {(dashboardData ? [
-                                { name: "Gross revenue", color: "#F87171", value: dashboardData.summary.total_gross_revenue },
-                                { name: "Revenue", color: "#9CA3AF", value: dashboardData.summary.total_net_margin },
-                                { name: "Gross margin", color: "#A5B4FC", value: dashboardData.summary.total_gross_margin },
-                                { name: "Net margin", color: "#A3E635", value: dashboardData.summary.total_net_margin },
-                                { name: "Commission", color: "#FDE047", value: dashboardData.summary.total_commission },
-                            ] : [
-                                { name: "Gross revenue", color: "#F87171" },
-                                { name: "Revenue", color: "#9CA3AF" },
-                                { name: "Gross margin", color: "#A5B4FC" },
-                                { name: "Net margin", color: "#A3E635" },
-                                { name: "Commission", color: "#FDE047" },
-                            ]).map((item, i) => (
+                            {[
+                                { name: "Gross revenue", color: "#F87171", value: dashboardData?.summary?.total_gross_revenue || 0 },
+                                { name: "Revenue", color: "#9CA3AF", value: dashboardData?.summary?.total_net_margin || 0 },
+                                { name: "Gross margin", color: "#A5B4FC", value: dashboardData?.summary?.total_gross_margin || 0 },
+                                { name: "Net margin", color: "#A3E635", value: dashboardData?.summary?.total_net_margin || 0 },
+                                { name: "Commission", color: "#FDE047", value: dashboardData?.summary?.total_commission || 0 },
+                            ].map((item, i) => (
                                 <div key={i} className="flex flex-col">
                                     <span
                                         style={{ color: item.color }}
@@ -497,11 +467,9 @@ export default function RevenueDashboard() {
                                     >
                                         {item.name}
                                     </span>
-                                    {dashboardData && (
-                                        <span className="text-[14px] font-medium text-gray-400">
-                                            $ {item.value >= 1000 ? (item.value/1000).toFixed(1) + 'k' : item.value}
-                                        </span>
-                                    )}
+                                    <span className="text-[14px] font-medium text-gray-400">
+                                        $ {item.value >= 1000 ? (item.value/1000).toFixed(1) + 'k' : item.value.toFixed(2)}
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -529,7 +497,7 @@ export default function RevenueDashboard() {
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">TOTAL</span>
                                 <span className="text-2xl font-black text-[#0F172A]">
-                                    {dashboardData ? (dashboardData.summary.total_gross_revenue >= 1000 ? (dashboardData.summary.total_gross_revenue/1000).toFixed(1) + 'k' : dashboardData.summary.total_gross_revenue) : '0'}
+                                    {dashboardData?.summary?.total_gross_revenue >= 1000 ? (dashboardData.summary.total_gross_revenue/1000).toFixed(1) + 'k' : (dashboardData?.summary?.total_gross_revenue?.toFixed(2) || '0.00')}
                                 </span>
                             </div>
                         </div>
@@ -573,7 +541,7 @@ export default function RevenueDashboard() {
                             { label: "ACM COMM", key: "acm_comm" },
                             { label: "REC CO", key: "rec_co" },
                         ]}
-                        data={(dashboardData ? dashboardData.table : []).map((item, index) => ({
+                        data={(dashboardData?.table || []).map((item, index) => ({
                             ...item,
                             no: index + 1,
                             name_customer: (
@@ -596,6 +564,7 @@ export default function RevenueDashboard() {
                         headerBgColor="bg-[#F8FAFF]"
                         stripedRows={false}
                         tableClassName="text-[15px]"
+                        emptyMessage="No data found. Please create timesheets to see revenue data."
                         onRowClick={(row) => {
                             setSelectedConsultant(row);
                             setIsModalOpen(true);

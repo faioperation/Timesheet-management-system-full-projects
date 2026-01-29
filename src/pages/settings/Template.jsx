@@ -29,6 +29,7 @@ export default function Template() {
     userRole === "Business Admin" ||
     userRole === "Staff" ||
     userRole === "supervisor";
+  const canDelete = userRole === "Business Admin";
 
   const fetchTemplates = async () => {
     setIsFetching(true);
@@ -109,6 +110,29 @@ export default function Template() {
     setSelectedTemplate(null);
     if (refresh === true) {
       fetchTemplates();
+    }
+  };
+
+  const handleDeleteTemplate = async (template) => {
+    if (!window.confirm(`Are you sure you want to delete "${template.name}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await apiFetch(`/email-template/${template.id}`, {
+        method: 'DELETE'
+      });
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        toast.success('Template deleted successfully');
+        fetchTemplates();
+      } else {
+        throw new Error(result.message || 'Failed to delete template');
+      }
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast.error(error.message || 'Failed to delete template');
     }
   };
 
@@ -196,6 +220,14 @@ export default function Template() {
               className="text-green-600 hover:text-green-800 font-medium transition-colors"
             >
               Update
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={() => handleDeleteTemplate(row)}
+              className="text-red-600 hover:text-red-800 font-medium transition-colors"
+            >
+              Delete
             </button>
           )}
         </div>

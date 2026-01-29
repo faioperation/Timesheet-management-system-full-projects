@@ -12,8 +12,8 @@ export default function CreateTimesheet() {
   const [formData, setFormData] = useState({
     client: '',
     consultant: '',
-    file: null,
-    previewUrl: null,
+    files: [],  // Changed to array for multiple files
+    filePreviews: [],  // Array to store preview URLs
     startDate: '',
     endDate: '',
     emailTemplate: '',
@@ -166,16 +166,41 @@ export default function CreateTimesheet() {
     toast.success('Hours set based on your weekend settings');
   };
 
-  const handleFileChange = (file) => {
-    if (!file) return;
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
 
-    // Create preview URL
-    const url = URL.createObjectURL(file);
-    setFormData(prev => {
-      // Clean up old preview URL if exists
-      if (prev.previewUrl) URL.revokeObjectURL(prev.previewUrl);
-      return { ...prev, file, previewUrl: url };
+    // Create preview URLs for new files
+    const newPreviews = selectedFiles.map(file => {
+      if (file.type.startsWith('image/')) {
+        return URL.createObjectURL(file);
+      }
+      return null;
     });
+
+    setFormData(prev => ({
+      ...prev,
+      files: [...prev.files, ...selectedFiles],
+      filePreviews: [...prev.filePreviews, ...newPreviews]
+    }));
+    
+    toast.success(`${selectedFiles.length} file(s) added`);
+  };
+
+  const handleRemoveFile = (index) => {
+    setFormData(prev => {
+      // Clean up preview URL if it exists
+      if (prev.filePreviews[index]) {
+        URL.revokeObjectURL(prev.filePreviews[index]);
+      }
+      
+      return {
+        ...prev,
+        files: prev.files.filter((_, i) => i !== index),
+        filePreviews: prev.filePreviews.filter((_, i) => i !== index)
+      };
+    });
+    toast.info('File removed');
   };
 
   const fetchUserDefaults = async (userId) => {
@@ -339,10 +364,12 @@ export default function CreateTimesheet() {
     }
   }, [userRole, currentUserId]);
 
-  // Clean up preview URL on unmount
+  // Clean up preview URLs on unmount
   useEffect(() => {
     return () => {
-      if (formData.previewUrl) URL.revokeObjectURL(formData.previewUrl);
+      formData.filePreviews.forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
     };
   }, []);
 
@@ -503,9 +530,10 @@ export default function CreateTimesheet() {
       payload.append('user_id', String(targetUserId));
       payload.append('client_id', String(formData.client));
 
-      if (formData.file) {
-        payload.append('file', formData.file);
-      }
+      // Append multiple files
+      formData.files.forEach((file) => {
+        payload.append('attachments[]', file);
+      });
 
       if (formData.emailTemplate) {
         payload.append('mail_template_id', String(formData.emailTemplate));
@@ -561,46 +589,53 @@ export default function CreateTimesheet() {
         {/* Left Section - Preview */}
         <div className="w-full lg:w-[400px] flex-shrink-0">
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-700 mb-4">Preview</h3>
-            <div className="bg-[#F3F4F6] rounded-lg p-8 min-h-[400px] flex items-center justify-center relative overflow-hidden">
-              {/* Watermark background pattern */}
-              <div className="absolute inset-0 opacity-5 pointer-events-none" style={{
-                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #000 10px, #000 20px)',
-              }}></div>
-
-              {/* Folder Icon Placeholder if no file */}
-              {!formData.file && (
-                <div className="relative z-10">
-                  <svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M30 40 L70 40 L85 55 L170 55 L170 140 L30 140 Z" fill="#E0E7FF" stroke="#C7D2FE" strokeWidth="2" />
-                    <path d="M30 40 L70 40 L85 25 L120 25 L120 40 L70 40" fill="#10B981" stroke="#059669" strokeWidth="2" />
-                    <rect x="40" y="65" width="120" height="65" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
-                    <rect x="45" y="75" width="110" height="50" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
-                  </svg>
+            <h3 className="text-lg font-bold text-gray-700 mb-4">
+              Attachments {formData.files.length > 0 && `(${formData.files.length})`}
+            </h3>
+            <div className="bg-[#F3F4F6] rounded-lg p-4 min-h-[400px] max-h-[600px] overflow-y-auto">
+              {formData.files.length === 0 ? (
+                <div className="h-full flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <svg width="120" height="96" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto">
+                      <path d="M30 40 L70 40 L85 55 L170 55 L170 140 L30 140 Z" fill="#E0E7FF" stroke="#C7D2FE" strokeWidth="2" />
+                      <path d="M30 40 L70 40 L85 25 L120 25 L120 40 L70 40" fill="#10B981" stroke="#059669" strokeWidth="2" />
+                      <rect x="40" y="65" width="120" height="65" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
+                      <rect x="45" y="75" width="110" height="50" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1" />
+                    </svg>
+                    <p className="mt-4 text-sm text-gray-500">No files selected</p>
+                  </div>
                 </div>
-              )}
-
-              {/* File Preview */}
-              {formData.file && formData.previewUrl && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4">
-                  {formData.file.type === 'application/pdf' ? (
-                    <iframe
-                      src={formData.previewUrl}
-                      title="PDF Preview"
-                      className="w-full h-full border-none"
-                    />
-                  ) : formData.file.type.startsWith('image/') ? (
-                    <img
-                      src={formData.previewUrl}
-                      alt="Preview"
-                      className="max-w-full max-h-full object-contain shadow-md rounded"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-gray-600 font-medium">{formData.file.name}</p>
-                      <p className="text-sm text-gray-400">Preview not available for this file type</p>
+              ) : (
+                <div className="space-y-3">
+                  {formData.files.map((file, index) => (
+                    <div key={index} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                      {/* File Preview */}
+                      <div className="mb-2">
+                        {file.type.startsWith('image/') && formData.filePreviews[index] ? (
+                          <img 
+                            src={formData.filePreviews[index]} 
+                            alt={file.name}
+                            className="w-full h-40 object-cover rounded"
+                          />
+                        ) : file.type === 'application/pdf' ? (
+                          <div className="w-full h-40 bg-red-50 rounded flex items-center justify-center">
+                            <svg className="w-16 h-16 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        ) : (
+                          <div className="w-full h-40 bg-blue-50 rounded flex items-center justify-center">
+                            <svg className="w-16 h-16 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      {/* File Name */}
+                      <p className="text-sm text-gray-700 truncate" title={file.name}>{file.name}</p>
+                      <p className="text-xs text-gray-400 mt-1">{(file.size / 1024).toFixed(2)} KB</p>
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -664,20 +699,39 @@ export default function CreateTimesheet() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">File</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
               <div className="relative">
                 <label className="block">
                   <input
                     type="file"
-                    onChange={(e) => handleFileChange(e.target.files[0])}
+                    multiple
+                    onChange={handleFileChange}
                     className="hidden"
                   />
                   <div className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer hover:border-[#5069E5] transition-colors flex items-center justify-between">
-                    <span>{formData.file ? formData.file.name : 'No file choosen'}</span>
+                    <span>Choose files...</span>
                     <IoMdArrowDropdown className="text-gray-500" size={20} />
                   </div>
                 </label>
               </div>
+              
+              {/* File List */}
+              {formData.files.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {formData.files.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded border border-gray-200">
+                      <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(index)}
+                        className="ml-2 text-red-600 hover:text-red-800 text-sm font-medium"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

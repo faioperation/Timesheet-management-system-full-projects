@@ -9,6 +9,14 @@ import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+  };
+
+  const userRole = getCookie('user_role');
   const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL;
   const [formData, setFormData] = useState({});
   const [isEditing, setIsEditing] = useState({
@@ -26,6 +34,9 @@ export default function Profile() {
   const [businessData, setBusinessData] = useState(null);
   const [isLoadingBusiness, setIsLoadingBusiness] = useState(true);
 
+  // Helper function to get auth token
+  const getAuthToken = () => getCookie("auth_token");
+
   const buildImageUrl = (path) => {
     if (!path) return null;
     if (path.startsWith("http") || path.startsWith("data:")) {
@@ -38,17 +49,6 @@ export default function Profile() {
     return normalizedBase
       ? `${normalizedBase}/${normalizedPath}`
       : path;
-  };
-
-  // Helper function to get auth token
-  const getAuthToken = () => {
-    const getCookie = (name) => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(";").shift();
-      return null;
-    };
-    return getCookie("auth_token");
   };
 
   // Helper function to send FormData to profile-edit API
@@ -424,52 +424,56 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Gender Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gender
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.gender || ""}
-                  onChange={(e) => handleInputChange("gender", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-                <IoMdArrowDropdown
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                  size={20}
-                />
+            {/* Gender Field - Hide for System Admin */}
+            {userRole !== 'System Admin' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Gender
+                </label>
+                <div className="relative">
+                  <select
+                    value={formData.gender || ""}
+                    onChange={(e) => handleInputChange("gender", e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <IoMdArrowDropdown
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                    size={20}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Marital Status Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Marital Status
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.maritalStatus || ""}
-                  onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                >
-                  <option value="">Select Marital Status</option>
-                  <option value="Single">Single</option>
-                  <option value="Married">Married</option>
-                  <option value="Divorced">Divorced</option>
-                  <option value="Widowed">Widowed</option>
-                </select>
-                <IoMdArrowDropdown
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                  size={20}
-                />
+            {/* Marital Status Field - Hide for System Admin */}
+            {userRole !== 'System Admin' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Marital Status
+                </label>
+                <div className="relative">
+                  <select
+                    value={formData.maritalStatus || ""}
+                    onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                  >
+                    <option value="">Select Marital Status</option>
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                    <option value="Divorced">Divorced</option>
+                    <option value="Widowed">Widowed</option>
+                  </select>
+                  <IoMdArrowDropdown
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                    size={20}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Password Field - Disabled as per request */}
             <div>
@@ -487,124 +491,130 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Signature Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Signature
-              </label>
-              <div className="relative">
-                <label className="block">
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={handleSignatureUpload}
-                    className="hidden"
-                  />
-                  <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer hover:border-[#5069E5] transition-colors flex items-center justify-between">
-                    <span className="text-gray-500">
-                      {formData.signature &&
-                        typeof formData.signature === "object"
-                        ? formData.signature.name
-                        : formData.signature
-                          ? "Signature uploaded"
-                          : "No file choosen"}
-                    </span>
-                    <FaPaperclip className="text-gray-500" size={18} />
-                  </div>
+            {/* Signature Field - Hide for System Admin */}
+            {userRole !== 'System Admin' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Signature
                 </label>
-              </div>
-
-              {/* Signature Preview */}
-              {signaturePreview && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Signature Preview
-                  </label>
-                  <div className="w-full h-48 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
-                    {signaturePreview.includes("data:image") ||
-                      signaturePreview.startsWith("http") ? (
-                      <img
-                        src={signaturePreview}
-                        alt="Signature Preview"
-                        className="max-w-full max-h-full object-contain"
-                        onError={(e) => {
-                          // If signature image fails to load, show placeholder
-                          e.target.style.display = "none";
-                          const placeholder = document.createElement("div");
-                          placeholder.className = "text-gray-500 text-sm";
-                          placeholder.textContent = "Signature file uploaded";
-                          e.target.parentElement.appendChild(placeholder);
-                        }}
-                      />
-                    ) : (
-                      <div className="text-gray-500 text-sm">
-                        Signature file uploaded
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Business Information Section */}
-            {isLoadingBusiness ? (
-              <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-center py-4">
-                  <div className="text-gray-500 text-sm">Loading business data...</div>
-                </div>
-              </div>
-            ) : businessData ? (
-              <div className="mt-8">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Business Information</h3>
-                <div className="space-y-4 p-6 bg-gradient-to-br from-[#5069E5]/5 to-[#5069E5]/10 rounded-lg border border-[#5069E5]/20">
-                  {/* Company Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Company Name
-                    </label>
-                    <div className="px-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 font-medium">
-                      {businessData.company_name || businessData.name || 'N/A'}
-                    </div>
-                  </div>
-
-                  {/* Address */}
-                  {businessData.address && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Company Address
-                      </label>
-                      <div className="px-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800">
-                        {businessData.address}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Status Badges */}
-                  <div className="flex gap-3 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">Status:</span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${businessData.is_active
-                          ? 'bg-[#E6F4F1] text-[#1B654A]'
-                          : 'bg-gray-200 text-gray-600'
-                        }`}>
-                        {businessData.is_active ? 'Active' : 'Inactive'}
+                <div className="relative">
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleSignatureUpload}
+                      className="hidden"
+                    />
+                    <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer hover:border-[#5069E5] transition-colors flex items-center justify-between">
+                      <span className="text-gray-500">
+                        {formData.signature &&
+                          typeof formData.signature === "object"
+                          ? formData.signature.name
+                          : formData.signature
+                            ? "Signature uploaded"
+                            : "No file choosen"}
                       </span>
+                      <FaPaperclip className="text-gray-500" size={18} />
                     </div>
-                    {businessData.is_verified !== undefined && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">Verification:</span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${businessData.is_verified
-                            ? 'bg-[#E6F4F1] text-[#1B654A]'
-                            : 'bg-[#FFF2E6] text-[#F97316]'
-                          }`}>
-                          {businessData.is_verified ? 'Verified' : 'Unverified'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  </label>
                 </div>
+
+                {/* Signature Preview */}
+                {signaturePreview && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Signature Preview
+                    </label>
+                    <div className="w-full h-48 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                      {signaturePreview.includes("data:image") ||
+                        signaturePreview.startsWith("http") ? (
+                        <img
+                          src={signaturePreview}
+                          alt="Signature Preview"
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            // If signature image fails to load, show placeholder
+                            e.target.style.display = "none";
+                            const placeholder = document.createElement("div");
+                            placeholder.className = "text-gray-500 text-sm";
+                            placeholder.textContent = "Signature file uploaded";
+                            e.target.parentElement.appendChild(placeholder);
+                          }}
+                        />
+                      ) : (
+                        <div className="text-gray-500 text-sm">
+                          Signature file uploaded
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : null}
+            )}
+
+            {/* Business Information Section - Hide for System Admin */}
+            {userRole !== 'System Admin' && (
+              <>
+                {isLoadingBusiness ? (
+                  <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-center py-4">
+                      <div className="text-gray-500 text-sm">Loading business data...</div>
+                    </div>
+                  </div>
+                ) : businessData ? (
+                  <div className="mt-8">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Business Information</h3>
+                    <div className="space-y-4 p-6 bg-gradient-to-br from-[#5069E5]/5 to-[#5069E5]/10 rounded-lg border border-[#5069E5]/20">
+                      {/* Company Name */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Company Name
+                        </label>
+                        <div className="px-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 font-medium">
+                          {businessData.company_name || businessData.name || 'N/A'}
+                        </div>
+                      </div>
+
+                      {/* Address */}
+                      {businessData.address && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Company Address
+                          </label>
+                          <div className="px-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800">
+                            {businessData.address}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Status Badges */}
+                      <div className="flex gap-3 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-700">Status:</span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${businessData.is_active
+                              ? 'bg-[#E6F4F1] text-[#1B654A]'
+                              : 'bg-gray-200 text-gray-600'
+                            }`}>
+                            {businessData.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        {businessData.is_verified !== undefined && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">Verification:</span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${businessData.is_verified
+                                ? 'bg-[#E6F4F1] text-[#1B654A]'
+                                : 'bg-[#FFF2E6] text-[#F97316]'
+                              }`}>
+                              {businessData.is_verified ? 'Verified' : 'Unverified'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            )}
 
             {/* Update Button */}
             <div className="mt-10 pt-6 border-t border-gray-100">

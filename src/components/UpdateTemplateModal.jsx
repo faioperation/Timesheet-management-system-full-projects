@@ -121,7 +121,7 @@ const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
             console.log('Final Update Payload:', payload);
 
             const response = await apiFetch(`/email-template/${template.id}`, {
-                method: 'POST',
+                method: 'PUT',
                 body: JSON.stringify(payload)
             });
 
@@ -232,11 +232,11 @@ const UpdateTemplateModal = ({ isOpen, onClose, template }) => {
                                         onChange={(e) => handleInputChange('templateType', e.target.value)}
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
                                     >
-                                        <option value="submit">Submit</option>
-                                        <option value="resubmit">Resubmit</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="pending">Pending</option>
+                                        <option value="submit">Timesheet Submit</option>
+                                        <option value="resubmit">Timesheet Resubmit</option>
+                                        <option value="approved">Timesheet Approved</option>
+                                        <option value="reject">Timesheet Reject</option>
+                                        <option value="pending">Timesheet Pending</option>
                                         <option value="access">Access</option>
                                         <option value="regular">Regular</option>
                                     </select>
