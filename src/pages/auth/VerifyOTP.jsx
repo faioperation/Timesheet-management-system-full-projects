@@ -53,6 +53,22 @@ export default function VerifyOTP() {
     }
   };
 
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").slice(0, 6);
+    if (!/^\d+$/.test(pastedData)) return;
+
+    const newOtp = [...otp];
+    pastedData.split("").forEach((char, index) => {
+      if (index < 6) newOtp[index] = char;
+    });
+    setOtp(newOtp);
+
+    // Focus on the last filled input or the first empty one
+    const nextIndex = pastedData.length < 6 ? pastedData.length : 5;
+    inputRefs.current[nextIndex]?.focus();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const otpCode = otp.join("");
@@ -198,6 +214,7 @@ export default function VerifyOTP() {
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={handlePaste}
                   className="w-12 h-12 sm:w-14 sm:h-14 text-center text-2xl border-2 border-[#CBD5E1] rounded-xl bg-white text-[#5069E5] font-bold focus:outline-none focus:border-[#5069E5] focus:ring-4 focus:ring-[#5069E5]/10 transition-all"
                   placeholder="0"
                 />

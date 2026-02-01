@@ -33,7 +33,7 @@ export default function ChangePassword() {
             toast.error("No email found. Please start from forgot password page.");
             navigate("/forgot-password");
         }
-    }, [router]);
+    }, [navigate]);
 
     const onSubmit = async (formData) => {
         setIsLoading(true);
@@ -59,7 +59,12 @@ export default function ChangePassword() {
                     navigate("/login");
                 }, 2000);
             } else {
-                toast.error(result.message || "Failed to change password");
+                let errorMessage = result.message || "Failed to change password";
+                if (result.errors) {
+                    const firstError = Object.values(result.errors)[0];
+                    errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+                }
+                toast.error(errorMessage);
             }
         } catch (error) {
             console.error("Change Password Error", error);
@@ -114,8 +119,8 @@ export default function ChangePassword() {
                             )}
                         </fieldset>
 
-                        <fieldset className="fieldset text-black relative">
-                            <legend className="fieldset-legend text-black">Confirm Password</legend>
+                        <fieldset className="fieldset text-black relative mt-4">
+                            <legend className="fieldset-legend text-black">Confirm New Password</legend>
                             <input
                                 type={viewConfirmPass ? "text" : "password"}
                                 className="input py-4 border-[#CED2E5] bg-white w-full -mt-1 focus:outline-none pr-8"
