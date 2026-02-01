@@ -1,0 +1,13 @@
+Login Credentials
+System Admin
+Email: admin@system.com
+Password: password123
+Business Admin
+Email: john@demotech.com
+Password: password123
+Supervisor
+Email: jane@demotech.com
+Password: password123
+User:
+Email: bob@demotech.com
+Password: password123
