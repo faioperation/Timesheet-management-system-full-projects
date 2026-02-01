@@ -57,7 +57,6 @@ export default function Timesheet() {
       );
       toast.success('Status updated');
     } catch (error) {
-      console.error('Status update error:', error);
       toast.error(error.message || 'Failed to update status');
     } finally {
       setUpdatingStatusId(null);
