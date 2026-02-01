@@ -96,11 +96,20 @@ export default function VerifyOTP() {
           navigate("/change-password");
         }, 1000);
       } else {
-        toast.error(result.message || "Invalid OTP", { theme: "colored" });
+        let errorMessage = result.message || "Invalid OTP";
+        if (result.errors) {
+          const firstError = Object.values(result.errors)[0];
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+        }
+        toast.error(errorMessage, { theme: "colored" });
       }
     } catch (error) {
       console.error("Verify OTP Error", error);
-      toast.error(`Error: ${error.message || "An unexpected error occurred"}`, { theme: "colored" });
+      let errorMsg = error.message || "An unexpected error occurred";
+      if (errorMsg === "Failed to fetch") {
+        errorMsg = "Server connection failed. Please check your internet or try again later.";
+      }
+      toast.error(errorMsg, { theme: "colored" });
     } finally {
       setIsVerifying(false);
     }
@@ -134,11 +143,20 @@ export default function VerifyOTP() {
         setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       } else {
-        toast.error(result.message || "Failed to resend OTP", { theme: "colored" });
+        let errorMessage = result.message || "Failed to resend OTP";
+        if (result.errors) {
+          const firstError = Object.values(result.errors)[0];
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+        }
+        toast.error(errorMessage, { theme: "colored" });
       }
     } catch (error) {
       console.error("Resend OTP Error", error);
-      toast.error(`Error: ${error.message || "An unexpected error occurred"}`, { theme: "colored" });
+      let errorMsg = error.message || "An unexpected error occurred";
+      if (errorMsg === "Failed to fetch") {
+        errorMsg = "Server connection failed. Please check your internet or try again later.";
+      }
+      toast.error(errorMsg, { theme: "colored" });
     } finally {
       setIsResending(false);
     }

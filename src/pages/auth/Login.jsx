@@ -42,13 +42,7 @@ export default function Login() {
         throw new Error(`API Error (${res.status}): ${text || res.statusText || 'Unknown error'}`);
       }
 
-      if (res.status === 401 || res.status === 403) {
-        toast.error(result.message || "Login Failed", {
-          position: "top-right",
-          autoClose: 3000,
-          theme: "colored"
-        });
-      } else if (res.ok) {
+      if (res.ok) {
         // Check if user status is approved
         const userStatus = result.status || result.user?.status;
 
@@ -89,14 +83,30 @@ export default function Login() {
         const dashboardPath = getRoleBasedDashboard(result.role || 'User');
         setTimeout(() => navigate(dashboardPath), 1000);
       } else {
-        toast.error(result.message || "Something went wrong", {
+        // Handle specific error statuses
+        let errorMessage = result.message || "Something went wrong";
+        
+        // If it's a validation error (422), extract the first error message
+        if (res.status === 422 && result.errors) {
+          const firstError = Object.values(result.errors)[0];
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+        }
+
+        toast.error(errorMessage, {
           position: "top-right",
           autoClose: 3000,
           theme: "colored"
         });
       }
     } catch (error) {
-      toast.error(`Error: ${error.message || "An unexpected error occurred"}`, {
+      let errorMsg = error.message || "An unexpected error occurred";
+      
+      // Handle browser's "Failed to fetch" (network errors)
+      if (errorMsg === "Failed to fetch") {
+        errorMsg = "Server connection failed. Please check your internet or try again later.";
+      }
+
+      toast.error(errorMsg, {
         position: "top-right",
         autoClose: 5000,
         theme: "colored"

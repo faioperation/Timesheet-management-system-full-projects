@@ -53,17 +53,32 @@ export default function SignUp() {
         });
         setTimeout(() => navigate("/login"), 2000);
       } else {
-        toast.error(
-          result.message || "This Email is already used. try another",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            theme: "colored",
-          },
-        );
+        // Handle specific error statuses or validation errors
+        let errorMessage = result.message || "Registration Failed";
+        
+        if (result.errors) {
+          const firstError = Object.values(result.errors)[0];
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+        }
+
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          theme: "colored",
+        });
       }
     } catch (error) {
-      setError("An error occurred during registration. Please try again.");
+      let errorMsg = error.message || "An unexpected error occurred";
+      
+      if (errorMsg === "Failed to fetch") {
+        errorMsg = "Server connection failed. Please check your internet or try again later.";
+      }
+
+      toast.error(errorMsg, {
+        position: "top-right",
+        autoClose: 5000,
+        theme: "colored",
+      });
     } finally {
       reset();
     }

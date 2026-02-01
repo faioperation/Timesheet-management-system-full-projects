@@ -68,7 +68,11 @@ export default function ChangePassword() {
             }
         } catch (error) {
             console.error("Change Password Error", error);
-            toast.error(`Error: ${error.message || "An unexpected error occurred"}`);
+            let errorMsg = error.message || "An unexpected error occurred";
+            if (errorMsg === "Failed to fetch") {
+                errorMsg = "Server connection failed. Please check your internet or try again later.";
+            }
+            toast.error(errorMsg);
         } finally {
             setIsLoading(false);
         }

@@ -38,7 +38,12 @@ export default function ForgotPassword() {
                     navigate("/verify-otp");
                 }, 1000);
             } else {
-                toast.error(result.message || "Failed to send OTP", {
+                let errorMessage = result.message || "Failed to send OTP";
+                if (result.errors) {
+                    const firstError = Object.values(result.errors)[0];
+                    errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+                }
+                toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
                     theme: "colored"
@@ -46,7 +51,11 @@ export default function ForgotPassword() {
             }
         } catch (error) {
             console.error("Forgot Password Error", error);
-            toast.error(`Error: ${error.message || "An unexpected error occurred"}`, {
+            let errorMsg = error.message || "An unexpected error occurred";
+            if (errorMsg === "Failed to fetch") {
+                errorMsg = "Server connection failed. Please check your internet or try again later.";
+            }
+            toast.error(errorMsg, {
                 position: "top-right",
                 autoClose: 5000,
                 theme: "colored"
