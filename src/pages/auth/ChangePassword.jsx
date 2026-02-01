@@ -76,17 +76,16 @@ export default function ChangePassword() {
 
     return (
         <div className="h-screen flex justify-center items-center text-black p-4">
-            <ToastContainer  />
             <div className="bg-[#FFFFFF] w-full max-w-[600px] min-h-[500px] py-6 sm:py-8 z-10 border border-[#CED2E5] shadow relative rounded-[16px] overflow-auto">
                 <Link to={"/login"}>
                     <div className="bg-[#F2F4FF] p-2 sm:p-3 inline-flex rounded-[8px] absolute top-4 sm:top-5 right-4 sm:right-5 z-20">
-                        <RxCross2 className="text-xl sm:text-2xl font-black text-[#F46B6A]"  />
+                        <RxCross2 className="text-xl sm:text-2xl font-black text-[#F46B6A]" />
                     </div>
                 </Link>
 
                 <div className="w-full h-full flex flex-col justify-center items-center px-4 sm:px-8 md:px-12 lg:px-24 py-6 sm:py-8 md:py-10">
                     <p className="text-center text-5xl sm:text-6xl md:text-7xl text-[#5069E5] w-full flex justify-center">
-                        <RiLock2Fill  />
+                        <RiLock2Fill />
                     </p>
                     <div className="w-full max-w-[411px] text-center mt-6 sm:mt-9">
                         <h2 className="text-2xl sm:text-3xl font-semibold pb-4">Change Password</h2>
@@ -107,12 +106,12 @@ export default function ChangePassword() {
                                         message: "Password must be at least 6 characters",
                                     },
                                 })}
-                             />
+                            />
                             <p
                                 className="absolute z-20 top-1/2 right-2 -translate-y-1/2 text-xl text-[#6D6E73] cursor-pointer"
                                 onClick={() => setViewPass(!viewPass)}
                             >
-                                {viewPass ? <AiFillEye  /> : <AiFillEyeInvisible  />}
+                                {viewPass ? <AiFillEye /> : <AiFillEyeInvisible />}
                             </p>
                             {errors.password && (
                                 <span className="text-red-600 text-sm">{errors.password.message}</span>
@@ -129,12 +128,12 @@ export default function ChangePassword() {
                                     required: "Please confirm your password",
                                     validate: (value) => value === password || "Passwords do not match",
                                 })}
-                             />
+                            />
                             <p
                                 className="absolute z-20 top-1/2 right-2 -translate-y-1/2 text-xl text-[#6D6E73] cursor-pointer"
                                 onClick={() => setViewConfirmPass(!viewConfirmPass)}
                             >
-                                {viewConfirmPass ? <AiFillEye  /> : <AiFillEyeInvisible  />}
+                                {viewConfirmPass ? <AiFillEye /> : <AiFillEyeInvisible />}
                             </p>
                             {errors.confirmPassword && (
                                 <span className="text-red-600 text-sm">{errors.confirmPassword.message}</span>

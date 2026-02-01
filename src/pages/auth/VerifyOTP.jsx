@@ -152,7 +152,6 @@ export default function VerifyOTP() {
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-[#F8FAFC] text-black p-4 sm:p-6 lg:p-10 font-['Inter',_sans-serif]">
-      <ToastContainer />
 
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -244,8 +243,8 @@ export default function VerifyOTP() {
                 onClick={handleResendOTP}
                 disabled={timer > 0 || isResending}
                 className={`text-[#5069E5] font-bold ${timer > 0 || isResending
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:underline decoration-2 underline-offset-4"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:underline decoration-2 underline-offset-4"
                   }`}
               >
                 {isResending

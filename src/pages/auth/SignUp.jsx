@@ -71,7 +71,6 @@ export default function SignUp() {
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-[#F8FAFC] text-black p-4 sm:p-6 lg:p-10 font-['Inter',_sans-serif]">
-      <ToastContainer />
 
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">

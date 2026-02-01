@@ -183,7 +183,6 @@ export default function AddInternalUser() {
 
   return (
     <div className="w-full pb-10">
-      <ToastContainer />
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-black mb-6">Add Internal User</h2>
 

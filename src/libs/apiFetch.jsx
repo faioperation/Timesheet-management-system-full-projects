@@ -94,7 +94,7 @@ const refreshToken = async () => {
         setCookie("auth_token", result.data.token);
         // Store token in localStorage too
         setLocalToken(result.data.token);
-        
+
         // Update other user data if provided
         if (result.data.user) {
           if (result.data.user.role) {
@@ -191,7 +191,7 @@ export const apiFetch = async (endpoint, options = {}) => {
  * @returns {Promise<void>}
  */
 export const logout = async (options = {}) => {
-  const { navigate, callApi = false } = options;
+  const { navigate, callApi = true } = options; // Default callApi to true for better security
 
   try {
     // Optionally call logout API endpoint
@@ -206,25 +206,13 @@ export const logout = async (options = {}) => {
       }
     }
 
-    // Clear cookies - handle both secure and non-secure contexts
-    const isSecure =
-      typeof window !== "undefined" && window.location.protocol === "https:";
-    const secureFlag = isSecure ? "Secure; " : "";
-    const expires = "Thu, 01 Jan 1970 00:00:00 UTC";
-
-    // Clear auth_token cookie
-    document.cookie = `auth_token=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
-    // Clear user_role cookie
-    document.cookie = `user_role=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
-    // Clear user_name cookie
-    document.cookie = `user_name=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
-    // Clear user_email cookie
-    document.cookie = `user_email=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
+    // Clear all cookies and local storage
+    clearCookies();
     clearLocalToken();
 
     // Navigate to login page
     if (navigate) {
-      navigate("/login");
+      navigate("/login", { replace: true });
     } else {
       // Fallback to window.location if navigate is not provided
       if (typeof window !== "undefined") {
@@ -233,16 +221,8 @@ export const logout = async (options = {}) => {
     }
   } catch (error) {
     console.error("Logout error:", error);
-    // Still try to clear cookies and redirect even if there's an error
-    const isSecure =
-      typeof window !== "undefined" && window.location.protocol === "https:";
-    const secureFlag = isSecure ? "Secure; " : "";
-    const expires = "Thu, 01 Jan 1970 00:00:00 UTC";
-
-    document.cookie = `auth_token=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
-    document.cookie = `user_role=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
-    document.cookie = `user_name=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
-    document.cookie = `user_email=; path=/; expires=${expires}; ${secureFlag}SameSite=Strict`;
+    // Still try to clear tokens and redirect even if there's an error
+    clearCookies();
     clearLocalToken();
 
     if (typeof window !== "undefined") {

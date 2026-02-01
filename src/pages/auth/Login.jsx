@@ -108,13 +108,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-[#F8FAFC] text-black p-4 sm:p-6 lg:p-10 font-['Inter',_sans-serif]">
-      <ToastContainer />
-
-      {/* Dynamic Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-[#5069E5]/5 blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-[#F46B6A]/5 blur-[120px]"></div>
-      </div>
 
       <div className="bg-white w-full max-w-[1140px] z-10 border border-[#E2E8F0] shadow-2xl rounded-[24px] grid grid-cols-1 lg:grid-cols-2 overflow-hidden animate-in fade-in zoom-in duration-500">
 
@@ -248,6 +241,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
