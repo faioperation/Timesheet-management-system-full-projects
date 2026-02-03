@@ -261,8 +261,8 @@ export default function VerifyOTP() {
                 onClick={handleResendOTP}
                 disabled={timer > 0 || isResending}
                 className={`text-[#5069E5] font-bold ${timer > 0 || isResending
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:underline decoration-2 underline-offset-4"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:underline decoration-2 underline-offset-4"
                   }`}
               >
                 {isResending

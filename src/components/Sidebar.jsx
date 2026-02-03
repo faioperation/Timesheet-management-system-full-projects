@@ -172,7 +172,7 @@ function Sidebar({ onClose }) {
           <div
             className="flex flex-col items-center py-2 hover:text-white transition-colors"
             onClick={() => {
-              logout({ navigate });
+              logout({ navigate, callApi: true });
               if (onClose) {
                 onClose();
               }
@@ -182,7 +182,7 @@ function Sidebar({ onClose }) {
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                logout({ navigate });
+                logout({ navigate, callApi: true });
                 if (onClose) {
                   onClose();
                 }

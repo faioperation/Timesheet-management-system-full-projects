@@ -3,7 +3,7 @@ import { getRoleBasedDashboard } from '../libs/roleUtils';
 
 const ProtectedRoute = ({ children }) => {
   const location = useLocation();
-  
+
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -11,7 +11,12 @@ const ProtectedRoute = ({ children }) => {
     return null;
   };
 
-  const token = getCookie('auth_token');
+  const getLocalToken = () => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("access_token");
+  };
+
+  const token = getLocalToken() || getCookie('auth_token');
   const publicPaths = ['/login', '/signup', '/forgot-password', '/send-otp', '/change-password', '/verify-otp'];
   const isPublicPath = publicPaths.includes(location.pathname);
 
