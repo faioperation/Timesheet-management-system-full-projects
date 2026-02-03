@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { AiFillEye, AiFillEyeInvisible, AiOutlineCheckCircle, AiOutlineLogin } from "react-icons/ai";
 import { useForm } from "react-hook-form";
 import { apiFetch } from "../../libs/apiFetch";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { getRoleBasedDashboard } from "../../libs/roleUtils";
 
 export default function Login() {
@@ -118,7 +118,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-[#F8FAFC] text-black p-4 sm:p-6 lg:p-10 font-['Inter',_sans-serif]">
-      <ToastContainer />
 
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -135,7 +134,7 @@ export default function Login() {
             src={"/assets/loginbanner.png"}
             alt="Login page banner"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0D2080]/80 via-transparent to-transparent flex flex-col justify-end p-12 text-white">
+          <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-12 text-white">
             <h2 className="text-4xl font-bold mb-4 tracking-tight">Welcome Back to ManageTP</h2>
             <p className="text-lg text-blue-100/90 leading-relaxed max-w-sm">
               Your comprehensive solution for seamless time management and team productivity.

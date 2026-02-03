@@ -7,7 +7,7 @@ import {
   AiFillEyeInvisible,
   AiOutlineCheckCircle,
 } from "react-icons/ai";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 export default function SignUp() {
   const [viewPass, setViewPass] = useState(false);
@@ -86,7 +86,6 @@ export default function SignUp() {
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-[#F8FAFC] text-black p-4 sm:p-6 lg:p-10 font-['Inter',_sans-serif]">
-      <ToastContainer />
 
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -102,7 +101,7 @@ export default function SignUp() {
             src={"/assets/signupbanner.png"}
             alt="Signup page banner"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0D2080]/80 via-transparent to-transparent flex flex-col justify-end p-12 text-white">
+          <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-12 text-white">
             <h2 className="text-4xl font-bold mb-4">
               Start your journey with us
             </h2>

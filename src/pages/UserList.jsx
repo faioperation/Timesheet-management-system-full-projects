@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { FaPlus, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ReusableTable from '../components/ReusableTable';
 import AddClientVendorEmployeeModal from '../components/AddClientVendorEmployeeModal';
 import { apiFetch } from '../libs/apiFetch';
@@ -9,6 +9,7 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
 export default function UserList() {
   const navigate = useNavigate();
+  const location = useLocation();
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -21,7 +22,7 @@ export default function UserList() {
   const isSupervisor = normalizedRole.includes("supervisor") || normalizedRole.includes("staff");
   const canAddAnyUser = isBusinessAdmin || isSupervisor;
   const canAssignClient = isBusinessAdmin || isSupervisor;
-  const [activeFilter, setActiveFilter] = useState('User');
+  const [activeFilter, setActiveFilter] = useState(location.state?.activeTab || 'User');
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingParty, setEditingParty] = useState(null);

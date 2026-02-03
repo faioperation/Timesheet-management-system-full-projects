@@ -46,9 +46,11 @@ export default function Profile() {
       ? IMAGE_BASE_URL.replace(/\/+$/, "")
       : "";
     const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
-    return normalizedBase
+    const finalUrl = normalizedBase
       ? `${normalizedBase}/${normalizedPath}`
       : path;
+    
+    return finalUrl ? `${finalUrl}?t=${new Date().getTime()}` : null;
   };
 
   // Helper function to send FormData to profile-edit API
@@ -229,6 +231,9 @@ export default function Profile() {
             setSignaturePreview(buildImageUrl(data.signature));
           }
         }
+        
+        // Dispatch event to notify other components (like Navbar)
+        window.dispatchEvent(new Event("profileUpdate"));
         
         setImageFile(null); // Clear pending file
         toast.success(result.message || "Profile updated successfully!");

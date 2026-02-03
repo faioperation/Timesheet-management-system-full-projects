@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { FaEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { apiFetch } from "../libs/apiFetch";
 
 const ROLE_OPTIONS = [
@@ -165,7 +165,7 @@ export default function AddInternalUser() {
       }
 
       toast.success("Internal user created successfully");
-      navigate("/user/userlist");
+      navigate("/user/userlist", { state: { activeTab: 'Internal User' } });
     } catch (error) {
       console.error("Error creating internal user:", error);
       toast.error(error.message || "Failed to create internal user", {
@@ -178,12 +178,11 @@ export default function AddInternalUser() {
   };
 
   const handleCancel = () => {
-    navigate("/user/userlist");
+    navigate("/user/userlist", { state: { activeTab: 'Internal User' } });
   };
 
   return (
     <div className="w-full pb-10">
-      <ToastContainer />
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-black mb-6">Add Internal User</h2>
 

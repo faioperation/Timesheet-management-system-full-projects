@@ -63,7 +63,8 @@ export default function Company() {
         if (business.logo) {
           const normalizedBase = Image_BASE_URL ? Image_BASE_URL.replace(/\/+$/, "") : "";
           const normalizedPath = business.logo.startsWith("/") ? business.logo.slice(1) : business.logo;
-          setLogoPreview(normalizedBase ? `${normalizedBase}/${normalizedPath}` : business.logo);
+          const finalLogoUrl = normalizedBase ? `${normalizedBase}/${normalizedPath}` : business.logo;
+          setLogoPreview(finalLogoUrl + "?t=" + new Date().getTime());
         }
       } else {
         throw new Error('No company data found');
@@ -94,13 +95,24 @@ export default function Company() {
 
   const handleSubmit = async () => {
     if (!formData.id) return;
+    
+    // Basic frontend validation
+    if (!formData.name.trim()) {
+      toast.error("Company name is required");
+      return;
+    }
+    if (!formData.email.trim()) {
+      toast.error("Company email is required");
+      return;
+    }
+
     setIsUpdating(true);
     try {
       const formDataPayload = new FormData();
       formDataPayload.append('name', formData.name);
       formDataPayload.append('email', formData.email);
-      formDataPayload.append('phone', formData.phone);
-      formDataPayload.append('address', formData.address);
+      formDataPayload.append('phone', formData.phone || '');
+      formDataPayload.append('address', formData.address || '');
       if (logoFile) {
         formDataPayload.append('logo', logoFile);
       }
@@ -110,14 +122,26 @@ export default function Company() {
         body: formDataPayload,
       });
 
-      if (!response.ok) throw new Error('Failed to update company');
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 422 && result.errors) {
+          const errorMsg = Object.values(result.errors).flat().join(", ");
+          throw new Error(errorMsg);
+        }
+        throw new Error(result.message || 'Failed to update company');
+      }
 
       toast.success('Company updated successfully!');
-      fetchCompanyData(); // Refresh data
+      
+      // Dispatch event to notify other components (like Navbar)
+      window.dispatchEvent(new Event("companyUpdate"));
+      
+      fetchCompanyData(); // Refresh local data
       setLogoFile(null);
     } catch (error) {
       console.error('Update error:', error);
-      toast.error('Failed to update company details');
+      toast.error(error.message || 'Failed to update company details');
     } finally {
       setIsUpdating(false);
     }

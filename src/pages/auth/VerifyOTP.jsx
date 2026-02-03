@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { apiFetch } from "../../libs/apiFetch";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { AiOutlineCheckCircle, AiOutlineSafety } from "react-icons/ai";
 
 export default function VerifyOTP() {
@@ -170,7 +170,6 @@ export default function VerifyOTP() {
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-[#F8FAFC] text-black p-4 sm:p-6 lg:p-10 font-['Inter',_sans-serif]">
-      <ToastContainer />
 
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -187,7 +186,7 @@ export default function VerifyOTP() {
             src={"/assets/loginbanner.png"}
             alt="OTP verification banner"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0D2080]/80 via-transparent to-transparent flex flex-col justify-end p-12 text-white">
+          <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-12 text-white">
             <h2 className="text-4xl font-bold mb-4 tracking-tight">Verify Your Identity</h2>
             <p className="text-lg text-blue-100/90 leading-relaxed max-w-sm">
               We've sent a 6-digit code to your email. Enter it below to continue with password reset.

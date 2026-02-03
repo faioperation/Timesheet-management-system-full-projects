@@ -39,6 +39,9 @@ export default function CreateTimesheet() {
   const [userProfile, setUserProfile] = useState(null);
   const [userDefaults, setUserDefaults] = useState([]);
   const [isDefaultsLoading, setIsDefaultsLoading] = useState(false);
+  const [assignedClientName, setAssignedClientName] = useState('');
+  const [assignedVendorName, setAssignedVendorName] = useState('');
+  const [selectedUserWeekend, setSelectedUserWeekend] = useState([]);
 
   const [timesheetEntries, setTimesheetEntries] = useState([]);
 
@@ -147,23 +150,31 @@ export default function CreateTimesheet() {
   };
 
   const handleSetWeekdays = () => {
-    const start = new Date();
-    const end = new Date();
-    end.setDate(start.getDate() + 6);
+    if (!timesheetEntries.length) {
+      toast.error('No timesheet entries found to update');
+      return;
+    }
 
-    const sDate = toISODate(start);
-    const eDate = toISODate(end);
+    // Use selected user's weekend settings, default to empty array if missing
+    // User said: "zodi user er kono offday na thake tahole sobgula 8 hours select hoye zabe"
+    const weekendSettings = selectedUserWeekend || [];
 
-    setFormData(prev => ({
-      ...prev,
-      startDate: sDate,
-      endDate: eDate,
-    }));
+    const updated = timesheetEntries.map((entry) => {
+      // Get day name for this entry's date
+      const date = new Date(entry.entryDate);
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+      
+      const isWeekend = weekendSettings.includes(dayName);
+      const defaultDailyHours = isWeekend ? '00:00' : '08:00';
 
-    // This now internally handles weekend 0h and workday 8h
-    const updated = buildEntriesForRange(start, end);
+      return {
+        ...entry,
+        dailyHours: defaultDailyHours,
+      };
+    });
+
     setTimesheetEntries(updated);
-    toast.success('Hours set based on your weekend settings');
+    toast.success('Hours set based on user weekend settings');
   };
 
   const handleFileChange = (e) => {
@@ -219,6 +230,38 @@ export default function CreateTimesheet() {
       setUserDefaults([]);
     } finally {
       setIsDefaultsLoading(false);
+    }
+  };
+
+  const fetchUserAssignments = async (userId) => {
+    if (!userId) {
+      setAssignedClientName('');
+      setAssignedVendorName('');
+      setSelectedUserWeekend([]);
+      return;
+    }
+    try {
+      const response = await apiFetch(`/user/${userId}`, { method: 'GET' });
+      const result = await response.json();
+      if (result.success && result.data && result.data.user_details) {
+        const ud = result.data.user_details;
+        setAssignedClientName(ud.client?.name || 'N/A');
+        setAssignedVendorName(ud.vendor?.name || 'N/A');
+        setSelectedUserWeekend(ud.weekend || []);
+
+        // Auto-select client_id in formData if it matches
+        if (ud.client_id) {
+          handleInputChange('client', String(ud.client_id));
+        }
+      } else {
+        setAssignedClientName('N/A');
+        setAssignedVendorName('N/A');
+        setSelectedUserWeekend([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user assignments:', error);
+      setAssignedClientName('Error');
+      setAssignedVendorName('Error');
     }
   };
 
@@ -283,8 +326,11 @@ export default function CreateTimesheet() {
           setUserRole(role || '');
 
           // Populate email if user is a Consultant
-          if (role === 'User' && result.data.email) {
-            setFormData(prev => ({ ...prev, emailTo: result.data.email }));
+          if (role === 'User') {
+            if (result.data.email) {
+              setFormData(prev => ({ ...prev, emailTo: result.data.email }));
+            }
+            fetchUserAssignments(result.data.id);
           }
         }
       } catch (error) {
@@ -458,6 +504,7 @@ export default function CreateTimesheet() {
   };
 
   const handleOpenRemarkModal = () => {
+    setRemarkText(formData.remark || '');
     setIsRemarkModalOpen(true);
   };
 
@@ -644,94 +691,125 @@ export default function CreateTimesheet() {
 
         {/* Right Section - Form */}
         <div className="flex-1 bg-white rounded-lg shadow-sm p-6">
-          {/* Client and Date Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {/* Role-based selection: User (Consultant) for Admins */}
-            {(userRole === 'Business Admin' || userRole === 'Staff') && (
+          {/* Grid Selection Section */}
+          <div className="space-y-6 mb-6">
+            {/* Row 1: User, Assigned Client, Assigned Vendor */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Role-based selection: User for Admins */}
+              {(userRole === 'Business Admin' || userRole === 'Staff') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">User</label>
+                  <div className="relative">
+                    <select
+                      value={formData.consultant}
+                      onChange={(e) => {
+                        const userId = e.target.value;
+                        handleInputChange('consultant', userId);
+                        fetchUserDefaults(userId);
+                        fetchUserAssignments(userId);
+
+                        // Find selected user's email to auto-populate "To" field
+                        const selectedUser = consultants.find(u => String(u.id) === String(userId));
+                        if (selectedUser && selectedUser.email) {
+                          handleInputChange('emailTo', selectedUser.email);
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
+                    >
+                      <option value="">Select user</option>
+                      {isConsultantsLoading && <option disabled>Loading consultants...</option>}
+                      {consultants.map((u) => (
+                        <option key={u.id} value={String(u.id)}>{u.name}</option>
+                      ))}
+                    </select>
+                    <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                  </div>
+                </div>
+              )}
+
+              {/* Assigned Client */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">User (Consultant)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Client</label>
+                <input
+                  type="text"
+                  value={assignedClientName}
+                  readOnly
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                  placeholder="No client assigned"
+                />
+              </div>
+
+              {/* Assigned Vendor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Vendor</label>
+                <input
+                  type="text"
+                  value={assignedVendorName}
+                  readOnly
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                  placeholder="No vendor assigned"
+                />
+              </div>
+            </div>
+
+            {/* Row 2: Attachments and Default Timesheet */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
+                <div className="relative">
+                  <label className="block">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <div className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer hover:border-[#5069E5] transition-colors flex items-center justify-between">
+                      <span>Choose files...</span>
+                      <IoMdArrowDropdown className="text-gray-500" size={20} />
+                    </div>
+                  </label>
+                </div>
+                
+                {/* File List */}
+                {formData.files.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {formData.files.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded border border-gray-200">
+                        <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index)}
+                          className="ml-2 text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Default Timesheet Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Default Timesheet</label>
                 <div className="relative">
                   <select
-                    value={formData.consultant}
-                    onChange={(e) => {
-                      const userId = e.target.value;
-                      handleInputChange('consultant', userId);
-                      fetchUserDefaults(userId);
-
-                      // Find selected user's email to auto-populate "To" field
-                      const selectedUser = consultants.find(u => String(u.id) === String(userId));
-                      if (selectedUser && selectedUser.email) {
-                        handleInputChange('emailTo', selectedUser.email);
-                      }
-                    }}
+                    value={formData.defaultTimesheetId}
+                    onChange={(e) => handleDefaultTimesheetChange(e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
                   >
-                    <option value="">Select consultant</option>
-                    {isConsultantsLoading && <option disabled>Loading consultants...</option>}
-                    {consultants.map((u) => (
-                      <option key={u.id} value={String(u.id)}>{u.name}</option>
+                    <option value="">Select default timesheet</option>
+                    {isDefaultsLoading && <option disabled>Loading defaults...</option>}
+                    {userDefaults.map((d) => (
+                      <option key={d.id} value={String(d.id)}>
+                        Default ({d.start_date} to {d.end_date})
+                      </option>
                     ))}
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
               </div>
-            )}
-
-            {/* Default Timesheet Selection - Required to populate dates and client */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Default Timesheet</label>
-              <div className="relative">
-                <select
-                  value={formData.defaultTimesheetId}
-                  onChange={(e) => handleDefaultTimesheetChange(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800 pr-10 cursor-pointer"
-                >
-                  <option value="">Select default timesheet</option>
-                  {isDefaultsLoading && <option disabled>Loading defaults...</option>}
-                  {userDefaults.map((d) => (
-                    <option key={d.id} value={String(d.id)}>
-                      Default ({d.start_date} to {d.end_date})
-                    </option>
-                  ))}
-                </select>
-                <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
-              <div className="relative">
-                <label className="block">
-                  <input
-                    type="file"
-                    multiple
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  <div className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer hover:border-[#5069E5] transition-colors flex items-center justify-between">
-                    <span>Choose files...</span>
-                    <IoMdArrowDropdown className="text-gray-500" size={20} />
-                  </div>
-                </label>
-              </div>
-              
-              {/* File List */}
-              {formData.files.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {formData.files.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                      <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(index)}
-                        className="ml-2 text-red-600 hover:text-red-800 text-sm font-medium"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
@@ -751,6 +829,24 @@ export default function CreateTimesheet() {
             </button>
           </div>
 
+          {/* Remark Display Section */}
+          {formData.remark && (
+            <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Remark:</h4>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{formData.remark}</p>
+                </div>
+                <button
+                  onClick={handleOpenRemarkModal}
+                  className="text-[#5069E5] hover:text-[#3d52c7] text-xs font-medium"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Timesheet Entry Table */}
           <div className="mb-6 overflow-x-auto">
             {timesheetEntries.length === 0 ? (
@@ -760,6 +856,7 @@ export default function CreateTimesheet() {
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Date</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Day</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Daily hours</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Extra hours</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Vacations</th>
@@ -771,9 +868,14 @@ export default function CreateTimesheet() {
                     const dailyParts = getTimeParts(entry.dailyHours);
                     const extraParts = getTimeParts(entry.extraHours);
                     const vacationParts = getTimeParts(entry.vacations);
+                    
+                    // Get day name from entry date
+                    const dayName = new Date(entry.entryDate).toLocaleDateString('en-US', { weekday: 'long' });
+                    
                     return (
                       <tr key={index}>
                         <td className="px-4 py-3 text-sm text-gray-800 border border-gray-300">{entry.date}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 border border-gray-300">{dayName}</td>
                         <td className="px-4 py-2 border border-gray-300">
                           <div className="flex items-center gap-2">
                             <select
@@ -848,10 +950,10 @@ export default function CreateTimesheet() {
                             <button
                               type="button"
                               onClick={() => handleOpenNoteModal(index)}
-                              className="text-sm text-gray-700 hover:text-[#3d52c7] transition-colors"
-                              title={entry.notes}
+                              className="text-orange-500 hover:text-orange-600 transition-colors"
+                              title="Click to view/edit note"
                             >
-                              {entry.notes}
+                              <BiNote size={20} />
                             </button>
                           ) : (
                             <button

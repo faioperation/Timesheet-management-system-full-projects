@@ -36,7 +36,7 @@ export default function ForgotPassword() {
                 localStorage.setItem('reset_email', formData.email);
                 setTimeout(() => {
                     navigate("/verify-otp");
-                }, 1000);
+                }, 100);
             } else {
                 let errorMessage = result.message || "Failed to send OTP";
                 if (result.errors) {
@@ -67,7 +67,6 @@ export default function ForgotPassword() {
 
     return (
         <div className="min-h-screen flex justify-center items-center bg-[#F8FAFC] text-black p-4 sm:p-6 lg:p-10 font-['Inter',_sans-serif]">
-            <ToastContainer />
 
             {/* Dynamic Background Elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -84,7 +83,7 @@ export default function ForgotPassword() {
                         src={"/assets/loginbanner.png"}
                         alt="Forgot password banner"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0D2080]/80 via-transparent to-transparent flex flex-col justify-end p-12 text-white">
+                    <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-12 text-white">
                         <h2 className="text-4xl font-bold mb-4 tracking-tight">Reset Your Password</h2>
                         <p className="text-lg text-blue-100/90 leading-relaxed max-w-sm">
                             Don't worry! It happens. Enter your email and we'll send you a code to reset your password.

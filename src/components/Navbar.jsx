@@ -9,38 +9,63 @@ function Navbar({ onMenuClick }) {
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [profileImage, setProfileImage] = useState('/assets/profilePlaceholder.png');
+  const [companyLogo, setCompanyLogo] = useState('/assets/Logo.png');
+
+  const fetchProfileData = async () => {
+    try {
+      const response = await apiFetch("/profile", {
+        method: "GET",
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const data = result.data;
+
+        if (data.name) {
+          setUserName(data.name);
+        }
+        if (data.email) {
+          setUserEmail(data.email);
+        }
+
+        if (data.image) {
+          let imageUrl = Image_BASE_URL + data.image + "?t=" + new Date().getTime();
+          setProfileImage(imageUrl);
+        }
+        
+        // Fetch company logo if available
+        if (data.business && data.business.logo) {
+          let logoUrl = Image_BASE_URL + data.business.logo + "?t=" + new Date().getTime();
+          setCompanyLogo(logoUrl);
+        } else {
+          setCompanyLogo('/assets/Logo.png');
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile data:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        const response = await apiFetch("/profile", {
-          method: "GET",
-        });        
-
-        const result = await response.json();
-
-
-        if (result.success && result.data) {
-          const data = result.data;
-
-          if (data.name) {
-            setUserName(data.name);
-          }
-          if (data.email) {
-            setUserEmail(data.email);
-          }
-
-          if (data.image) {
-            let imageUrl = Image_BASE_URL + data.image;
-            
-            setProfileImage(imageUrl);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching profile data:", error);
-      }
-    };
     fetchProfileData();
+
+    // Listen for profile updates
+    const handleProfileUpdate = () => {
+      fetchProfileData();
+    };
+    
+    // Listen for company updates
+    const handleCompanyUpdate = () => {
+      fetchProfileData();
+    };
+
+    window.addEventListener('profileUpdate', handleProfileUpdate);
+    window.addEventListener('companyUpdate', handleCompanyUpdate);
+    return () => {
+      window.removeEventListener('profileUpdate', handleProfileUpdate);
+      window.removeEventListener('companyUpdate', handleCompanyUpdate);
+    };
   }, []);
 
   return (
@@ -55,7 +80,14 @@ function Navbar({ onMenuClick }) {
         </button>
 
         <div className='w-[40px] h-[40px] sm:w-[44px] sm:h-[44px] lg:w-[48px] lg:h-[48px] flex-shrink-0'>
-          <img className='w-full h-full lg:scale-150' src={'/assets/Logo.png'} alt={'Company Logo'} />
+          <img 
+            className='w-full h-full object-contain' 
+            src={companyLogo} 
+            alt={'Company Logo'} 
+            onError={(e) => {
+              e.target.src = '/assets/Logo.png';
+            }}
+          />
         </div>
         <div className='flex-1 min-w-0'>
           <h3 className='truncate'>

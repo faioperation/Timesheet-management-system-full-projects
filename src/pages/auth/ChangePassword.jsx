@@ -6,7 +6,7 @@ import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../libs/apiFetch";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 export default function ChangePassword() {
     const [viewPass, setViewPass] = useState(false);
@@ -57,7 +57,7 @@ export default function ChangePassword() {
                 localStorage.removeItem("reset_email");
                 setTimeout(() => {
                     navigate("/login");
-                }, 2000);
+                }, 100);
             } else {
                 let errorMessage = result.message || "Failed to change password";
                 if (result.errors) {
@@ -80,7 +80,6 @@ export default function ChangePassword() {
 
     return (
         <div className="h-screen flex justify-center items-center text-black p-4">
-            <ToastContainer  />
             <div className="bg-[#FFFFFF] w-full max-w-[600px] min-h-[500px] py-6 sm:py-8 z-10 border border-[#CED2E5] shadow relative rounded-[16px] overflow-auto">
                 <Link to={"/login"}>
                     <div className="bg-[#F2F4FF] p-2 sm:p-3 inline-flex rounded-[8px] absolute top-4 sm:top-5 right-4 sm:right-5 z-20">

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { IoMdArrowDropdown } from "react-icons/io";
-import { FaPlus } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaPlus } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../libs/apiFetch";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
+import AddClientVendorEmployeeModal from "../components/AddClientVendorEmployeeModal";
 
 export default function EditUser() {
   const { id } = useParams();
@@ -51,39 +52,55 @@ export default function EditUser() {
   const [internalUsers, setInternalUsers] = useState([]);
   const [userDetailsId, setUserDetailsId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('Client');
+  const [pendingSelectType, setPendingSelectType] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchAuxiliaryData = async () => {
     try {
-      const [cRes, vRes, eRes, iRes] = await Promise.all([
-        apiFetch('/clients', { method: 'GET' }),
-        apiFetch('/vendors', { method: 'GET' }),
-        apiFetch('/employees', { method: 'GET' }),
-        apiFetch('/internalusers', { method: 'GET' }),
-      ]);
+      const respClients = await apiFetch('/clients', { method: 'GET' });
+      const respVendors = await apiFetch('/vendors', { method: 'GET' });
+      const respEmployees = await apiFetch('/employees', { method: 'GET' });
+      const respInternal = await apiFetch('/internalusers', { method: 'GET' });
 
-      if (cRes.ok) {
-        const result = await cRes.json();
-        setClients(result.data || []);
+      if (respClients.ok) {
+        const res = await respClients.json();
+        const data = res.success && res.data ? res.data : [];
+        setClients(data);
+        if (pendingSelectType === 'Client' && data.length > 0) {
+          setAssignedData(prev => ({ ...prev, clientId: data[data.length - 1].id }));
+          setPendingSelectType(null);
+        }
       }
-      if (vRes.ok) {
-        const result = await vRes.json();
-        setVendors(result.data || []);
+      if (respVendors.ok) {
+        const res = await respVendors.json();
+        const data = res.success && res.data ? res.data : [];
+        setVendors(data);
+        if (pendingSelectType === 'Vendor' && data.length > 0) {
+          setAssignedData(prev => ({ ...prev, vendorId: data[data.length - 1].id }));
+          setPendingSelectType(null);
+        }
       }
-      if (eRes.ok) {
-        const result = await eRes.json();
-        setEmployees(result.data || []);
+      if (respEmployees.ok) {
+        const res = await respEmployees.json();
+        const data = res.success && res.data ? res.data : [];
+        setEmployees(data);
+        if (pendingSelectType === 'Employee' && data.length > 0) {
+          setAssignedData(prev => ({ ...prev, employeeId: data[data.length - 1].id }));
+          setPendingSelectType(null);
+        }
       }
-      if (iRes.ok) {
-        const result = await iRes.json();
-        setInternalUsers(result.data?.map(item => ({
+      if (respInternal.ok) {
+        const res = await respInternal.json();
+        setInternalUsers(res.success && res.data ? res.data.map(item => ({
           id: item.id,
           name: item.name || '',
           role: (item.role || '').toLowerCase(),
           commission_on: item.commission_on || 'Gross margin',
           rate_type: item.rate_type || 'Percentage',
           rate: item.rate || '',
-        })) || []);
+        })) : []);
       }
     } catch (error) {
       console.error("Error fetching auxiliary data:", error);
@@ -122,10 +139,10 @@ export default function EditUser() {
             vendorId: ud.vendor_id || (ud.invoice_to === 'Vendor' ? ud.party_id : '') || '',
             clientRate: ud.client_rate || '',
             timesheetPeriod: ud.time_sheet_period ? ud.time_sheet_period.charAt(0).toUpperCase() + ud.time_sheet_period.slice(1) : 'Weekly',
-            startDate: ud.start_date || '',
-            endDate: ud.end_date || '',
-            recursive: ud.recursive || false,
-            recursiveMonth: ud.recursive_month || '',
+            startDate: ud.start_date ? ud.start_date.substring(0, 10) : '',
+            endDate: ud.end_date ? ud.end_date.substring(0, 10) : '',
+            recursive: ud.recursive == 1,
+            recursiveMonth: (ud.recursive_month === 'all_months' ? '' : ud.recursive_month) || '',
             other: ud.other_rate || '',
             otherRateType: ud.other_rate_type || 'Percentage',
             employeeType: ud.employee_id ? '1099 C2C' : 'W2',
@@ -233,6 +250,45 @@ export default function EditUser() {
       return;
     }
 
+    // Frontend Validation for Assigned Details
+    if (assignedData.invoiceTo === 'Client' && !assignedData.clientId) {
+      toast.error('Please select a client');
+      return;
+    }
+    if (assignedData.invoiceTo === 'Vendor' && !assignedData.vendorId) {
+      toast.error('Please select a vendor');
+      return;
+    }
+    if (!assignedData.clientRate || Number(assignedData.clientRate) <= 0) {
+      toast.error('Please enter a valid rate');
+      return;
+    }
+    if (!assignedData.startDate) {
+      toast.error('Start date is required');
+      return;
+    }
+
+    // Employee Type Specific Validation
+    if (assignedData.employeeType === 'W2') {
+      if (!assignedData.w2 || Number(assignedData.w2) <= 0) {
+        toast.error('Please enter W2 amount');
+        return;
+      }
+      if (!assignedData.payTax || Number(assignedData.payTax) <= 0) {
+        toast.error('Please enter pay tax amount');
+        return;
+      }
+    } else {
+      if (!assignedData.employeeId) {
+        toast.error('Please select an employee');
+        return;
+      }
+      if (!assignedData.employeeRate || Number(assignedData.employeeRate) <= 0) {
+        toast.error('Please enter employee rate');
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -269,7 +325,6 @@ export default function EditUser() {
           client_id: assignedData.clientId || null,
           vendor_id: assignedData.vendorId || null,
           client_rate: Number(assignedData.clientRate) || 0,
-          other_rate: Number(assignedData.other) || 0,
           w2: isW2 ? Number(assignedData.w2) || 0 : 0,
           ptax: isW2 ? Number(assignedData.payTax) || 0 : 0,
           c2c_or_other: !isW2 ? Number(assignedData.employeeRate) || 0 : 0,
@@ -284,6 +339,10 @@ export default function EditUser() {
           recruiter_id: assignedData.recruiter === 'NA' ? null : (assignedData.recruiter || null),
           recruiter_commission: Number(assignedData.recruiterCommission) || 0,
           invoice_to: assignedData.invoiceTo || 'Client',
+          other_rate: Number(assignedData.other) || 0,
+          other_rate_type: assignedData.otherRateType || 'Percentage',
+          recursive: assignedData.recursive ? 1 : 0,
+          recursive_month: assignedData.recursive ? 'all_months' : (assignedData.recursiveMonth || null),
         };
 
         const assignedResponse = await apiFetch(`/user-details/${userDetailsId}`, {
@@ -313,13 +372,12 @@ export default function EditUser() {
 
   return (
     <div className="w-full pb-10">
-      <ToastContainer />
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-black mb-6">Edit User</h2>
 
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Name*</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Name<span className="text-red-500">*</span></label>
             <input
               type="text"
               value={formData.name}
@@ -329,7 +387,7 @@ export default function EditUser() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email*</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email<span className="text-red-500">*</span></label>
             <input
               type="email"
               value={formData.email}
@@ -340,7 +398,7 @@ export default function EditUser() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone*</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Phone<span className="text-red-500">*</span></label>
               <input
                 type="tel"
                 value={formData.phone}
@@ -366,7 +424,7 @@ export default function EditUser() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Role*</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Role<span className="text-red-500">*</span></label>
             <div className="relative">
               <select
                 value={formData.role}
@@ -387,9 +445,9 @@ export default function EditUser() {
 
             <div className="space-y-8">
               {/* Assignment */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Invoice to</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Invoice to<span className="text-red-500">*</span></label>
                   <div className="relative">
                     <select
                       value={assignedData.invoiceTo}
@@ -405,36 +463,62 @@ export default function EditUser() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Client name</label>
-                  <div className="relative">
-                    <select
-                      value={assignedData.clientId}
-                      onChange={(e) => handleAssignedInputChange('clientId', e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        value={assignedData.clientId}
+                        onChange={(e) => handleAssignedInputChange('clientId', e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                      >
+                        <option value="">Select client</option>
+                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalType('Client');
+                        setPendingSelectType('Client');
+                        setIsModalOpen(true);
+                      }}
+                      className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
                     >
-                      <option value="">Select client</option>
-                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                    <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                      <FaPlus size={14} />
+                    </button>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Vendor name</label>
-                  <div className="relative">
-                    <select
-                      value={assignedData.vendorId}
-                      onChange={(e) => handleAssignedInputChange('vendorId', e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        value={assignedData.vendorId}
+                        onChange={(e) => handleAssignedInputChange('vendorId', e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                      >
+                        <option value="">Select vendor</option>
+                        {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                      </select>
+                      <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalType('Vendor');
+                        setPendingSelectType('Vendor');
+                        setIsModalOpen(true);
+                      }}
+                      className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
                     >
-                      <option value="">Select vendor</option>
-                      {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                    </select>
-                    <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                      <FaPlus size={14} />
+                    </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Client Rate</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Client Rate<span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     value={assignedData.clientRate}
@@ -462,7 +546,7 @@ export default function EditUser() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Start date<span className="text-red-500">*</span></label>
                   <input
                     type="date"
                     value={assignedData.startDate}
@@ -478,6 +562,84 @@ export default function EditUser() {
                     onChange={(e) => handleAssignedInputChange('endDate', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                   />
+                </div>
+              </div>
+
+              {/* Other Rates */}
+              <div className="pt-4">
+                <h4 className="text-lg font-semibold text-gray-700 mb-4">Other Rates</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Other</label>
+                    <input
+                      type="number"
+                      value={assignedData.other}
+                      onChange={(e) => handleAssignedInputChange('other', e.target.value)}
+                      placeholder="Enter other rate"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Other rate type</label>
+                    <div className="relative">
+                      <select
+                        value={assignedData.otherRateType}
+                        onChange={(e) => handleAssignedInputChange('otherRateType', e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                      >
+                        <option value="Percentage">Percentage</option>
+                        <option value="Fixed">Fixed</option>
+                      </select>
+                      <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Recursive</label>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={assignedData.recursive}
+                          onChange={() => handleCheckboxChange('recursive')}
+                          className="w-4 h-4 text-[#5069E5] rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Recursive</span>
+                      </label>
+                      <div className="relative flex-1">
+                        {assignedData.recursive ? (
+                          <input
+                            type="text"
+                            value="All months"
+                            readOnly
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
+                          />
+                        ) : (
+                          <>
+                            <select
+                              value={assignedData.recursiveMonth}
+                              onChange={(e) => handleAssignedInputChange('recursiveMonth', e.target.value)}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                            >
+                              <option value="">Select month</option>
+                              <option value="1">January</option>
+                              <option value="2">February</option>
+                              <option value="3">March</option>
+                              <option value="4">April</option>
+                              <option value="5">May</option>
+                              <option value="6">June</option>
+                              <option value="7">July</option>
+                              <option value="8">August</option>
+                              <option value="9">September</option>
+                              <option value="10">October</option>
+                              <option value="11">November</option>
+                              <option value="12">December</option>
+                            </select>
+                            <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -513,7 +675,7 @@ export default function EditUser() {
                   {assignedData.employeeType === 'W2' ? (
                     <>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">W2</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">W2<span className="text-red-500">*</span></label>
                         <input
                           type="number"
                           value={assignedData.w2}
@@ -522,7 +684,7 @@ export default function EditUser() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Pay tax</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Pay tax<span className="text-red-500">*</span></label>
                         <input
                           type="number"
                           value={assignedData.payTax}
@@ -534,21 +696,34 @@ export default function EditUser() {
                   ) : (
                     <>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Employee</label>
-                        <div className="relative">
-                          <select
-                            value={assignedData.employeeId}
-                            onChange={(e) => handleAssignedInputChange('employeeId', e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Employee<span className="text-red-500">*</span></label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <select
+                              value={assignedData.employeeId}
+                              onChange={(e) => handleAssignedInputChange('employeeId', e.target.value)}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] appearance-none bg-white text-gray-800"
+                            >
+                              <option value="">Select employee</option>
+                              {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                            </select>
+                            <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setModalType('Employee');
+                              setPendingSelectType('Employee');
+                              setIsModalOpen(true);
+                            }}
+                            className="px-3 py-2.5 rounded-md bg-[#E0E7FF] text-[#5069E5] hover:bg-[#c7d2fe] font-medium transition-colors"
                           >
-                            <option value="">Select employee</option>
-                            {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                          </select>
-                          <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
+                            <FaPlus size={14} />
+                          </button>
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Employee rate</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Employee rate<span className="text-red-500">*</span></label>
                         <input
                           type="number"
                           value={assignedData.employeeRate}
@@ -762,6 +937,15 @@ export default function EditUser() {
           </div>
         </div>
       </div>
+      <AddClientVendorEmployeeModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        type={modalType}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          fetchAuxiliaryData();
+        }}
+      />
     </div>
   );
 }

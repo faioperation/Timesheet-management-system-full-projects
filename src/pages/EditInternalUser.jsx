@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { apiFetch } from "../libs/apiFetch";
 
 const ROLE_OPTIONS = [
@@ -126,7 +126,7 @@ export default function EditInternalUser() {
       }
 
       toast.success("Internal user updated successfully");
-      setTimeout(() => navigate("/user/userlist"), 1500);
+      setTimeout(() => navigate("/user/userlist", { state: { activeTab: 'Internal User' } }), 1500);
     } catch (error) {
       console.error("Error updating internal user:", error);
       toast.error(error.message || "Failed to update internal user");
@@ -141,7 +141,6 @@ export default function EditInternalUser() {
 
   return (
     <div className="w-full pb-10">
-      <ToastContainer />
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-black mb-6">Edit Internal User</h2>
         <div className="space-y-6">
@@ -283,7 +282,7 @@ export default function EditInternalUser() {
             >
               {isSubmitting ? "Updating..." : "Update Internal User"}
             </button>
-            <button onClick={() => navigate("/user/userlist")} className="px-6 py-2.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors font-medium">Cancel</button>
+            <button onClick={() => navigate("/user/userlist", { state: { activeTab: 'Internal User' } })} className="px-6 py-2.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors font-medium">Cancel</button>
           </div>
         </div>
       </div>

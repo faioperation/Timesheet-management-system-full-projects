@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { AiFillEye, AiFillEyeInvisible, AiOutlineCheckCircle, AiOutlinePlusCircle } from "react-icons/ai";
 import { FiChevronDown } from "react-icons/fi";
 import { apiFetch } from "../../libs/apiFetch";
@@ -101,7 +101,6 @@ export default function AddCompany() {
 
     return (
         <div className="w-full h-full font-['Inter',_sans-serif]">
-            <ToastContainer />
 
             <div className="flex items-center justify-between mb-8 px-4">
                 <div>

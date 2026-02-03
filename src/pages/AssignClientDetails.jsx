@@ -222,6 +222,41 @@ export default function AssignClientDetails() {
         return;
       }
 
+      // Frontend Validation
+      if (!formData.clientId && !formData.vendorId) {
+        toast.error('Please select client or vendor');
+        return;
+      }
+      if (!formData.clientRate || Number(formData.clientRate) <= 0) {
+        toast.error('Please enter a valid rate');
+        return;
+      }
+      if (!formData.startDate) {
+        toast.error('Start date is required');
+        return;
+      }
+
+      // Employee Type Specific Validation
+      if (formData.employeeType === 'W2') {
+        if (!formData.w2 || Number(formData.w2) <= 0) {
+          toast.error('Please enter W2 amount');
+          return;
+        }
+        if (!formData.payTax || Number(formData.payTax) <= 0) {
+          toast.error('Please enter pay tax amount');
+          return;
+        }
+      } else {
+        if (!formData.employeeId) {
+          toast.error('Please select an employee');
+          return;
+        }
+        if (!formData.employeeRate || Number(formData.employeeRate) <= 0) {
+          toast.error('Please enter employee rate');
+          return;
+        }
+      }
+
       // First, fetch user data to get user_details.id
       const userResponse = await apiFetch(`/user/${userId}`, {
         method: 'GET',
@@ -238,15 +273,15 @@ export default function AssignClientDetails() {
         throw new Error('User details not found. Please contact support.');
       }
 
-      console.log('User Details ID:', userDetailsId);
-
-      // Build payload based on provided API contract
+      // Build payload
       const isW2 = formData.employeeType === 'W2';
       const payload = {
         party_id:
           formData.invoiceTo === 'Vendor'
             ? formData.vendorId || null
             : formData.clientId || null,
+        client_id: formData.clientId || null,
+        vendor_id: formData.vendorId || null,
         client_rate: Number(formData.clientRate) || 0,
         other_rate: Number(formData.other) || 0,
         w2: isW2 ? Number(formData.w2) || 0 : 0,
@@ -256,16 +291,14 @@ export default function AssignClientDetails() {
         time_sheet_period: (formData.timesheetPeriod || '').toLowerCase(),
         start_date: formData.startDate || null,
         end_date: formData.endDate || null,
-        account_manager_id: formData.accountManager || null,
+        account_manager_id: formData.accountManager === 'NA' ? null : formData.accountManager || null,
         account_manager_commission: Number(formData.accountManagerCommission) || 0,
-        business_development_manager_id: formData.bdManager || null,
+        business_development_manager_id: formData.bdManager === 'NA' ? null : formData.bdManager || null,
         business_development_manager_commission: Number(formData.bdManagerCommission) || 0,
-        recruiter_id: formData.recruiter || null,
+        recruiter_id: formData.recruiter === 'NA' ? null : formData.recruiter || null,
         recruiter_commission: Number(formData.recruiterCommission) || 0,
         invoice_to: formData.invoiceTo || 'Client',
       };
-
-      console.log('Assign Client Payload:', payload);
 
       const response = await apiFetch(`/user-details/${userDetailsId}`, {
         method: 'POST',
@@ -274,9 +307,12 @@ export default function AssignClientDetails() {
 
       const result = await response.json().catch(() => ({}));
 
-      if (!response.ok || !result.success) {
-        const message = result && (result.message || result.error);
-        throw new Error(message || 'Failed to assign client details');
+      if (!response.ok) {
+        if (response.status === 422 && result.errors) {
+          const errorMsg = Object.values(result.errors).flat().join(", ");
+          throw new Error(errorMsg);
+        }
+        throw new Error(result.message || result.error || 'Failed to assign client details');
       }
 
       toast.success('Client details updated successfully!', {
@@ -334,7 +370,7 @@ export default function AssignClientDetails() {
               {/* Client name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Client name<span className="text-red-500">*</span>
+                  Client name
                 </label>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
@@ -369,7 +405,7 @@ export default function AssignClientDetails() {
               {/* Vendor name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Vendor name<span className="text-red-500">*</span>
+                  Vendor name
                 </label>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
@@ -691,7 +727,7 @@ export default function AssignClientDetails() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Account manager<span className="text-red-500">*</span>
+                  Account manager
                 </label>
                 <div className="relative">
                   <select
@@ -714,7 +750,7 @@ export default function AssignClientDetails() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Commission<span className="text-red-500">*</span>
+                  Commission
                 </label>
                 <input
                   type="number"
@@ -729,7 +765,7 @@ export default function AssignClientDetails() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Commission on<span className="text-red-500">*</span>
+                  Commission on
                 </label>
                 <div className="relative">
                   <select
@@ -746,7 +782,7 @@ export default function AssignClientDetails() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rate type<span className="text-red-500">*</span>
+                  Rate type
                 </label>
                 <div className="relative">
                   <select
@@ -767,7 +803,7 @@ export default function AssignClientDetails() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  BD Manager<span className="text-red-500">*</span>
+                  BD Manager
                 </label>
                 <div className="relative">
                   <select
@@ -790,7 +826,7 @@ export default function AssignClientDetails() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Commission<span className="text-red-500">*</span>
+                  Commission
                 </label>
                 <input
                   type="number"
@@ -805,7 +841,7 @@ export default function AssignClientDetails() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Commission on<span className="text-red-500">*</span>
+                  Commission on
                 </label>
                 <div className="relative">
                   <select
@@ -822,7 +858,7 @@ export default function AssignClientDetails() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rate type<span className="text-red-500">*</span>
+                  Rate type
                 </label>
                 <div className="relative">
                   <select
@@ -843,7 +879,7 @@ export default function AssignClientDetails() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Recruiter<span className="text-red-500">*</span>
+                  Recruiter
                 </label>
                 <div className="relative">
                   <select
@@ -866,7 +902,7 @@ export default function AssignClientDetails() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Commission<span className="text-red-500">*</span>
+                  Commission
                 </label>
                 <input
                   type="number"
@@ -881,7 +917,7 @@ export default function AssignClientDetails() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Commission on<span className="text-red-500">*</span>
+                  Commission on
                 </label>
                 <div className="relative">
                   <select
@@ -898,7 +934,7 @@ export default function AssignClientDetails() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rate type<span className="text-red-500">*</span>
+                  Rate type
                 </label>
                 <div className="relative">
                   <select

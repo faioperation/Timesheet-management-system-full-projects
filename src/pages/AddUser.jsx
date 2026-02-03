@@ -4,7 +4,7 @@ import { FaEye, FaEyeSlash, FaEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import UserSuccessModal from "../components/UserSuccessModal";
 import { apiFetch } from "../libs/apiFetch";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 export default function AddUser() {
   const navigate = useNavigate();
@@ -146,7 +146,6 @@ export default function AddUser() {
 
   return (
     <div className="w-full pb-10">
-      <ToastContainer />
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-black mb-6">Add User</h2>
 
