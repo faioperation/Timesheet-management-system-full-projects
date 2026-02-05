@@ -33,7 +33,6 @@ export default function CompanyView() {
         { id: 1, feature: 'User can login', key: 'user_can_login', status: false },
         { id: 2, feature: 'Commission', key: 'commission', status: false },
         { id: 3, feature: 'Template can add', key: 'template_can_add', status: false },
-        { id: 4, feature: 'QB integration', key: 'qb_integration', status: false },
     ]);
 
     const [userLimit, setUserLimit] = useState(0);
@@ -79,7 +78,6 @@ export default function CompanyView() {
                     { id: 1, feature: 'User can login', key: 'user_can_login', status: !!business.permission?.user_can_login },
                     { id: 2, feature: 'Commission', key: 'commission', status: !!business.permission?.commission },
                     { id: 3, feature: 'Template can add', key: 'template_can_add', status: !!business.permission?.template_can_add },
-                    { id: 4, feature: 'QB integration', key: 'qb_integration', status: !!business.permission?.qb_integration },
                 ];
                 setAccessPlanData(initialAccessPlan);
 

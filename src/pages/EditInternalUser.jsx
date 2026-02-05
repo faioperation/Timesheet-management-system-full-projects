@@ -40,6 +40,22 @@ export default function EditInternalUser() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [permissions, setPermissions] = useState(null);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const response = await apiFetch('/profile', { method: 'GET' });
+        const result = await response.json();
+        if (result.success && result.data && result.data.business) {
+          setPermissions(result.data.business.permission);
+        }
+      } catch (error) {
+        console.error("Error fetching permissions:", error);
+      }
+    };
+    fetchPermissions();
+  }, []);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -203,6 +219,7 @@ export default function EditInternalUser() {
               <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
             </div>
           </div>
+          {(!permissions || permissions.commission === 1) && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Commission on*</label>
@@ -274,6 +291,7 @@ export default function EditInternalUser() {
               </div>
             </div>
           </div>
+          )}
           <div className="flex gap-4 pt-4">
             <button
               onClick={handleSubmit}

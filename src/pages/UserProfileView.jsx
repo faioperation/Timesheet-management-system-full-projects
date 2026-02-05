@@ -13,6 +13,22 @@ export default function UserProfileView() {
   const [userData, setUserData] = useState(null);
   const [profileImage, setProfileImage] = useState(null);
   const [signaturePreview, setSignaturePreview] = useState(null);
+  const [permissions, setPermissions] = useState(null);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const response = await apiFetch('/profile', { method: 'GET' });
+        const result = await response.json();
+        if (result.success && result.data && result.data.business) {
+          setPermissions(result.data.business.permission);
+        }
+      } catch (error) {
+        console.error("Error fetching permissions:", error);
+      }
+    };
+    fetchPermissions();
+  }, []);
 
   const buildImageUrl = (path) => {
     if (!path) return null;
@@ -169,7 +185,7 @@ export default function UserProfileView() {
           </div>
 
           {/* Internal User Specific Fields */}
-          {isInternal && userData && (
+          {isInternal && userData && (!permissions || permissions.commission === 1) && (
             <div className="mt-8 pt-8 border-t border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800 mb-6">Commission Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

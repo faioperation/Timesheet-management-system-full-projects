@@ -14,6 +14,22 @@ export default function AssignClientDetails() {
   const [vendors, setVendors] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [internalUsers, setInternalUsers] = useState([]);
+  const [permissions, setPermissions] = useState(null);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const response = await apiFetch('/profile', { method: 'GET' });
+        const result = await response.json();
+        if (result.success && result.data && result.data.business) {
+          setPermissions(result.data.business.permission);
+        }
+      } catch (error) {
+        console.error("Error fetching permissions:", error);
+      }
+    };
+    fetchPermissions();
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('Client');
   const [pendingSelectType, setPendingSelectType] = useState(null);
@@ -720,6 +736,7 @@ export default function AssignClientDetails() {
           </div>
 
           {/* Bottom Section - Commission Details */}
+          {(!permissions || permissions.commission === 1) && (
           <div className="rounded-lg  space-y-6">
             <h3 className="text-lg font-semibold text-gray-800">Commission Details</h3>
 
@@ -951,6 +968,7 @@ export default function AssignClientDetails() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-4 pt-6">

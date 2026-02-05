@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { apiFetch } from '../libs/apiFetch';
 
 const SettingsLayout = () => {
   const location = useLocation();
@@ -13,19 +14,36 @@ const SettingsLayout = () => {
   };
 
   const userRole = getCookie('user_role');
+  const [permissions, setPermissions] = React.useState(null);
+
+  React.useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const response = await apiFetch('/profile', { method: 'GET' });
+        const result = await response.json();
+        if (result.success && result.data && result.data.business) {
+          setPermissions(result.data.business.permission);
+        }
+      } catch (error) {
+        console.error("Error fetching permissions for settings layout:", error);
+      }
+    };
+    fetchPermissions();
+  }, []);
 
   // Define tabs based on role
-  const getTabs = () => {
+    const getTabs = () => {
+    let baseTabs = [];
     if (userRole === 'supervisor' || userRole === 'Staff' || userRole === 'staff') {
       // Supervisor/Staff: Only Profile and Template
-      return [
+      baseTabs = [
         { name: 'Profile', path: '/settings/profile' },
         { name: 'Template', path: '/settings/template' },
         { name: 'Security', path: '/settings/change-password' },
       ];
     } else if (userRole === 'Business Admin') {
       // Business Admin: All tabs except holiday
-      return [
+      baseTabs = [
         { name: 'Profile', path: '/settings/profile' },
         { name: 'Company', path: '/settings/company' },
         { name: 'Role permission', path: '/settings/role-permission' },
@@ -35,18 +53,26 @@ const SettingsLayout = () => {
       ];
     } else if (userRole === 'System Admin') {
       // System Admin: Only Profile and Security
-      return [
+      baseTabs = [
         { name: 'Profile', path: '/settings/profile' },
         { name: 'Security', path: '/settings/change-password' },
       ];
     } else {
       // Default/User: Profile, Weekend, and Security
-      return [
+      baseTabs = [
         { name: 'Profile', path: '/settings/profile' },
         { name: 'Weekend', path: '/settings/weekend' },
         { name: 'Security', path: '/settings/change-password' },
       ];
     }
+
+    if (permissions) {
+        return baseTabs.filter(tab => {
+            if (tab.name === 'Template' && permissions.template_can_add === 0) return false;
+            return true;
+        });
+    }
+    return baseTabs;
   };
 
   const tabs = getTabs();

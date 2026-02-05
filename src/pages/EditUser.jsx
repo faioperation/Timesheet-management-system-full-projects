@@ -56,6 +56,22 @@ export default function EditUser() {
   const [modalType, setModalType] = useState('Client');
   const [pendingSelectType, setPendingSelectType] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [permissions, setPermissions] = useState(null);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const response = await apiFetch('/profile', { method: 'GET' });
+        const result = await response.json();
+        if (result.success && result.data && result.data.business) {
+          setPermissions(result.data.business.permission);
+        }
+      } catch (error) {
+        console.error("Error fetching permissions:", error);
+      }
+    };
+    fetchPermissions();
+  }, []);
 
   const fetchAuxiliaryData = async () => {
     try {
@@ -737,8 +753,9 @@ export default function EditUser() {
               </div>
 
               {/* Commission Details */}
-              <div className="space-y-6">
-                <h4 className="text-lg font-semibold text-gray-700">Commission Details</h4>
+              {(!permissions || permissions.commission === 1) && (
+                <div className="space-y-6">
+                  <h4 className="text-lg font-semibold text-gray-700">Commission Details</h4>
 
                 {/* Account Manager */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -917,6 +934,7 @@ export default function EditUser() {
                   </div>
                 </div>
               </div>
+            )}
             </div>
           </div>
 

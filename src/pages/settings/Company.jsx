@@ -16,7 +16,6 @@ export default function Company() {
     user_can_login: false,
     commission: false,
     template_can_add: false,
-    qb_integration: false,
     user_limit: 0
   });
 
@@ -55,7 +54,6 @@ export default function Company() {
             user_can_login: !!business.permission.user_can_login,
             commission: !!business.permission.commission,
             template_can_add: !!business.permission.template_can_add,
-            qb_integration: !!business.permission.qb_integration,
             user_limit: business.permission.user_limit || 0
           });
         }
@@ -196,7 +194,6 @@ export default function Company() {
                 { label: 'User Login', status: permissions.user_can_login },
                 { label: 'Commissions', status: permissions.commission },
                 { label: 'Email Templates', status: permissions.template_can_add },
-                { label: 'QuickBooks Integration', status: permissions.qb_integration },
               ].map((perm, idx) => (
                 <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <span className="text-sm font-medium text-gray-600">{perm.label}</span>
