@@ -46,6 +46,7 @@ export default function Template() {
           type: item.template_type,
           subject: item.subject,
           body: item.body,
+          business_id: item.business_id, // Include business_id
           used_by: item.used_by || item.usedBy || []
         }));
         console.log('Templates raw data:', result.data);
@@ -206,32 +207,39 @@ export default function Template() {
       key: 'action',
       label: 'Action',
       className: 'text-left',
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleViewTemplate(row)}
-            className="text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
-          >
-            View
-          </button>
-          {canModify && (
+      render: (row) => {
+        // Check if this is a default template (business_id = null)
+        const isDefaultTemplate = row.business_id === null;
+        
+        return (
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => handleUpdateTemplate(row)}
-              className="text-green-600 hover:text-green-800 font-medium transition-colors"
+              onClick={() => handleViewTemplate(row)}
+              className="text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
             >
-              Update
+              View
             </button>
-          )}
-          {canDelete && (
-            <button
-              onClick={() => handleDeleteTemplate(row)}
-              className="text-red-600 hover:text-red-800 font-medium transition-colors"
-            >
-              Delete
-            </button>
-          )}
-        </div>
-      ),
+            {/* Only show Update button for business templates (not default) */}
+            {canModify && !isDefaultTemplate && (
+              <button
+                onClick={() => handleUpdateTemplate(row)}
+                className="text-green-600 hover:text-green-800 font-medium transition-colors"
+              >
+                Update
+              </button>
+            )}
+            {/* Only show Delete button for business templates (not default) */}
+            {canDelete && !isDefaultTemplate && (
+              <button
+                onClick={() => handleDeleteTemplate(row)}
+                className="text-red-600 hover:text-red-800 font-medium transition-colors"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 

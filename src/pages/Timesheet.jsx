@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { IoMdArrowDropdown } from 'react-icons/io';
-import { FaEye, FaPlus } from 'react-icons/fa';
+import { FaEye, FaPlus, FaEdit } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import ReusableTable from '../components/ReusableTable';
 import { apiFetch } from '../libs/apiFetch';
@@ -297,15 +297,30 @@ export default function Timesheet() {
       key: 'action',
       label: 'Action',
       className: 'text-left',
-      render: (row) => (
-        <button
-          onClick={() => handleView(row)}
-          className="flex items-center gap-1 text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
-        >
-          <FaEye size={14} />
-          <span>View</span>
-        </button>
-      ),
+      render: (row) => {
+        const canEdit = ['Draft', 'Pending', 'Rejected'].includes(row.status);
+        
+        return (
+          <div className="flex items-center gap-3">
+            {canEdit && (
+              <Link
+                to={`/timesheet/edit/${row.id}`}
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium transition-colors"
+              >
+                <FaEdit size={14} />
+                <span>Edit</span>
+              </Link>
+            )}
+            <button
+              onClick={() => handleView(row)}
+              className="flex items-center gap-1 text-[#5069E5] hover:text-[#3d52c7] font-medium transition-colors"
+            >
+              <FaEye size={14} />
+              <span>View</span>
+            </button>
+          </div>
+        );
+      },
     },
   ];
 

@@ -256,6 +256,10 @@ const router = createBrowserRouter([
         element: <CreateTimesheet />,
       },
       {
+        path: 'timesheet/edit/:id',
+        element: <CreateTimesheet />,
+      },
+      {
         path: 'activity',
         element: (
           <RoleBasedRoute allowedRoles={['Business Admin']}>

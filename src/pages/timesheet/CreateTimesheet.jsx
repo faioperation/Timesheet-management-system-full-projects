@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { BiNote } from 'react-icons/bi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../../libs/apiFetch';
 import { toast } from 'react-toastify';
 import ReactQuill from 'react-quill';
@@ -9,6 +9,8 @@ import 'quill/dist/quill.snow.css';
 
 export default function CreateTimesheet() {
   const navigate = useNavigate();
+  const { id: timesheetId } = useParams(); // Get ID from URL for edit mode
+  const isEditMode = Boolean(timesheetId);
   const [formData, setFormData] = useState({
     client: '',
     consultant: '',
@@ -18,6 +20,7 @@ export default function CreateTimesheet() {
     endDate: '',
     emailTemplate: '',
     emailTo: 'example@gmail.com',
+    emailCc: '',
     emailSubject: 'Naresh Vyas timesheet',
     emailBody: '<p>Hello,</p><p>Timesheet is submit for client : R12</p><p>for time period: 09/15/2025 To 09/21/2025</p><p>Please check and approve.</p><p>Thank you.</p>',
     remark: '',
@@ -42,6 +45,8 @@ export default function CreateTimesheet() {
   const [assignedClientName, setAssignedClientName] = useState('');
   const [assignedVendorName, setAssignedVendorName] = useState('');
   const [selectedUserWeekend, setSelectedUserWeekend] = useState([]);
+  const [existingAttachments, setExistingAttachments] = useState([]); // For edit mode
+  const [attachmentsToDelete, setAttachmentsToDelete] = useState([]); // Track which attachments to delete
 
   const [timesheetEntries, setTimesheetEntries] = useState([]);
 
@@ -92,6 +97,11 @@ export default function CreateTimesheet() {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+
+  // Helper to format hours from decimal to HH:MM for editing
+  const formatHours = (decimal) => {
+    return formatDecimalToTime(decimal);
   };
 
   const timeToNumber = (value) => {
@@ -325,6 +335,11 @@ export default function CreateTimesheet() {
           const role = getCookie('user_role');
           setUserRole(role || '');
 
+          // Auto-populate CC with logged-in user's email
+          if (result.data.email) {
+            setFormData(prev => ({ ...prev, emailCc: result.data.email }));
+          }
+
           // Populate email if user is a Consultant
           if (role === 'User') {
             if (result.data.email) {
@@ -430,8 +445,10 @@ export default function CreateTimesheet() {
         const result = await response.json();
         if (result.success && Array.isArray(result.data)) {
           setEmailTemplates(result.data);
-          if (result.data.length && !formData.emailTemplate) {
-            setFormData(prev => ({ ...prev, emailTemplate: String(result.data[0].id) }));
+          // Always auto-select the first template as default
+          if (result.data.length > 0) {
+            const defaultTemplate = result.data[0];
+            handleEmailTemplateChange(String(defaultTemplate.id));
           }
         } else {
           setEmailTemplates([]);
@@ -448,26 +465,113 @@ export default function CreateTimesheet() {
     fetchTemplates();
   }, []);
 
+  // Load timesheet data if in edit mode
+  useEffect(() => {
+    if (isEditMode && timesheetId) {
+      const loadTimesheetData = async () => {
+        try {
+          const response = await apiFetch(`/timesheet/${timesheetId}`, { method: 'GET' });
+          if (!response.ok) {
+            throw new Error('Failed to load timesheet');
+          }
+          const result = await response.json();
+          if (result.success && result.data) {
+            const ts = result.data;
+            
+            // Set form data
+            setFormData(prev => ({
+              ...prev,
+              client: String(ts.client_id || ''),
+              consultant: String(ts.user_id || ''),
+              startDate: ts.start_date || '',
+              endDate: ts.end_date || '',
+              emailTemplate: String(ts.mail_template_id || ''),
+              emailTo: ts.send_to || '',
+              emailCc: ts.cc || '',
+              remark: ts.remarks || '',
+            }));
+            
+            // Set email subject and body from template
+            if (ts.mail && ts.mail.subject) {
+              setFormData(prev => ({
+                ...prev,
+                emailSubject: ts.mail.subject,
+                emailBody: ts.mail.body || ''
+              }));
+            }
+            
+            // Set timesheet entries
+            if (ts.entries && ts.entries.length > 0) {
+              const entries = ts.entries.map(entry => ({
+                entryDate: entry.entry_date,
+                displayDate: formatDisplayDate(new Date(entry.entry_date)),
+                dailyHours: formatHours(entry.daily_hours || 0),
+                extraHours: formatHours(entry.extra_hours || 0),
+                vacationHours: formatHours(entry.vacation_hours || 0),
+                note: entry.note || '',
+              }));
+              setTimesheetEntries(entries);
+            }
+            
+            // Set existing attachments
+            if (ts.attachments && ts.attachments.length > 0) {
+              setExistingAttachments(ts.attachments);
+            }
+            
+            toast.success('Timesheet loaded');
+          }
+        } catch (error) {
+          console.error('Error loading timesheet:', error);
+          toast.error(error.message || 'Failed to load timesheet');
+          navigate('/timesheet');
+        }
+      };
+      
+      loadTimesheetData();
+    }
+  }, [isEditMode, timesheetId]);
+
   const replacePlaceholders = (text, data) => {
     if (!text) return '';
     let result = text;
     
     // Find client name
     const client = clients.find(c => String(c.id) === String(data.client));
-    const clientName = client ? client.name : 'Client';
+    const clientName = client ? client.name : '';
     
-    // Find consultant name
+    // Find consultant/user name
     let consultantName = '';
     if (userRole === 'Business Admin' || userRole === 'Staff') {
       const cons = consultants.find(u => String(u.id) === String(data.consultant));
-      consultantName = cons ? cons.name : 'Consultant';
+      consultantName = cons ? cons.name : '';
     } else {
-      consultantName = userProfile ? userProfile.name : 'Consultant';
+      consultantName = userProfile ? userProfile.name : '';
     }
 
+    // Split name into parts
+    const nameParts = consultantName.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    // Define all placeholders with both formats: {key} and {{ key }}
     const placeholders = {
-      '{{ User first name }}': consultantName.split(' ')[0],
-      '{{ User last name }}': consultantName.split(' ').slice(1).join(' ') || '',
+      // Basic Information
+      '{user_name}': consultantName,
+      '{{user_name}}': consultantName,
+      '{start_date}': data.startDate || '',
+      '{{start_date}}': data.startDate || '',
+      '{end_date}': data.endDate || '',
+      '{{end_date}}': data.endDate || '',
+      '{client_name}': clientName,
+      '{{client_name}}': clientName,
+      '{status}': 'submitted',
+      '{{status}}': 'submitted',
+      '{remarks}': data.remark || '',
+      '{{remarks}}': data.remark || '',
+      
+      // Legacy placeholders (keep for backward compatibility)
+      '{{ User first name }}': firstName,
+      '{{ User last name }}': lastName,
       '{{ Client name }}': clientName,
       '{{ Start date }}': data.startDate || '',
       '{{ End date }}': data.endDate || '',
@@ -475,6 +579,7 @@ export default function CreateTimesheet() {
       '{{ Private signature }}': consultantName,
     };
 
+    // Replace all placeholders
     Object.entries(placeholders).forEach(([key, value]) => {
       result = result.split(key).join(value || '');
     });
@@ -541,6 +646,7 @@ export default function CreateTimesheet() {
     toast.success('Note saved');
   };
 
+
   const handleSubmit = async () => {
     try {
       if (!formData.startDate || !formData.endDate) {
@@ -553,6 +659,19 @@ export default function CreateTimesheet() {
       }
       if (!currentUserId) {
         toast.error('User information not loaded yet');
+        return;
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      
+      if (formData.emailTo && !emailRegex.test(formData.emailTo)) {
+        toast.error('Please enter a valid email address in the "To" field');
+        return;
+      }
+      
+      if (formData.emailCc && !emailRegex.test(formData.emailCc)) {
+        toast.error('Please enter a valid email address in the "CC" field');
         return;
       }
 
@@ -588,6 +707,9 @@ export default function CreateTimesheet() {
       if (formData.emailTo) {
         payload.append('send_to', formData.emailTo);
       }
+      if (formData.emailCc) {
+        payload.append('cc', formData.emailCc);
+      }
       if (formData.emailSubject) {
         payload.append('subject', formData.emailSubject);
       }
@@ -604,27 +726,36 @@ export default function CreateTimesheet() {
         );
         payload.append(
           `entries[${index}][vacation_hours]`,
-          String(timeToNumber(entry.vacations))
+          String(timeToNumber(entry.vacationHours))
         );
-        payload.append(`entries[${index}][note]`, entry.notes || '');
+        payload.append(`entries[${index}][note]`, entry.note || '');
       });
 
-      const response = await apiFetch('/timesheet', {
-        method: 'POST',
+      // If editing, add attachments to delete
+      if (isEditMode && attachmentsToDelete.length > 0) {
+        payload.append('delete_attachments', JSON.stringify(attachmentsToDelete));
+      }
+
+      // Determine API endpoint and method based on mode
+      const apiEndpoint = isEditMode ? `/timesheet/${timesheetId}` : '/timesheet';
+      const httpMethod = 'POST'; // Backend uses POST for both create and update
+
+      const response = await apiFetch(apiEndpoint, {
+        method: httpMethod,
         body: payload,
       });
 
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success) {
-        const message = result.message || result.error || 'Failed to submit timesheet';
+        const message = result.message || result.error || `Failed to ${isEditMode ? 'update' : 'submit'} timesheet`;
         throw new Error(message);
       }
 
-      toast.success('Timesheet submitted successfully');
+      toast.success(`Timesheet ${isEditMode ? 'updated' : 'submitted'} successfully`);
       navigate('/timesheet');
     } catch (error) {
       console.error('Timesheet submit error:', error);
-      toast.error(error.message || 'Failed to submit timesheet');
+      toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'submit'} timesheet`);
     } finally {
       setIsSubmitting(false);
     }
@@ -975,7 +1106,7 @@ export default function CreateTimesheet() {
 
           {/* Email Composition Section */}
           <div className="mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email Template</label>
                 <div className="relative">
@@ -1001,11 +1132,26 @@ export default function CreateTimesheet() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  To <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="email"
                   value={formData.emailTo}
                   onChange={(e) => handleInputChange('emailTo', e.target.value)}
+                  placeholder="user@example.com"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">CC</label>
+                <input
+                  type="email"
+                  value={formData.emailCc}
+                  onChange={(e) => handleInputChange('emailCc', e.target.value)}
+                  placeholder="creator@example.com (optional)"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800"
                 />
               </div>

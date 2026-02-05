@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 const CreateTemplateModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     parameterInsertOn: 'Subject', // 'Subject' or 'template'
-    templateType: 'submit',
+    templateType: 'timesheet_submit',
     templateName: '',
     used_by: [], // Array of role IDs
     subject: '',
@@ -142,7 +142,7 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
         // Reset form
         setFormData({
           parameterInsertOn: 'Subject',
-          templateType: 'submit',
+          templateType: 'timesheet_submit',
           templateName: '',
           used_by: [],
           subject: '',
@@ -252,13 +252,11 @@ const CreateTemplateModal = ({ isOpen, onClose }) => {
                     onChange={(e) => handleInputChange('templateType', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5069E5] bg-white text-gray-800 pr-10 appearance-none cursor-pointer"
                   >
-                    <option value="submit">Timesheet Submit</option>
-                    <option value="resubmit">Timesheet Resubmit</option>
-                    <option value="approved">Timesheet Approved</option>
-                    <option value="reject">Timesheet Reject</option>
-                    <option value="pending">Timesheet Pending</option>
-                    <option value="access">Access</option>
-                    <option value="regular">Regular</option>
+                    <option value="timesheet_submit">Timesheet Submit</option>
+                    <option value="timesheet_approve">Timesheet Approve</option>
+                    <option value="timesheet_reject">Timesheet Reject</option>
+                    <option value="pending_timesheet_reminder">Pending Timesheet Reminder</option>
+                    <option value="general">General</option>
                   </select>
                   <IoMdArrowDropdown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
                 </div>
