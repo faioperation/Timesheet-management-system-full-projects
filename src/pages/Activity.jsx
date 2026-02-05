@@ -95,7 +95,6 @@ export default function Activity() {
             setTotalItems(0);
             return;
           }
-
           throw new Error("Failed to fetch activitiess");
         }
 
