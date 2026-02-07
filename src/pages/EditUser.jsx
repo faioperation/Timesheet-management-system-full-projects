@@ -148,7 +148,6 @@ export default function EditUser() {
         if (u.user_details) {
           const ud = u.user_details;
           setUserDetailsId(ud.id);
-          const isW2 = ud.w2 > 0 || ud.ptax > 0 || !ud.employee_id;
           setAssignedData({
             invoiceTo: ud.invoice_to || 'Client',
             clientId: ud.client_id || (ud.invoice_to === 'Client' ? ud.party_id : '') || '',
@@ -157,27 +156,27 @@ export default function EditUser() {
             timesheetPeriod: ud.time_sheet_period ? ud.time_sheet_period.charAt(0).toUpperCase() + ud.time_sheet_period.slice(1) : 'Weekly',
             startDate: ud.start_date ? ud.start_date.substring(0, 10) : '',
             endDate: ud.end_date ? ud.end_date.substring(0, 10) : '',
-            recursive: ud.recursive == 1,
-            recursiveMonth: (ud.recursive_month === 'all_months' ? '' : ud.recursive_month) || '',
+            recursive: ud.recurssive == 1,
+            recursiveMonth: (ud.recurssive_month === 'all_months' ? '' : ud.recurssive_month) || '',
             other: ud.other_rate || '',
-            otherRateType: ud.other_rate_type || 'Percentage',
-            employeeType: ud.employee_id ? '1099 C2C' : 'W2',
+            otherRateType: ud.other_rate_type ? ud.other_rate_type.charAt(0).toUpperCase() + ud.other_rate_type.slice(1) : 'Percentage',
+            employeeType: (ud.employee_id || Number(ud.c2c_or_other) > 0) ? '1099 C2C' : 'W2',
             w2: ud.w2 || '',
             payTax: ud.ptax || '',
             employeeId: ud.employee_id || '',
             employeeRate: ud.c2c_or_other || '',
-            accountManager: ud.account_manager_id || '',
+            accountManager: ud.account_manager_id || 'NA',
             accountManagerCommission: ud.account_manager_commission || '',
             accountManagerCommissionOn: ud.account_manager_commission_on || 'Gross margin',
-            accountManagerRateType: ud.account_manager_rate_type || 'Percentage',
-            bdManager: ud.business_development_manager_id || '',
+            accountManagerRateType: ud.account_manager_commission_rate_type ? ud.account_manager_commission_rate_type.charAt(0).toUpperCase() + ud.account_manager_commission_rate_type.slice(1) : 'Percentage',
+            bdManager: ud.business_development_manager_id || 'NA',
             bdManagerCommission: ud.business_development_manager_commission || '',
             bdManagerCommissionOn: ud.business_development_manager_commission_on || 'Gross margin',
-            bdManagerRateType: ud.business_development_manager_rate_type || 'Fixed',
-            recruiter: ud.recruiter_id || '',
+            bdManagerRateType: ud.business_development_manager_commission_rate_type ? ud.business_development_manager_commission_rate_type.charAt(0).toUpperCase() + ud.business_development_manager_commission_rate_type.slice(1) : 'Fixed',
+            recruiter: ud.recruiter_id || 'NA',
             recruiterCommission: ud.recruiter_commission || '',
             recruiterCommissionOn: ud.recruiter_commission_on || 'Gross margin',
-            recruiterRateType: ud.recruiter_rate_type || 'Percentage',
+            recruiterRateType: ud.recruiter_rate_type ? ud.recruiter_rate_type.charAt(0).toUpperCase() + ud.recruiter_rate_type.slice(1) : 'Percentage',
           });
         }
       }
@@ -350,15 +349,18 @@ export default function EditUser() {
           end_date: assignedData.endDate || null,
           account_manager_id: assignedData.accountManager === 'NA' ? null : (assignedData.accountManager || null),
           account_manager_commission: Number(assignedData.accountManagerCommission) || 0,
+          account_manager_commission_rate_type: (assignedData.accountManagerRateType || 'Percentage').toLowerCase(),
           business_development_manager_id: assignedData.bdManager === 'NA' ? null : (assignedData.bdManager || null),
           business_development_manager_commission: Number(assignedData.bdManagerCommission) || 0,
+          business_development_manager_commission_rate_type: (assignedData.bdManagerRateType || 'Fixed').toLowerCase(),
           recruiter_id: assignedData.recruiter === 'NA' ? null : (assignedData.recruiter || null),
           recruiter_commission: Number(assignedData.recruiterCommission) || 0,
+          recruiter_rate_type: (assignedData.recruiterRateType || 'Percentage').toLowerCase(),
           invoice_to: assignedData.invoiceTo || 'Client',
           other_rate: Number(assignedData.other) || 0,
-          other_rate_type: assignedData.otherRateType || 'Percentage',
-          recursive: assignedData.recursive ? 1 : 0,
-          recursive_month: assignedData.recursive ? 'all_months' : (assignedData.recursiveMonth || null),
+          other_rate_type: (assignedData.otherRateType || 'Percentage').toLowerCase(),
+          recurssive: assignedData.recursive ? 1 : 0,
+          recurssive_month: assignedData.recursive ? 'all_months' : (assignedData.recursiveMonth || null),
         };
 
         const assignedResponse = await apiFetch(`/user-details/${userDetailsId}`, {

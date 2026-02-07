@@ -20,16 +20,14 @@ import ReusableTable from "../../components/ReusableTable";
 const COLORS = ["#E5D416", "#D9DFFF", "#58CC02", "#5069E5", "#555659", "#F46B6A"];
 
 const reportColumns = [
-    { key: "no", label: <div className="flex items-center gap-1">No <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-left w-16" },
-    { key: "name", label: <div className="flex items-center gap-1">Name/Customer <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-left font-semibold" },
-    { key: "totalHours", label: <div className="flex items-center justify-center gap-1">Total Hours <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-center" },
-    { key: "revenue", label: <div className="flex items-center justify-center gap-1">Revenue <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-center" },
-    { key: "totalExpense", label: <div className="flex items-center justify-center gap-1">Total Expense <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-center" },
-    { key: "gMargin", label: <div className="flex items-center justify-center gap-1">G.Margin <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-center" },
-    { key: "totalCommission", label: <div className="flex items-center justify-center gap-1">Total Commisision <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-center" },
-    { key: "nMargin", label: <div className="flex items-center justify-center gap-1">N.Margin <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-center" },
-    { key: "acmComm", label: <div className="flex items-center justify-center gap-1">ACM Comm <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-center" },
-    { key: "recCo", label: <div className="flex items-center justify-center gap-1">Rec Co <IoMdArrowDropdown size={14} className="opacity-50" /></div>, className: "text-center" },
+    { key: "no", label: "No", className: "text-left w-16" },
+    { key: "name", label: "Name/Customer", className: "text-left font-semibold" },
+    { key: "totalHours", label: "Total Hours", className: "text-center" },
+    { key: "revenue", label: "Revenue", className: "text-center" },
+    { key: "gMargin", label: "G.Margin", className: "text-center" },
+    { key: "totalCommission", label: "Commission", className: "text-center" },
+    { key: "nMargin", label: "N.Margin", className: "text-center font-bold text-[#5069E5]" },
+    { key: "action", label: "Action", className: "text-center w-24" },
 ];
 
 const FilterDropdown = ({ label, value, options, onSelect }) => {
@@ -126,67 +124,132 @@ const SimpleDropdown = ({ value, options, onSelect }) => {
 const ConsultantDetailModal = ({ isOpen, onClose, data }) => {
     if (!isOpen || !data) return null;
 
+    const SummaryCard = ({ label, value, colorClass = "text-[#0F172A]" }) => (
+        <div className="bg-[#F8FAFF] rounded-2xl p-5 border border-gray-100/50 flex flex-col gap-1 shadow-sm">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
+            <span className={`text-xl font-black ${colorClass}`}>{value}</span>
+        </div>
+    );
+
     const InfoRow = ({ label, value }) => (
-        <div className="flex items-center py-2 border-b border-gray-50 last:border-0 min-h-[44px]">
-            <span className="text-[14px] text-gray-500 w-[180px] flex-shrink-0">{label} :</span>
-            <span className="text-[14px] font-semibold text-gray-800">{value || "-"}</span>
+        <div className="flex items-center py-2.5 border-b border-gray-50 last:border-0 min-h-[46px]">
+            <span className="text-[13px] text-gray-500 w-[170px] flex-shrink-0 font-medium">{label} :</span>
+            <span className="text-[14px] font-bold text-[#0F172A]">{value ?? "-"}</span>
         </div>
     );
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[1280px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-hidden">
+            <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-[1240px] max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                 {/* Modal Header */}
-                <div className="flex justify-between items-center px-10 py-6">
-                    <h2 className="text-2xl font-bold text-gray-900">Consultant Information</h2>
-                    <div className="flex items-center gap-4">
-                        <button className="px-8 py-2 bg-[#5069E5] text-white rounded-lg font-bold hover:bg-[#4054B2] transition-colors shadow-lg shadow-indigo-100">
-                            Edit
-                        </button>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors bg-gray-50 p-2 rounded-full">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                <div className="flex justify-between items-center px-10 py-7 border-b border-gray-100">
+                    <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-full bg-[#5069E5] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-indigo-100">
+                            {data.user_info?.name?.charAt(0)}
+                        </div>
+                        <div>
+                            <h2 className="text-[22px] font-black text-[#0F172A] tracking-tight">{data.user_info?.name}</h2>
+                            <p className="text-gray-400 text-sm font-semibold">{data.user_info?.email}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-[#F87171] transition-all bg-gray-50 p-2.5 rounded-full hover:bg-red-50">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Modal Scrollable Content */}
+                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar overscroll-contain">
+                    {/* NEW: Summary Cards Section */}
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-12">
+                        <SummaryCard label="Total Hours" value={data.summary?.total_hours?.toFixed(2)} />
+                        <SummaryCard label="Total Revenue" value={`$ ${data.summary?.total_gross_revenue?.toFixed(2)}`} colorClass="text-green-600" />
+                        <SummaryCard label="Total Expense" value={`$ ${data.summary?.total_expense?.toFixed(2)}`} colorClass="text-red-500" />
+                        <SummaryCard label="Gross Margin" value={`$ ${data.summary?.total_gross_margin?.toFixed(2)}`} />
+                        <SummaryCard label="Net Margin" value={`$ ${data.summary?.total_net_margin?.toFixed(2)}`} colorClass="text-[#5069E5]" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-16">
+                        {/* Group 1: General Info */}
+                        <div className="space-y-1">
+                            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-7 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div> General Information
+                            </h3>
+                            <InfoRow label="Phone" value={data.user_info?.phone} />
+                            <InfoRow label="Gender" className="capitalize" value={data.user_info?.gender} />
+                            <InfoRow label="Address" value={data.user_info?.address} />
+                            <InfoRow label="Status" value={<span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-black uppercase tracking-tighter">{data.user_info?.status}</span>} />
+                        </div>
+
+                        {/* Group 2: Assignment */}
+                        <div className="space-y-1">
+                            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-7 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div> Assignment Details
+                            </h3>
+                            <InfoRow label="Client" value={data.user_detail?.client?.name} />
+                            <InfoRow label="Vendor" value={data.user_detail?.vendor?.name} />
+                            <InfoRow label="Account Manager" value={data.user_detail?.account_manager?.name || "N/A"} />
+                            <InfoRow label="BD Manager" value={data.user_detail?.bd_manager?.name || "N/A"} />
+                            <InfoRow label="Recruiter" value={data.user_detail?.recruiter?.name || "N/A"} />
+                        </div>
+
+                        {/* Group 3: Financials */}
+                        <div className="space-y-1">
+                            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-7 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div> Rates & Commissions
+                            </h3>
+                            <InfoRow label="Client Rate" value={`$ ${data.user_detail?.client_rate || "0.00"}`} />
+                            <InfoRow label="W2 Rate" value={`$ ${data.user_detail?.w2 || "0.00"}`} />
+                            <InfoRow label="PTAX" value={`${data.user_detail?.ptax || "0"}%`} />
+                            <InfoRow label="Consultant Rate" value={`$ ${data.user_detail?.consultant_rate || "0.00"}`} />
+                            <InfoRow label="AM Commission" value={`$ ${data.user_detail?.account_manager_commission || "0.00"}`} />
+                            <InfoRow label="BDM Commission" value={`$ ${data.user_detail?.business_development_manager_commission || "0.00"}`} />
+                        </div>
+                    </div>
+
+                    {/* Timesheet Table Section */}
+                    <div>
+                        <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div> Timesheet History
+                        </h3>
+                        <div className="overflow-hidden border border-gray-100 rounded-[20px] shadow-sm">
+                            <table className="min-w-full">
+                                <thead>
+                                    <tr className="bg-[#F8FAFF]">
+                                        <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Period</th>
+                                        <th className="px-6 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Hours</th>
+                                        <th className="px-6 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Gross Revenue</th>
+                                        <th className="px-6 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">G. Margin</th>
+                                        <th className="px-8 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest font-bold">N. Margin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.timesheets?.map((ts, idx) => (
+                                        <tr key={idx} className="border-t border-gray-50 hover:bg-gray-50 transition-colors group">
+                                            <td className="px-8 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[13px] font-bold text-[#0F172A]">{ts.period}</span>
+                                                    <span className="text-[10px] text-gray-400 font-semibold tracking-tight">#{ts.id}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center text-[13px] font-bold text-[#0F172A]">{ts.total_hours?.toFixed(2)}</td>
+                                            <td className="px-6 py-4 text-center text-[13px] font-bold text-green-600">$ {ts.revenue?.toFixed(2)}</td>
+                                            <td className="px-6 py-4 text-center text-[13px] font-bold text-[#0F172A]">$ {ts.gross_margin?.toFixed(2)}</td>
+                                            <td className="px-8 py-4 text-right text-[14px] font-black text-[#5069E5]">$ {ts.net_margin?.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                {/* Modal Content - 3 Column Layout from Image */}
-                <div className="px-10 pb-12 grid grid-cols-1 md:grid-cols-3 gap-16">
-                    {/* Column 1 */}
-                    <div className="space-y-1">
-                        <h3 className="text-xl font-bold text-gray-800 mb-6">Consultant Information</h3>
-                        <InfoRow label="Consultant Name" value={data.name} />
-                        <InfoRow label="Consultant Email" value="vyasnaresh+u11@gmail.com" />
-                        <InfoRow label="Client Name" value="Bangladesh" />
-                        <InfoRow label="Vendor Name" value="Bangladesh" />
-                        <InfoRow label="Employer Name" value="" />
-                    </div>
-
-                    {/* Column 2 */}
-                    <div className="space-y-1">
-                        <h3 className="text-xl font-bold text-gray-800 mb-6">Consultant Information</h3>
-                        <InfoRow label="Start Date" value="Sep-11-2024" />
-                        <InfoRow label="End Date" value="Dec-07-2025" />
-                        <InfoRow label="Employer Phone" value="" />
-                        <InfoRow label="Address" value="" />
-                        <InfoRow label="Account Manager Name" value="ACM1 NV" />
-                        <InfoRow label="BD Manager Name" value="not available" />
-                        <InfoRow label="Recruiter Name" value="recruiter 1 NV" />
-                    </div>
-
-                    {/* Column 3 */}
-                    <div className="space-y-1">
-                        <h3 className="text-xl font-bold text-gray-800 mb-6">Consultant Information</h3>
-                        <InfoRow label="Client Rate" value="50.0" />
-                        <InfoRow label="Consultant Rate" value="0.0" />
-                        <InfoRow label="W2" value="30.0" />
-                        <InfoRow label="ptax" value="15.0%" />
-                        <InfoRow label="Account Manager Commision" value="1.0 Fix" />
-                        <InfoRow label="BD Commission" value="1.0 Fix" />
-                        <InfoRow label="Recruiter Commision" value="1.0 Fix" />
-                        <InfoRow label="C2C Other" value="1.0 Fix" />
-                    </div>
+                {/* Footer */}
+                <div className="px-10 py-6 border-t border-gray-100 flex justify-end">
+                    <button onClick={onClose} className="px-8 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-colors">
+                        Close
+                    </button>
                 </div>
             </div>
         </div>
@@ -205,6 +268,7 @@ export default function RevenueDashboard() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedConsultant, setSelectedConsultant] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
 
     const years = Array.from({ length: 16 }, (_, i) => (2020 + i).toString());
     const months = [
@@ -508,67 +572,63 @@ export default function RevenueDashboard() {
             {/* Revenue Report Table - EXACT IMAGE MATCH */}
             <div className="mt-8">
                 {/* Table Header Controls */}
-                <div className="flex justify-between items-center mb-6 px-2">
-                    <div className="relative">
-                        <button className="flex items-center gap-3 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-[#5069E5] transition-all">
-                            <span>Display all</span>
-                            <IoMdArrowDropdown size={18} />
-                        </button>
-                    </div>
-
+                <div className="flex justify-end items-center mb-6 px-2">
                     <div className="relative w-[300px]">
                         <input
                             type="text"
-                            placeholder="Search"
+                            placeholder="Search by name or email"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5069E5] focus:ring-1 focus:ring-[#5069E5]/20 transition-all font-medium"
                         />
                         <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     </div>
                 </div>
 
-                {/* Table Component */}
-                <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
+                {/* Simplified Table View */}
+                <div className="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100">
                     <ReusableTable
-                        columns={[
-                            { label: "NO", key: "no", className: "w-16" },
-                            { label: "USER/CLIENT", key: "name_customer" },
-                            { label: "TOTAL HOURS", key: "total_hours" },
-                            { label: "REVENUE", key: "revenue" },
-                            { label: "TOTAL EXPENSE", key: "total_expense" },
-                            { label: "G.MARGIN", key: "gross_margin" },
-                            { label: "TOTAL COMMISSION", key: "total_commission" },
-                            { label: "N.MARGIN", key: "net_margin" },
-                            { label: "ACM COMM", key: "acm_comm" },
-                            { label: "REC CO", key: "rec_co" },
-                        ]}
-                        data={(dashboardData?.table || []).map((item, index) => ({
-                            ...item,
-                            no: index + 1,
-                            name_customer: (
-                                <div className="flex flex-col">
-                                    <span className="text-[#0F172A] font-bold text-sm tracking-tight">{item.consultant_name}</span>
-                                    <span className="text-gray-400 text-[11px] font-medium">{item.client_name}</span>
+                        columns={reportColumns}
+                        data={dashboardData?.table
+                            ?.filter(group => {
+                                const search = searchTerm.toLowerCase();
+                                return (
+                                    group.user_info?.name?.toLowerCase().includes(search) ||
+                                    group.user_info?.email?.toLowerCase().includes(search)
+                                );
+                            })
+                            ?.map((group, i) => ({
+                            no: i + 1,
+                            name: (
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-[#E0E7FF] text-[#5069E5] flex items-center justify-center font-bold text-xs">
+                                        {group.user_info?.name?.charAt(0)}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-[#0F172A]">{group.user_info?.name}</span>
+                                        <span className="text-[10px] text-gray-400 font-medium">{group.user_info?.email}</span>
+                                    </div>
                                 </div>
                             ),
-                            total_hours: <span className="font-bold text-[#0F172A]">{item.total_hours?.toFixed(2) || '0.00'}</span>,
-                            revenue: <span className="font-bold text-[#0F172A]">{item.revenue?.toFixed(2) || '0.00'}</span>,
-                            total_expense: <span className="font-bold text-[#0F172A]">{item.total_expense?.toFixed(2) || '0.00'}</span>,
-                            gross_margin: <span className="font-bold text-[#0F172A]">{item.gross_margin?.toFixed(2) || '0.00'}</span>,
-                            total_commission: <span className="font-bold text-[#0F172A]">{item.total_commission?.toFixed(2) || '0.00'}</span>,
-                            net_margin: <span className="font-bold text-blue-600">{item.net_margin?.toFixed(2) || '0.00'}</span>,
-                            acm_comm: <span className="font-bold text-[#0F172A]">{item.am_commission?.toFixed(2) || '0.00'}</span>,
-                            rec_co: <span className="font-bold text-[#0F172A]">{item.rec_commission?.toFixed(2) || '0.00'}</span>,
-                        }))}
+                            totalHours: group.summary?.total_hours?.toFixed(2),
+                            revenue: `$ ${group.summary?.total_gross_revenue?.toFixed(2)}`,
+                            gMargin: `$ ${group.summary?.total_gross_margin?.toFixed(2)}`,
+                            totalCommission: `$ ${group.summary?.total_commission?.toFixed(2)}`,
+                            nMargin: `$ ${group.summary?.total_net_margin?.toFixed(2)}`,
+                            action: (
+                                <button
+                                    onClick={() => {
+                                        setSelectedConsultant(group);
+                                        setIsModalOpen(true);
+                                    }}
+                                    className="px-4 py-1.5 bg-[#E0E7FF] text-[#5069E5] rounded-lg text-xs font-black hover:bg-[#5069E5] hover:text-white transition-all"
+                                >
+                                    View
+                                </button>
+                            )
+                        })) || []}
+                        headerBgColor="bg-gray-50/50"
                         itemsPerPage={10}
-                        showPagination={true}
-                        headerBgColor="bg-[#F8FAFF]"
-                        stripedRows={false}
-                        tableClassName="text-[15px]"
-                        emptyMessage="No data found. Please create timesheets to see revenue data."
-                        onRowClick={(row) => {
-                            setSelectedConsultant(row);
-                            setIsModalOpen(true);
-                        }}
                     />
                 </div>
             </div>

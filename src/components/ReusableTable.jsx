@@ -24,36 +24,43 @@ import { IoMdArrowDropdown } from 'react-icons/io';
 const ReusableTable = ({
   columns = [],
   data = [],
-  itemsPerPage: initialItemsPerPage = 10,
+  itemsPerPage: propItemsPerPage,
+  currentPage: propCurrentPage,
   totalPages: propTotalPages,
   onPageChange,
+  onItemsPerPageChange,
   emptyMessage = 'No data available',
   showPagination = true,
   tableClassName = '',
   headerBgColor = 'bg-gray-100',
   stripedRows = true,
   onRowClick,
+  isServerSide = false,
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
+  const [internalCurrentPage, setInternalCurrentPage] = useState(1);
+  const [internalItemsPerPage, setInternalItemsPerPage] = useState(10);
 
-  // Update itemsPerPage when initialItemsPerPage prop changes
-  useEffect(() => {
-    setItemsPerPage(initialItemsPerPage);
-  }, [initialItemsPerPage]);
+  // Sync internal state with props if provided
+  const currentPage = propCurrentPage !== undefined ? propCurrentPage : internalCurrentPage;
+  const itemsPerPage = propItemsPerPage !== undefined ? propItemsPerPage : internalItemsPerPage;
 
-  // Calculate pagination - always slice data locally based on itemsPerPage
-  // If propTotalPages is provided, use it for pagination display, but still slice locally
+  // Calculate pagination
   const calculatedTotalPages = Math.ceil(data.length / itemsPerPage);
-  const totalPages = propTotalPages || calculatedTotalPages;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  // Always slice data based on itemsPerPage for client-side pagination
-  const currentItems = data.slice(startIndex, endIndex);
+  const totalPages = propTotalPages !== undefined ? propTotalPages : calculatedTotalPages;
+
+  // Data to display
+  let currentItems = data;
+  if (!isServerSide) {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    currentItems = data.slice(startIndex, endIndex);
+  }
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+      if (propCurrentPage === undefined) {
+        setInternalCurrentPage(page);
+      }
       if (onPageChange) {
         onPageChange(page);
       }
@@ -62,9 +69,19 @@ const ReusableTable = ({
 
   const handleItemsPerPageChange = (e) => {
     const newItemsPerPage = Number(e.target.value);
-    setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1); // Reset to first page when items per page changes
-    // If propTotalPages is provided, notify parent about the change
+    
+    if (propItemsPerPage === undefined) {
+      setInternalItemsPerPage(newItemsPerPage);
+    }
+    
+    if (onItemsPerPageChange) {
+      onItemsPerPageChange(newItemsPerPage);
+    }
+
+    // Reset to first page
+    if (propCurrentPage === undefined) {
+      setInternalCurrentPage(1);
+    }
     if (onPageChange) {
       onPageChange(1);
     }

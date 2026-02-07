@@ -173,56 +173,35 @@ export default function UserList() {
             if (result.success && result.data) {
               const users = result.data;
 
-              // Fetch individual details for each user to check party_id status
-              const mappedData = await Promise.all(
-                users.map(async (item) => {
-                  const primaryRole =
-                    item.roles && item.roles[0] ? item.roles[0].name : item.role;
-                  let isActive = true;
-                  let hasClientAssigned = false;
-                  let userDetailsId = null;
-                  try {
-                    // Hit /user/{id} to get detailed user information including party_id and precise status
-                    const detailResponse = await apiFetch(`/user/${item.id}`, {
-                      method: 'GET',
-                    });
-                    if (detailResponse.ok) {
-                      const detailResult = await detailResponse.json();
-                      const userData = detailResult.data;
+              // Use the enriched data from /users (which now includes user_details and timesheets_count)
+              const mappedData = users.map((item) => {
+                const primaryRole = item.roles && item.roles[0] ? item.roles[0].name : item.role;
+                
+                // Logic for Assignment
+                let hasClientAssigned = false;
+                let userDetailsId = null;
+                if (item.user_details?.party_id) {
+                  hasClientAssigned = true;
+                  userDetailsId = item.user_details.id || null;
+                }
 
-                      // Logic for Assignment
-                      if (userData?.user_details?.party_id) {
-                        hasClientAssigned = true;
-                        userDetailsId = userData.user_details.id || null;
-                      }
+                // Logic for Status: Strictly follow "approved" requirement
+                const statusStr = (item.status || '').toLowerCase();
+                const isActive = statusStr === 'approved';
 
-                      // Logic for Status: Strictly follow "approved" requirement
-                      const statusStr = (userData?.status || item.status || '').toLowerCase();
-                      isActive = statusStr === 'approved';
-                    } else {
-                      // Fallback: Strictly follow "approved" requirement
-                      const s = (item.status || '').toLowerCase();
-                      isActive = s === 'approved';
-                    }
-                  } catch (err) {
-                    console.error(`Error fetching individual details for user ${item.id}:`, err);
-                    const s = (item.status || '').toLowerCase();
-                    isActive = s === 'active' || s === 'approved' || item.active === 1 || item.active === true;
-                  }
-
-                  return {
-                    id: item.id,
-                    userId: item.id || item.user_id || null,
-                    name: item.name || '',
-                    email: item.email || '',
-                    phone: item.phone || '',
-                    role: primaryRole || 'User',
-                    status: isActive ? 'Active' : 'Deactive',
-                    hasClientAssigned: hasClientAssigned,
-                    userDetailsId: userDetailsId,
-                  };
-                })
-              );
+                return {
+                  id: item.id,
+                  userId: item.id || item.user_id || null,
+                  name: item.name || '',
+                  email: item.email || '',
+                  phone: item.phone || '',
+                  role: primaryRole || 'User',
+                  status: isActive ? 'Active' : 'Deactive',
+                  hasClientAssigned: hasClientAssigned,
+                  userDetailsId: userDetailsId,
+                  timesheetsCount: item.timesheets_count || 0, // NEW: capture timesheet count
+                };
+              });
               setAllUsersData(mappedData);
             } else {
               setAllUsersData([]);
@@ -585,13 +564,15 @@ export default function UserList() {
             <FaEye size={16} />
           </button>
 
-          <button
-            onClick={() => handleEdit(row)}
-            className="text-blue-500 hover:text-blue-700 transition-colors"
-            title="Edit"
-          >
-            <FaEdit size={16} />
-          </button>
+          {row.timesheetsCount === 0 && (
+            <button
+              onClick={() => handleEdit(row)}
+              className="text-blue-500 hover:text-blue-700 transition-colors"
+              title="Edit"
+            >
+              <FaEdit size={16} />
+            </button>
+          )}
 
           {isBusinessAdmin && (
             <button

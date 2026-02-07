@@ -56,6 +56,7 @@ const formatDate = (dateString) => {
 export default function Activity() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [activitiesData, setActivitiesData] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
@@ -69,7 +70,7 @@ export default function Activity() {
         // Build query params
         const params = new URLSearchParams();
         params.append("page", currentPage.toString());
-        params.append("per_page", "10");
+        params.append("per_page", itemsPerPage.toString());
 
         const response = await apiFetch(
           `/manage-activity?${params.toString()}`,
@@ -108,7 +109,7 @@ export default function Activity() {
 
             return {
               id: item.id,
-              no: String((currentPage - 1) * 10 + index + 1).padStart(2, "0"),
+              no: String((currentPage - 1) * itemsPerPage + index + 1).padStart(2, "0"),
               createdBy: item.user?.name || "Unknown",
               date: formatDate(item.created_at),
               role: mappedRole,
@@ -142,7 +143,7 @@ export default function Activity() {
     };
 
     fetchActivities();
-  }, [activeFilter, currentPage]);
+  }, [activeFilter, currentPage, itemsPerPage]);
 
   useEffect(() => {
     // Reset to first page when filter changes
@@ -155,6 +156,11 @@ export default function Activity() {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (size) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);
   };
 
   const columns = [
@@ -209,13 +215,6 @@ export default function Activity() {
           ))}
         </div>
 
-        {/* Activities Dropdown */}
-        <div className="relative">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-[#5069E5] transition-colors">
-            <span>Activities</span>
-            <IoMdArrowDropdown size={16} />
-          </button>
-        </div>
       </div>
 
       {/* Table */}
@@ -230,11 +229,14 @@ export default function Activity() {
           key={activeFilter} // Reset pagination when filter changes
           columns={columns}
           data={activitiesData}
-          itemsPerPage={10}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}
+          onItemsPerPageChange={handleItemsPerPageChange}
           headerBgColor="bg-[#E0E7FF]"
           stripedRows={true}
+          isServerSide={true}
         />
       )}
     </div>
