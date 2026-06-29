@@ -36,4 +36,3 @@ import_dump() {
 }
 
 import_dump "/tmp/master_db.sql" "$master_database"
-import_dump "/tmp/sub_company_db.sql" "$sub_database"

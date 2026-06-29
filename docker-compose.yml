@@ -20,7 +20,6 @@ services:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
       - ./backend/master_db.sql:/tmp/master_db.sql:ro
-      - ./backend/sub_company_db.sql:/tmp/sub_company_db.sql:ro
     networks:
       - timesheet-network
     healthcheck:
@@ -53,6 +52,7 @@ services:
       SESSION_DRIVER: ${SESSION_DRIVER:-database}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      RUN_SEEDERS: ${RUN_SEEDERS:-true}
       RUN_LARAVEL_CACHE: ${RUN_LARAVEL_CACHE:-true}
     volumes:
       - backend_storage:/var/www/html/storage
