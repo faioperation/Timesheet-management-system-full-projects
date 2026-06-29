@@ -1,17 +1,30 @@
-FROM composer:2 AS vendor
+FROM php:8.2-cli-bookworm AS vendor
 
 WORKDIR /app
 
-COPY composer.json composer.lock ./
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        zip \
+        libzip-dev \
+    && docker-php-ext-install zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2.7.9 /usr/bin/composer /usr/bin/composer
+
+# Copy the whole Laravel project first
+COPY . .
+
 RUN composer install \
     --no-dev \
     --prefer-dist \
     --no-interaction \
     --no-progress \
     --optimize-autoloader
-
-COPY . .
-RUN composer dump-autoload --optimize --no-dev
 
 
 FROM php:8.2-fpm-bookworm AS app
