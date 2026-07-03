@@ -1,63 +1,81 @@
-# Dockerfile (Simple, works on Render)
-# Stage 1: Build PHP dependencies with composer image
-FROM composer:2 AS build
-WORKDIR /app
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
-COPY . .
+FROM composer:2 AS vendor
 
-# Stage 2: Runtime image
-FROM php:8.2-cli
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress \
+    --optimize-autoloader
+
+COPY . .
+RUN composer dump-autoload --optimize --no-dev
+
+
+FROM php:8.2-fpm-bookworm AS app
+
 WORKDIR /var/www/html
 
-# System deps & PHP extensions commonly needed for Laravel
-RUN apt-get update && apt-get install -y \
-    git unzip libzip-dev zip libpng-dev libonig-dev libxml2-dev \
-    default-mysql-client \
-  && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath zip gd
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# Copy built app
-COPY --from=build /app /var/www/html
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bash \
+        curl \
+        default-mysql-client \
+        git \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libonig-dev \
+        libpng-dev \
+        libxml2-dev \
+        libzip-dev \
+        unzip \
+        zip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        bcmath \
+        exif \
+        gd \
+        mbstring \
+        opcache \
+        pcntl \
+        pdo_mysql \
+        zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Ensure permissions for storage and cache
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true \
-    && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-timesheet.ini
+COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY docker/php/wait-for-db.sh /usr/local/bin/wait-for-db.sh
 
-# Expose "default" port (not strictly required, but useful)
-EXPOSE 8000
+COPY --from=vendor /app /var/www/html
 
-# Use PORT env set by Render or default to 8000
-ENV PORT=8000
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/wait-for-db.sh \
+    && mkdir -p \
+        storage/app/public \
+        storage/framework/cache \
+        storage/framework/sessions \
+        storage/framework/testing \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R ug+rwX storage bootstrap/cache
 
-# Start using artisan serve on the provided PORT
-CMD php artisan serve --host=0.0.0.0 --port=${PORT}
+EXPOSE 9000
 
-
-
-
-
-
-
-
-
-
-
-
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["php-fpm"]
 
 
+FROM nginx:1.27-alpine AS nginx
 
+WORKDIR /var/www/html
 
-# # Stage 1: Build dependencies
-# FROM composer:2 AS build
-# WORKDIR /app
-# COPY composer.json composer.lock ./
-# RUN composer install --no-dev --optimize-autoloader
-# COPY . .
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=vendor /app/public /var/www/html/public
 
-# # Stage 2: Run app
-# FROM php:8.2-fpm
-# WORKDIR /var/www/html
-# COPY --from=build /app .
-# RUN docker-php-ext-install pdo pdo_mysql
-# CMD php artisan serve --host=0.0.0.0 --port=8000
-# EXPOSE 8001
+EXPOSE 80

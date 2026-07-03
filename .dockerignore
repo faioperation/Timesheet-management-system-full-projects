@@ -1,0 +1,17 @@
+.git
+.gitignore
+**/node_modules
+**/vendor
+**/.env
+**/.env.*
+!**/.env.example
+**/dist
+**/build
+**/.dart_tool
+**/.phpunit.cache
+**/.phpunit.result.cache
+**/storage/logs/*.log
+**/storage/framework/cache/*
+**/storage/framework/sessions/*
+**/storage/framework/views/*
+flutter-app
